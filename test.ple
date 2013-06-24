@@ -1,10 +1,11 @@
 a = (b + 5) * 3.14
+| : identifier
+| : expression
          | : integer_constant
      | : identifier
               |  | : expression
      | : expression
-         | : expression		      
-| : identifier
+         | : expression                 
 |                | : statement
 |                | : assignment
     |     | : parenthetical_expression
