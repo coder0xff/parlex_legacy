@@ -1,0 +1,16 @@
+a = (b + 5) * 3.14
+         | : integer_constant
+     | : identifier
+              |  | : expression
+     | : expression
+         | : expression		      
+| : identifier
+|                | : statement
+|                | : assignment
+    |     | : parenthetical_expression
+     |   | : addition
+     |   | : expression
+    |     | : expression
+    |            | : multiplication
+    |            | : expression
+              |  | : float_constant

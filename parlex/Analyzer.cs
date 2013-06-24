@@ -8,50 +8,83 @@ namespace parlex
 {
     class Analyzer
     {
-        class SymbolClassNode
+        //The NFA subset created for a particular example of a particular product.
+        //While the sub-products it utilizes will be NFAs all their own, this one follows
+        //a particular sequence, and each element must be satisfied
+        public class NfaSequence
         {
             public int SpanStart;
-            public SymbolClassNode[][] RelationBranches;
-            public SymbolClass SymbolClass;
+            public readonly List<Product>[] RelationBranches;
+            public Product OwnerProduct;
 
-            public SymbolClassNode(int spanStart, int spanLength, SymbolClass symbolClass)
+            public NfaSequence(int spanStart, int spanLength, Product ownerProduct)
             {
                 SpanStart = spanStart;
-                RelationBranches = new SymbolClassNode[spanLength + 1][]; //+1 to find what comes after this
-                SymbolClass = symbolClass;
+                RelationBranches = new List<Product>[spanLength + 1]; //+1 to find what comes after this
+                for (int initBranches = 0; initBranches < spanLength + 1; initBranches++)
+                {
+                    RelationBranches[initBranches] = new List<Product>();
+                }
+                OwnerProduct = ownerProduct;
             }
         }
 
-        void CreateRelations(GrammarExampleEntry entry)
+        void CreateRelations(Exemplar entry)
         {
             int length = entry.Text.Length;
-            List<SymbolClassNode>[] temp = new List<SymbolClassNode>[length];
-            for (int init = 0; init < length; init++) temp[init] = new List<SymbolClassNode>();
-            foreach (SymbolClassSpan span in entry.SymbolClassSpans)
+            var sequencesByStartIndex = new List<NfaSequence>[length];
+            for (int init = 0; init < length; init++) sequencesByStartIndex[init] = new List<NfaSequence>();
+            foreach (ProductSpan span in entry.ProductSpans)
             {
-                temp[span.SpanStart].Add(new SymbolClassNode(span.SpanStart, span.SpanLength, span.SymbolClass));                
+                var sequence = new NfaSequence(span.SpanStart, span.SpanLength,
+                                                                         span.Product);
+                sequencesByStartIndex[span.SpanStart].Add(sequence);
+                span.Product.Sequences.Add(sequence);
             }
-            SymbolClassNode[][] temp2 = new SymbolClassNode[length][];
-            for (int arrayize = 0; arrayize < length; arrayize++) temp2[arrayize] = temp[arrayize].ToArray();
-            HashSet<SymbolClassNode> currentlyEnteredNodes = new HashSet<SymbolClassNode>();
+            var currentlyEnteredSequences = new HashSet<NfaSequence>();
             for (int startIndex = 0; startIndex < length; startIndex++)
             {
-                foreach (SymbolClassNode node in temp2[startIndex])
+                foreach (NfaSequence node in sequencesByStartIndex[startIndex])
                 {
-                    currentlyEnteredNodes.Add(node);
+                    currentlyEnteredSequences.Add(node);
                 }
-                foreach (SymbolClassNode node in currentlyEnteredNodes)
+                var toRemove = new HashSet<NfaSequence>();
+                foreach (NfaSequence node in currentlyEnteredSequences)
                 {
-
+                    if (node.SpanStart + node.RelationBranches.Length < startIndex)
+                    {
+                        toRemove.Add(node);
+                    }
+                }
+                foreach (NfaSequence node in toRemove)
+                {
+                    currentlyEnteredSequences.Remove(node);
+                }
+                foreach (NfaSequence node in currentlyEnteredSequences)
+                {
+                    foreach (NfaSequence sequence in sequencesByStartIndex[startIndex])
+                    {
+                        node.RelationBranches[startIndex - node.SpanStart].Add(sequence.OwnerProduct);
+                    }
                 }
             }
         }
-        void CreateHierarchies(IEnumerable<GrammarExampleEntry> entries)
-        {
 
+        void CreateRelations(IEnumerable<Exemplar> entries)
+        {
+            foreach (Exemplar entry in entries)
+            {
+                CreateRelations(entry);
+            }
         }
-        public void Analyze(IEnumerable<GrammarExampleEntry> entries) {
-            
+
+        public void Analyze(IEnumerable<Exemplar> entries) {
+            var products = entries.SelectMany(x => x.ProductSpans).Select(x => x.Product).ToList();
+            foreach (Product product in products)
+            {
+                product.Sequences.Clear();
+            }
+            CreateRelations(entries);
         }
     }
 }
