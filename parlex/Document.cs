@@ -32,15 +32,21 @@ namespace parlex {
                     currentExemplarSource = null;
                 } else {
                     if (currentExemplarSource == null) {
-                        currentExemplarSource = new ExemplarSource { Text = line };
-                        result.ExemplarSources.Add(currentExemplarSource);
+                        if (line.Trim() == "exemplar:") {
+                        } else if (line.Trim() == "relation:") {
+                            currentExemplarSource = new ExemplarSource { Text = "" };
+                            result.ExemplarSources.Add(currentExemplarSource);
+                        } else {
+                            currentExemplarSource = new ExemplarSource { Text = line };
+                            result.ExemplarSources.Add(currentExemplarSource);
+                        }                        
                     } else {
                         var productDeclarationParts = line.Split(':');
                         int startPosition = productDeclarationParts[0].IndexOf('|');
                         int length = productDeclarationParts[0].LastIndexOf('|') - startPosition + 1;
                         currentExemplarSource.ProductDeclarations.Add(
                             new ExemplarSource.ProductDeclaration(
-                                productDeclarationParts[1], startPosition, length
+                                productDeclarationParts[1].Trim(), startPosition, length
                             )
                          );
                     }
@@ -49,20 +55,22 @@ namespace parlex {
             return result;
         }
 
-        public IEnumerable<Exemplar> GetExemplars() {
-            var products = new Dictionary<string, Product>();
+        internal IEnumerable<Exemplar> GetExemplars(Dictionary<string, Product> products) {
             var results = new List<Exemplar>();
             foreach (ExemplarSource exemplarSource in ExemplarSources) {
                 var result = new Exemplar(exemplarSource.Text);
                 results.Add(result);
                 foreach (ExemplarSource.ProductDeclaration productDeclaration in exemplarSource.ProductDeclarations) {
-                    if (!products.ContainsKey(productDeclaration.Name)) {
-                        products.Add(productDeclaration.Name, new Product(productDeclaration.Name));
+                    bool isRepititious = productDeclaration.Name.EndsWith("*");
+                    string properName = productDeclaration.Name.Replace("*", "");
+                    if (!products.ContainsKey(properName)) {
+                        products.Add(properName, new Product(properName));
                     }
                     result.ProductSpans.Add(new ProductSpan(
-                        products[productDeclaration.Name],
+                        products[properName],
                         productDeclaration.StartPosition,
-                        productDeclaration.Length)
+                        productDeclaration.Length,
+                        isRepititious)
                     );
                 }
             }

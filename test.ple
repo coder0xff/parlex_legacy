@@ -1,3 +1,9 @@
+relation:
+| : letter
+ | : alpha_numeric*
+|| : identifier
+
+exemplar:
 a = (b + 5) * 3.14
 | : identifier
 | : expression
