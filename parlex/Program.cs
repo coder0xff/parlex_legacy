@@ -11,6 +11,9 @@ namespace parlex {
             string testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.ple");
             var testDocument = Document.FromText(testFile);
             var analyzer = new Analyzer(testDocument);
+            var parser = new Parser();
+            string toParseFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\parse_test.txt");
+            parser.Parse(toParseFile, analyzer.CodePointProducts, analyzer.AllProducts.Values);
             //             Application.EnableVisualStyles();
             //             Application.SetCompatibleTextRenderingDefault(false);
             //             Application.Run(new Form1());

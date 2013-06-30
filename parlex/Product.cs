@@ -22,11 +22,20 @@ namespace parlex {
         }
 
         public readonly String Title;
+        public readonly Int32? CodePoint;
         public List<Analyzer.NfaSequence> Sequences = new List<Analyzer.NfaSequence>();
-
+       
         public Product(String title) {
             Title = title;
+            CodePoint = null;
         }
+
+        public Product(String title, Int32 codePoint) {
+            Title = title;
+            CodePoint = codePoint;
+        }
+
+        public bool IsBuiltIn { get; set; }
 
         public override bool Equals(object obj) {
             if (ReferenceEquals(null, obj)) return false;
