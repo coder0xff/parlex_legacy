@@ -21,3 +21,7 @@ a = (b + 5) * 3.14
     |            | : multiplication
     |            | : expression
               |  | : float_constant
+              
+identifier is an expression
+
+multiplication is an expression

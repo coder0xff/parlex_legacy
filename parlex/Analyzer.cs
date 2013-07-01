@@ -25,6 +25,17 @@ namespace parlex {
             InitializeBuiltInProducts();
             var exemplars = document.GetExemplars(AllProducts);
             Analyze(exemplars);
+            CreateIsARelations(document);
+        }
+
+        private void CreateIsARelations(Document document) {
+            foreach (var isASource in document.IsASources) {
+                var leftProduct = AllProducts[isASource.LeftProduct];
+                var rightProduct = AllProducts[isASource.RightProduct];
+                var sequence = new NfaSequence(0, 1, false, rightProduct);
+                sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
+                AllProducts[isASource.RightProduct].Sequences.Add(sequence);
+            }
         }
 
         private void InitializeBuiltInProducts() {

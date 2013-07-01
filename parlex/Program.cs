@@ -13,7 +13,10 @@ namespace parlex {
             var analyzer = new Analyzer(testDocument);
             var parser = new Parser();
             string toParseFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\parse_test.txt");
-            parser.Parse(toParseFile, analyzer.CodePointProducts, analyzer.AllProducts.Values);
+            foreach (var productMatchResult in parser.Parse(toParseFile, analyzer.CodePointProducts, analyzer.AllProducts.Values)) {
+                System.Diagnostics.Debug.WriteLine(productMatchResult.Product.Title);
+            }
+            System.Diagnostics.Debug.WriteLine("All matched products printed");
             //             Application.EnableVisualStyles();
             //             Application.SetCompatibleTextRenderingDefault(false);
             //             Application.Run(new Form1());

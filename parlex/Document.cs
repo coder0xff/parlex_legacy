@@ -23,6 +23,18 @@ namespace parlex {
 
         public List<ExemplarSource> ExemplarSources = new List<ExemplarSource>();
 
+        public struct IsASource {
+            public readonly String LeftProduct;
+            public readonly String RightProduct;
+
+            public IsASource(string leftProduct, string rightProduct) : this() {
+                LeftProduct = leftProduct;
+                RightProduct = rightProduct;
+            }
+        }
+
+        public List<IsASource> IsASources = new List<IsASource>();
+
         public static Document FromText(String source) {
             var result = new Document();
             var lines = Regex.Split(source, "\r\n|\r|\n");
@@ -36,10 +48,20 @@ namespace parlex {
                         } else if (line.Trim() == "relation:") {
                             currentExemplarSource = new ExemplarSource { Text = "" };
                             result.ExemplarSources.Add(currentExemplarSource);
+                        } else if (line.Contains(" is a ") || line.Contains(" is an ")) {
+                            int isALength = " is a ".Length;
+                            int isAIndex = line.IndexOf(" is a ");
+                            if (isAIndex == -1) {
+                                isALength = " is an ".Length;
+                                isAIndex = line.IndexOf(" is an ");
+                            }
+                            string leftProduct = line.Substring(0, isAIndex).Trim();
+                            string rightProduct = line.Substring(isAIndex + isALength).Trim();
+                            result.IsASources.Add(new IsASource(leftProduct, rightProduct));
                         } else {
                             currentExemplarSource = new ExemplarSource { Text = line };
                             result.ExemplarSources.Add(currentExemplarSource);
-                        }                        
+                        }                
                     } else {
                         var productDeclarationParts = line.Split(':');
                         int startPosition = productDeclarationParts[0].IndexOf('|');
