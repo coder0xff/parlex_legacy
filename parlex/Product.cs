@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 namespace parlex {
-    class Product : IEquatable<Product> {
+    internal class Product : IEquatable<Product> {
         public bool Equals(Product other) {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -22,20 +22,11 @@ namespace parlex {
         }
 
         public readonly String Title;
-        public readonly Int32? CodePoint;
         public List<Analyzer.NfaSequence> Sequences = new List<Analyzer.NfaSequence>();
-       
+
         public Product(String title) {
             Title = title;
-            CodePoint = null;
         }
-
-        public Product(String title, Int32 codePoint) {
-            Title = title;
-            CodePoint = codePoint;
-        }
-
-        public bool IsBuiltIn { get; set; }
 
         public override bool Equals(object obj) {
             if (ReferenceEquals(null, obj)) return false;

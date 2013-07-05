@@ -10,12 +10,16 @@ namespace parlex {
         //a particular sequence, and each element must be satisfied
 
         public readonly Dictionary<Int32, Product> CodePointProducts = new Dictionary<Int32, Product>();
-        private readonly Product _lowerLetterProduct = new Product("lower_letter");
-        private readonly Product _upperLetterProduct = new Product("upper_letter");
-        private readonly Product _letterProduct = new Product("letter");
-        private readonly Product _digitProduct = new Product("digit");
-        private readonly Product _letterOrDigitProduct = new Product("letter_or_digit");
-        public readonly Dictionary<String, Product> AllProducts = new Dictionary<string, Product>();
+        public readonly List<CharacterClassCharacterProduct> CharacterClassProducts = new List<CharacterClassCharacterProduct>();
+        public readonly Dictionary<String, Product> BuiltInCharacterProducts = new Dictionary<string, Product>();
+//         private readonly Product _lowerLetterProduct = new Product("lower_letter");
+//         private readonly Product _upperLetterProduct = new Product("upper_letter");
+//         private readonly Product _letterProduct = new Product("letter");
+//         private readonly Product _digitProduct = new Product("digit");
+//         private readonly Product _letterOrDigitProduct = new Product("letter_or_digit");
+        private readonly Dictionary<String, Product> UserProducts;
+
+        public IEnumerable<Product> Products { get { return UserProducts.Values; } }
 
         public Analyzer() {
             InitializeBuiltInProducts();
@@ -23,18 +27,19 @@ namespace parlex {
 
         public Analyzer(Document document) {
             InitializeBuiltInProducts();
-            var exemplars = document.GetExemplars(AllProducts);
+            UserProducts = new Dictionary<string, Product>(BuiltInCharacterProducts);
+            var exemplars = document.GetExemplars(UserProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
         }
 
         private void CreateIsARelations(Document document) {
             foreach (var isASource in document.IsASources) {
-                var leftProduct = AllProducts[isASource.LeftProduct];
-                var rightProduct = AllProducts[isASource.RightProduct];
+                var leftProduct = UserProducts[isASource.LeftProduct];
+                var rightProduct = UserProducts[isASource.RightProduct];
                 var sequence = new NfaSequence(0, 1, false, rightProduct);
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
-                AllProducts[isASource.RightProduct].Sequences.Add(sequence);
+                UserProducts[isASource.RightProduct].Sequences.Add(sequence);
             }
         }
 
@@ -42,35 +47,21 @@ namespace parlex {
             foreach (var codePoint in Unicode.All) {
                 CreateCodePointProduct(codePoint);
             }
-            GenerateCharacterCategoryProduct(_lowerLetterProduct, Unicode.LowercaseLetter);
-            GenerateCharacterCategoryProduct(_upperLetterProduct, Unicode.UppercaseLetter);
-            GenerateCharacterCategoryProduct(_letterProduct, Unicode.Letters);
-            GenerateCharacterCategoryProduct(_digitProduct, Unicode.DecimalDigitNumber);
-            GenerateCharacterCategoryProduct(_letterOrDigitProduct, Unicode.AlphaNumeric);
-            var allProducts = new List<Product>(CodePointProducts.Values) {
-                _lowerLetterProduct,
-                _upperLetterProduct,
-                _letterProduct,
-                _digitProduct,
-                _letterOrDigitProduct
-            };
-            foreach (Product product in allProducts) {
-                product.IsBuiltIn = true;
-                AllProducts.Add(product.Title, product);
-            }
-        }
-
-        private void GenerateCharacterCategoryProduct(Product product, IEnumerable<int> codePoints) {
-            foreach (int codePoint in codePoints) {
-                var sequence = new NfaSequence(0, 1, false, product);
-                sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(CodePointProducts[codePoint], false, 1));
-                product.Sequences.Add(sequence);
+            CharacterClassProducts.Add(new CharacterClassCharacterProduct("lower_letter", Unicode.LowercaseLetters));
+            CharacterClassProducts.Add(new CharacterClassCharacterProduct("upper_letter", Unicode.UppercaseLetters));
+            CharacterClassProducts.Add(new CharacterClassCharacterProduct("letter", Unicode.Letters));
+            CharacterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers));
+            CharacterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
+            foreach (var characterClassProduct in CharacterClassProducts) {
+                BuiltInCharacterProducts.Add(characterClassProduct.Title, characterClassProduct);
             }
         }
 
         private void CreateCodePointProduct(Int32 codePoint) {
             if (!CodePointProducts.ContainsKey(codePoint)) {
-                CodePointProducts.Add(codePoint, new Product("codePoint" + codePoint.ToString("X6"), codePoint));
+                var codePointProduct = new CodePointCharacterProduct(codePoint);
+                CodePointProducts.Add(codePoint, codePointProduct);
+                BuiltInCharacterProducts.Add(codePointProduct.Title, codePointProduct);
             }
         }
 
@@ -94,7 +85,7 @@ namespace parlex {
             var currentlyEnteredSequences = new HashSet<NfaSequence>();
             for (int startIndex = 0; startIndex < length; startIndex++) {
                 foreach (NfaSequence node in sequencesByStartIndex[startIndex]) {
-                    if (!node.OwnerProduct.IsBuiltIn) {
+                    if (!(node.OwnerProduct is IBuiltInCharacterProduct)) {
                         currentlyEnteredSequences.Add(node);
                     }
                 }
@@ -115,7 +106,7 @@ namespace parlex {
                                                        lastCharacterIndexOfSequence <= lastCharacterIndexOfNode) ||
                                                       (lastCharacterIndexOfSequence < lastCharacterIndexOfNode
                                                       /*&& already know that startIndex >= node.SpanStart*/) ||
-                                                      sequence.OwnerProduct.IsBuiltIn; //it's not strictly nested, but in this case, we know which is which 
+                                                      (sequence.OwnerProduct is IBuiltInCharacterProduct); //if not strictly nested, in this case we can assume an "is a" relationship
                         bool isTrailingRelation = (startIndex - node.SpanStart) > lastCharacterIndexOfNode;
                         if (sequenceIsNestedInNode || isTrailingRelation) {
                             node.RelationBranches[startIndex - node.SpanStart].Add(new NfaSequence.ProductReference(sequence.OwnerProduct, sequence.IsRepitious, sequence.SpanStart + sequence.SpanLength));
@@ -129,12 +120,12 @@ namespace parlex {
             foreach (Exemplar entry in entries) {
                 CreateRelations(entry);
             }
-            foreach (Product product in AllProducts.Values) {
+            foreach (Product product in UserProducts.Values) {
                 foreach (NfaSequence sequence in product.Sequences) {
                     for (int index = 0; index < sequence.RelationBranches.Length; index++) {
                         sequence.RelationBranches[index] = sequence.RelationBranches[index].Distinct().ToList();
                     }
-                    sequence.RelationBranches[0].RemoveAll(x => x.Product == product && x.IsRepititious == false);
+                    sequence.RelationBranches[0].RemoveAll(x => x.Product == product && x.IsRepetitious == false);
                 }
             }
         }
@@ -159,7 +150,7 @@ namespace parlex {
             AddCodePointProducts(entries);
             List<Product> products = entries.SelectMany(x => x.ProductSpans).Select(x => x.Product).ToList();
             foreach (Product product in products) {
-                if (!product.IsBuiltIn)
+                if (!(product is IBuiltInCharacterProduct))
                     product.Sequences.Clear();
             }
             CreateRelations(entries);
@@ -167,12 +158,12 @@ namespace parlex {
         }
 
         public class NfaSequence {
-            public struct ProductReference {
+            public class ProductReference {
                 public readonly Product Product;
-                public readonly bool IsRepititious;
+                public readonly bool IsRepetitious;
                 public readonly int ExitSequenceCounter;
-                public ProductReference(Product product, bool isRepititious, int exitSequenceCounter) {
-                    IsRepititious = isRepititious;
+                public ProductReference(Product product, bool isRepetitious, int exitSequenceCounter) {
+                    IsRepetitious = isRepetitious;
                     Product = product;
                     ExitSequenceCounter = exitSequenceCounter;
                 }

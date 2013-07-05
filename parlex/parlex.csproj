@@ -46,6 +46,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Analyzer.cs" />
+    <Compile Include="CharacterClassCharacterProduct.cs" />
+    <Compile Include="CodePointCharacterProduct.cs" />
     <Compile Include="Document.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
@@ -54,6 +56,8 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Exemplar.cs" />
+    <Compile Include="IBuiltInCharacterProduct.cs" />
+    <Compile Include="ListExtensions.cs" />
     <Compile Include="Parser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

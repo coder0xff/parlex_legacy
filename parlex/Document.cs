@@ -77,7 +77,7 @@ namespace parlex {
             return result;
         }
 
-        internal IEnumerable<Exemplar> GetExemplars(Dictionary<string, Product> products) {
+        internal IEnumerable<Exemplar> GetExemplars(Dictionary<string, Product> inOutProducts) {
             var results = new List<Exemplar>();
             foreach (ExemplarSource exemplarSource in ExemplarSources) {
                 var result = new Exemplar(exemplarSource.Text);
@@ -85,11 +85,11 @@ namespace parlex {
                 foreach (ExemplarSource.ProductDeclaration productDeclaration in exemplarSource.ProductDeclarations) {
                     bool isRepititious = productDeclaration.Name.EndsWith("*");
                     string properName = productDeclaration.Name.Replace("*", "");
-                    if (!products.ContainsKey(properName)) {
-                        products.Add(properName, new Product(properName));
+                    if (!inOutProducts.ContainsKey(properName)) {
+                        inOutProducts.Add(properName, new Product(properName));
                     }
                     result.ProductSpans.Add(new ProductSpan(
-                        products[properName],
+                        inOutProducts[properName],
                         productDeclaration.StartPosition,
                         productDeclaration.Length,
                         isRepititious)
