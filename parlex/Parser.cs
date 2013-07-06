@@ -178,7 +178,7 @@ namespace parlex {
                                                                         nextMatchesThusFar);
                     result |= _parser.AddSequenceMatchState(nextSequenceMatchState);
                     result |= _parser.StartProductMatch(nextProduct.Product, nextSourceIndex);
-                    bool canEndNow = nextProduct.IsRepetitious &&
+                    bool canEndNow = !result && nextProduct.IsRepetitious &&
                               nextProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength;
                     if (canEndNow) {
                         AddProductMatchResult(nextMatchesThusFar, nextSourceIndex);
