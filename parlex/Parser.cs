@@ -41,6 +41,7 @@ namespace parlex {
             ProcessBuiltInCharacterProducts(builtInCharacterProducts);
             foreach (Product product in products) {
                 if (product is IBuiltInCharacterProduct) continue;
+                if (product.Title != "multiplication") continue;
                 StartProductMatch(product, 0);
             }
             if (_completedProductMatches[0] == null) {
@@ -177,13 +178,21 @@ namespace parlex {
                                                                         nextMatchesThusFar);
                     result |= _parser.AddSequenceMatchState(nextSequenceMatchState);
                     result |= _parser.StartProductMatch(nextProduct.Product, nextSourceIndex);
+                    bool canEndNow = nextProduct.IsRepetitious &&
+                              nextProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength;
+                    if (canEndNow) {
+                        AddProductMatchResult(nextMatchesThusFar, nextSourceIndex);
+                    }
+                    result |= canEndNow;
                 }
                 return result;
             }
         }
 
         bool StartProductMatch(Product product, int sourceIndex) {
-            if (_completedProductMatches[sourceIndex].ContainsKey(product)) return true;
+            if (sourceIndex >= _textCodePoints.Length) return false;
+            MakeProductCollections(sourceIndex, product);
+            if (_completedProductMatches[sourceIndex][product].Count > 0) return true;
             if (_pendingProductMatches[sourceIndex].Contains(product)) return false;
             var builtInCharacterProduct = product as IBuiltInCharacterProduct;
             if (builtInCharacterProduct != null) {
@@ -206,16 +215,22 @@ namespace parlex {
                                                             new List<ProductMatchResult>());
                 }
             }
-            return _completedProductMatches[sourceIndex].ContainsKey(product);
+            return _completedProductMatches[sourceIndex][product].Count > 0;
         }
 
         bool AddSequenceMatchState(SequenceMatchState sequenceMatchState) {
             int startingInputIndex = sequenceMatchState.InputIndex;
+            if (startingInputIndex >= _textCodePoints.Length) return false;
             Product product = sequenceMatchState.NeededProduct.Product;
             MakeProductCollections(startingInputIndex, product);
             _dependentSequences[startingInputIndex][product].Add(sequenceMatchState);
-            foreach (ProductMatchResult productMatchResult in _completedProductMatches[startingInputIndex][product]) {
-                sequenceMatchState.DependencyFulfilled(productMatchResult);
+            var completedProductMatches = _completedProductMatches[startingInputIndex][product];
+            //we must anticipate that items will be added to the list for left recursion
+            //foreach depends on an enumerator, which doesn't work when items are added
+// ReSharper disable ForCanBeConvertedToForeach
+            for (int dependencyIndex = 0; dependencyIndex < completedProductMatches.Count; dependencyIndex++) {
+// ReSharper restore ForCanBeConvertedToForeach
+                sequenceMatchState.DependencyFulfilled(completedProductMatches[dependencyIndex]);
             }
             return _completedProductMatches[startingInputIndex][product].Count > 0;
         }
@@ -232,8 +247,16 @@ namespace parlex {
             _pendingProductMatches[startingInputIndex].Remove(product);
             MakeProductCollections(startingInputIndex, product);
             _completedProductMatches[startingInputIndex][product].Add(productMatch);
-            foreach (SequenceMatchState dependentSequence in _dependentSequences[startingInputIndex][product]) {
-                dependentSequence.DependencyFulfilled(productMatch);
+            var dependents = new HashSet<SequenceMatchState>(_dependentSequences[startingInputIndex][product]);
+            var fulfilledDependents = new HashSet<SequenceMatchState>();
+            while(dependents.Count > fulfilledDependents.Count) {
+                foreach (SequenceMatchState sequenceMatchState in dependents) {
+                    if (!fulfilledDependents.Contains(sequenceMatchState)) {
+                        sequenceMatchState.DependencyFulfilled(productMatch);
+                        fulfilledDependents.Add(sequenceMatchState);
+                    }
+                }
+                dependents = new HashSet<SequenceMatchState>(_dependentSequences[startingInputIndex][product]);
             }
         }
 
