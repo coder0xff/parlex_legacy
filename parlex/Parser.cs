@@ -4,24 +4,88 @@ using System.Linq;
 
 namespace parlex {
     class Parser {
-        internal class ProductMatchResult {
+        internal class ProductMatchResult : IEquatable<ProductMatchResult> {
+            public bool Equals(ProductMatchResult other) {
+                if (ReferenceEquals(null, other)) {
+                    return false;
+                }
+                if (ReferenceEquals(this, other)) {
+                    return true;
+                }
+                bool allElseEquals = Product.Equals(other.Product) && _sequenceNumber == other._sequenceNumber &&
+                                     StartingInputIndex == other.StartingInputIndex &&
+                                     SourceLength == other.SourceLength;
+                if (allElseEquals) {
+                    if (ReferenceEquals(SubMatches, other.SubMatches)) return true;
+                    if (SubMatches == null || other.SubMatches == null) return false;
+                    return SubMatches.SequenceEqual(other.SubMatches);
+                }
+                return false;
+            }
+
+            public override bool Equals(object obj) {
+                if (ReferenceEquals(null, obj)) {
+                    return false;
+                }
+                if (ReferenceEquals(this, obj)) {
+                    return true;
+                }
+                if (obj.GetType() != GetType()) {
+                    return false;
+                }
+                return Equals((ProductMatchResult) obj);
+            }
+
+            int ComputeHashCode() {
+                unchecked {
+                    int hashCode = Product.GetHashCode();
+                    hashCode = (hashCode * 397) ^ _sequenceNumber;
+                    hashCode = (hashCode * 397) ^ StartingInputIndex;
+                    hashCode = (hashCode * 397) ^ SourceLength;
+                    if (SubMatches != null) {
+// ReSharper disable LoopCanBeConvertedToQuery
+                        foreach (ProductMatchResult subMatch in SubMatches) {
+// ReSharper restore LoopCanBeConvertedToQuery
+                            hashCode = (hashCode*397) ^ subMatch.GetHashCode();
+                        }
+                    }
+                    return hashCode;
+                }                
+            }
+
+            public override int GetHashCode() {
+                return _hashCode;
+            }
+
+            public static bool operator ==(ProductMatchResult left, ProductMatchResult right) {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(ProductMatchResult left, ProductMatchResult right) {
+                return !Equals(left, right);
+            }
+
             public readonly Product Product;
-            public readonly int SequenceNumber;
+            private readonly int _sequenceNumber;
+// ReSharper disable MemberCanBePrivate.Global
             public readonly IReadOnlyList<ProductMatchResult> SubMatches;
+// ReSharper restore MemberCanBePrivate.Global
             public readonly int StartingInputIndex;
             public readonly int SourceLength;
+            private readonly int _hashCode;
 
             public ProductMatchResult(Product product, int sequenceNumber, List<ProductMatchResult> subMatches, int startingInputIndex, int sourceLength) {
                 Product = product;
-                SequenceNumber = sequenceNumber;
+                _sequenceNumber = sequenceNumber;
                 SubMatches = subMatches != null ? subMatches.AsReadOnly() : null;
                 StartingInputIndex = startingInputIndex;
                 SourceLength = sourceLength;
+                _hashCode = ComputeHashCode();
             }
         }
 
         private readonly HashSet<Product>[] _pendingProductMatches;
-        private readonly Dictionary<Product, List<ProductMatchResult>>[] _completedProductMatches;
+        private readonly Dictionary<Product, HashSet<ProductMatchResult>>[] _completedProductMatches;
         private readonly Dictionary<Product, HashSet<SequenceMatchState>>[] _dependentSequences;
         private readonly IEnumerable<ProductMatchResult> _results;
         private readonly Int32[] _textCodePoints;
@@ -31,21 +95,21 @@ namespace parlex {
                        IEnumerable<Product> products) {
             _textCodePoints = text.GetUtf32CodePoints();
             _pendingProductMatches = new HashSet<Product>[_textCodePoints.Length];
-            _completedProductMatches = new Dictionary<Product, List<ProductMatchResult>>[_textCodePoints.Length];
+            _completedProductMatches = new Dictionary<Product, HashSet<ProductMatchResult>>[_textCodePoints.Length];
             _dependentSequences = new Dictionary<Product, HashSet<SequenceMatchState>>[_textCodePoints.Length];
             for (int initCollections = 0; initCollections < _textCodePoints.Length; initCollections++) {
                 _pendingProductMatches[initCollections] = new HashSet<Product>();
-                _completedProductMatches[initCollections] = new Dictionary<Product, List<ProductMatchResult>>();
+                _completedProductMatches[initCollections] = new Dictionary<Product, HashSet<ProductMatchResult>>();
                 _dependentSequences[initCollections] = new Dictionary<Product, HashSet<SequenceMatchState>>();
             }
             ProcessBuiltInCharacterProducts(builtInCharacterProducts);
             foreach (Product product in products) {
                 if (product is IBuiltInCharacterProduct) continue;
-                if (product.Title != "multiplication") continue;
+                if (product.Title != "assignment") continue;
                 StartProductMatch(product, 0);
             }
             if (_completedProductMatches[0] == null) {
-                _completedProductMatches[0] = new Dictionary<Product, List<ProductMatchResult>>();
+                _completedProductMatches[0] = new Dictionary<Product, HashSet<ProductMatchResult>>();
             }
             _results = _completedProductMatches[0].SelectMany(x => x.Value);
         }
@@ -145,7 +209,7 @@ namespace parlex {
 // ReSharper restore UseObjectOrCollectionInitializer
                 nextMatchesThusFar.Add(productMatchResult);
                 if (!NeededProduct.IsRepetitious || !CreateNextStates(_counter, nextSourceIndex, nextMatchesThusFar)) {
-                    if (NeededProduct.ExitSequenceCounter == _sequence.SpanLength) {
+                    if (NeededProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength) {
                         AddProductMatchResult(nextMatchesThusFar, nextSourceIndex);
                     } else {
                         CreateNextStates(NeededProduct.ExitSequenceCounter, nextSourceIndex, nextMatchesThusFar);
@@ -223,14 +287,16 @@ namespace parlex {
             if (startingInputIndex >= _textCodePoints.Length) return false;
             Product product = sequenceMatchState.NeededProduct.Product;
             MakeProductCollections(startingInputIndex, product);
-            _dependentSequences[startingInputIndex][product].Add(sequenceMatchState);
-            var completedProductMatches = _completedProductMatches[startingInputIndex][product];
             //we must anticipate that items will be added to the list for left recursion
             //foreach depends on an enumerator, which doesn't work when items are added
+            //so we make a copy
+            //we don't need to catch new entries though, because _dependentSequences will handle that
+            var completedProductMatches = new HashSet<ProductMatchResult>(_completedProductMatches[startingInputIndex][product]);
+            _dependentSequences[startingInputIndex][product].Add(sequenceMatchState);
 // ReSharper disable ForCanBeConvertedToForeach
-            for (int dependencyIndex = 0; dependencyIndex < completedProductMatches.Count; dependencyIndex++) {
+            foreach (var completedProduct in completedProductMatches) {
 // ReSharper restore ForCanBeConvertedToForeach
-                sequenceMatchState.DependencyFulfilled(completedProductMatches[dependencyIndex]);
+                sequenceMatchState.DependencyFulfilled(completedProduct);
             }
             return _completedProductMatches[startingInputIndex][product].Count > 0;
         }
@@ -247,22 +313,19 @@ namespace parlex {
             _pendingProductMatches[startingInputIndex].Remove(product);
             MakeProductCollections(startingInputIndex, product);
             _completedProductMatches[startingInputIndex][product].Add(productMatch);
+            //we must anticipate that items will be added to the list for left recursion
+            //foreach depends on an enumerator, which doesn't work when items are added
+            //so we make a copy
+            //we don't need to catch new entries though, because _completedProductMatches will handle that
             var dependents = new HashSet<SequenceMatchState>(_dependentSequences[startingInputIndex][product]);
-            var fulfilledDependents = new HashSet<SequenceMatchState>();
-            while(dependents.Count > fulfilledDependents.Count) {
-                foreach (SequenceMatchState sequenceMatchState in dependents) {
-                    if (!fulfilledDependents.Contains(sequenceMatchState)) {
-                        sequenceMatchState.DependencyFulfilled(productMatch);
-                        fulfilledDependents.Add(sequenceMatchState);
-                    }
-                }
-                dependents = new HashSet<SequenceMatchState>(_dependentSequences[startingInputIndex][product]);
+            foreach (SequenceMatchState sequenceMatchState in dependents) {
+                sequenceMatchState.DependencyFulfilled(productMatch);
             }
         }
 
         void MakeProductCollections(int inputIndex, Product product) {
             if (!_completedProductMatches[inputIndex].ContainsKey(product)) {
-                _completedProductMatches[inputIndex][product] = new List<ProductMatchResult>();
+                _completedProductMatches[inputIndex][product] = new HashSet<ProductMatchResult>();
                 _dependentSequences[inputIndex][product] = new HashSet<SequenceMatchState>();
             }
         }

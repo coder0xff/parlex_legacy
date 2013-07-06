@@ -4,10 +4,23 @@ relation:
 || : identifier
 
 exemplar:
-(b + 5) * 3
-|     | : expression
-|         | : multiplication
-          | : expression
+a = (b + 5) * 3.14
+| : identifier
+| : expression
+         | : integer_constant
+     | : identifier
+              |  | : expression
+     | : expression
+         | : expression                 
+|                | : statement
+|                | : assignment
+    |     | : parenthetical_expression
+     |   | : addition
+     |   | : expression
+    |     | : expression
+    |            | : multiplication
+    |            | : expression
+              |  | : float_constant
               
 identifier is an expression
 
