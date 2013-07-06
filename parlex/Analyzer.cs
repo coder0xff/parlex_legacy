@@ -121,11 +121,21 @@ namespace parlex {
                 CreateRelations(entry);
             }
             foreach (Product product in UserProducts.Values) {
+                int sequenceIndex = 0;
+                List<int> sequenceIndicesToRemove = new List<int>();
                 foreach (NfaSequence sequence in product.Sequences) {
                     for (int index = 0; index < sequence.RelationBranches.Length; index++) {
                         sequence.RelationBranches[index] = sequence.RelationBranches[index].Distinct().ToList();
                     }
                     sequence.RelationBranches[0].RemoveAll(x => x.Product == product && x.IsRepetitious == false);
+                    if (sequence.RelationBranches[0].Count == 0) {
+                        sequenceIndicesToRemove.Add(sequenceIndex);
+                    }
+                    sequenceIndex++;
+                }
+                sequenceIndicesToRemove.Reverse();
+                foreach (var sequenceToRemoveIndex in sequenceIndicesToRemove) {
+                    product.Sequences.RemoveAt(sequenceToRemoveIndex);
                 }
             }
         }
