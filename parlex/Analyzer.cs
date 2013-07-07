@@ -9,37 +9,33 @@ namespace parlex {
         //While the sub-products it utilizes will be NFAs all their own, this one follows
         //a particular sequence, and each element must be satisfied
 
-        public readonly Dictionary<Int32, Product> CodePointProducts = new Dictionary<Int32, Product>();
-        public readonly List<CharacterClassCharacterProduct> CharacterClassProducts = new List<CharacterClassCharacterProduct>();
+        private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
+        private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
         public readonly Dictionary<String, Product> BuiltInCharacterProducts = new Dictionary<string, Product>();
 //         private readonly Product _lowerLetterProduct = new Product("lower_letter");
 //         private readonly Product _upperLetterProduct = new Product("upper_letter");
 //         private readonly Product _letterProduct = new Product("letter");
 //         private readonly Product _digitProduct = new Product("digit");
 //         private readonly Product _letterOrDigitProduct = new Product("letter_or_digit");
-        private readonly Dictionary<String, Product> UserProducts;
+        private readonly Dictionary<String, Product> _userProducts;
 
-        public IEnumerable<Product> Products { get { return UserProducts.Values; } }
-
-        public Analyzer() {
-            InitializeBuiltInProducts();
-        }
+        public IEnumerable<Product> Products { get { return _userProducts.Values; } }
 
         public Analyzer(Document document) {
             InitializeBuiltInProducts();
-            UserProducts = new Dictionary<string, Product>(BuiltInCharacterProducts);
-            var exemplars = document.GetExemplars(UserProducts);
+            _userProducts = new Dictionary<string, Product>(BuiltInCharacterProducts);
+            var exemplars = document.GetExemplars(_userProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
         }
 
         private void CreateIsARelations(Document document) {
             foreach (var isASource in document.IsASources) {
-                var leftProduct = UserProducts[isASource.LeftProduct];
-                var rightProduct = UserProducts[isASource.RightProduct];
+                var leftProduct = _userProducts[isASource.LeftProduct];
+                var rightProduct = _userProducts[isASource.RightProduct];
                 var sequence = new NfaSequence(0, 1, false, rightProduct);
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
-                UserProducts[isASource.RightProduct].Sequences.Add(sequence);
+                _userProducts[isASource.RightProduct].Sequences.Add(sequence);
             }
         }
 
@@ -47,20 +43,20 @@ namespace parlex {
             foreach (var codePoint in Unicode.All) {
                 CreateCodePointProduct(codePoint);
             }
-            CharacterClassProducts.Add(new CharacterClassCharacterProduct("lower_letter", Unicode.LowercaseLetters));
-            CharacterClassProducts.Add(new CharacterClassCharacterProduct("upper_letter", Unicode.UppercaseLetters));
-            CharacterClassProducts.Add(new CharacterClassCharacterProduct("letter", Unicode.Letters));
-            CharacterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers));
-            CharacterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
-            foreach (var characterClassProduct in CharacterClassProducts) {
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("lower_letter", Unicode.LowercaseLetters));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("upper_letter", Unicode.UppercaseLetters));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("letter", Unicode.Letters));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
+            foreach (var characterClassProduct in _characterClassProducts) {
                 BuiltInCharacterProducts.Add(characterClassProduct.Title, characterClassProduct);
             }
         }
 
         private void CreateCodePointProduct(Int32 codePoint) {
-            if (!CodePointProducts.ContainsKey(codePoint)) {
+            if (!_codePointProducts.ContainsKey(codePoint)) {
                 var codePointProduct = new CodePointCharacterProduct(codePoint);
-                CodePointProducts.Add(codePoint, codePointProduct);
+                _codePointProducts.Add(codePoint, codePointProduct);
                 BuiltInCharacterProducts.Add(codePointProduct.Title, codePointProduct);
             }
         }
@@ -120,9 +116,9 @@ namespace parlex {
             foreach (Exemplar entry in entries) {
                 CreateRelations(entry);
             }
-            foreach (Product product in UserProducts.Values) {
+            foreach (Product product in _userProducts.Values) {
                 int sequenceIndex = 0;
-                List<int> sequenceIndicesToRemove = new List<int>();
+                var sequenceIndicesToRemove = new List<int>();
                 foreach (NfaSequence sequence in product.Sequences) {
                     for (int index = 0; index < sequence.RelationBranches.Length; index++) {
                         sequence.RelationBranches[index] = sequence.RelationBranches[index].Distinct().ToList();
@@ -147,7 +143,7 @@ namespace parlex {
                     string textElement = elementEnumerator.GetTextElement();
                     int elementLength = textElement.Length;
                     int codePoint = char.ConvertToUtf32(textElement, 0);
-                    Product product = CodePointProducts[codePoint];
+                    Product product = _codePointProducts[codePoint];
                     int elementPosition = elementEnumerator.ElementIndex;
                     var elementSpan = new ProductSpan(product, elementPosition, elementLength, false);
                     exemplar.ProductSpans.Add(elementSpan);
@@ -155,7 +151,7 @@ namespace parlex {
             }
         }
 
-        internal IEnumerable<Product> Analyze(IEnumerable<Exemplar> sourceEntries) {
+        private void Analyze(IEnumerable<Exemplar> sourceEntries) {
             List<Exemplar> entries = sourceEntries.Select(x => (Exemplar)x.Clone()).ToList();
             AddCodePointProducts(entries);
             List<Product> products = entries.SelectMany(x => x.ProductSpans).Select(x => x.Product).ToList();
@@ -164,7 +160,6 @@ namespace parlex {
                     product.Sequences.Clear();
             }
             CreateRelations(entries);
-            return products;
         }
 
         public class NfaSequence {
