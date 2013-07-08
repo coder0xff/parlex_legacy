@@ -12,8 +12,8 @@ namespace parlex {
             var testDocument = Document.FromText(testFile);
             var analyzer = new Analyzer(testDocument);
             string toParseFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\parse_test.txt");
-            var parseResult = Parser.Parse(toParseFile, analyzer.BuiltInCharacterProducts.Values, analyzer.Products);
-            foreach (var productMatchResult in parseResult) {
+            var parseResult = new Parser(toParseFile, analyzer.Products);
+            foreach (var productMatchResult in parseResult.Results) {
                 System.Diagnostics.Debug.WriteLine(productMatchResult.Product.Title);
             }
             System.Diagnostics.Debug.WriteLine("All matched products printed");
