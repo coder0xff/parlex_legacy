@@ -56,12 +56,44 @@ namespace parlex {
             //ProcessBuiltInCharacterProducts(builtInCharacterProducts);
             foreach (Product product in products) {
                 if (product is IBuiltInCharacterProduct) continue;
-                if (product.Title != "identifier") continue;
-                MatchProduct(product, 0, new Dictionary<Product, List<SubMatchChain>>(), new Dictionary<Product, List<SequenceMatchState>>());
+                MatchProduct(product, 0, new Dictionary<Product, DependencyMediator>());
 
             }
             _results = new List<ParseResult>();
             PrepareResults();
+        }
+
+        private class DependencyMediator {
+            private readonly List<SubMatchChain> _completedSoFar = new List<SubMatchChain>();
+            private readonly List<SequenceMatchState> _dependents = new List<SequenceMatchState>();
+            private readonly HashSet<SequenceMatchState> _unfulfilledDependents = new HashSet<SequenceMatchState>();
+
+            public void AddMatchChain(SubMatchChain subMatchChain) {
+                _completedSoFar.Add(subMatchChain);
+                foreach (var sequenceMatchState in _dependents) {
+                    sequenceMatchState.DependencyFulfilled(subMatchChain);
+                    _unfulfilledDependents.Remove(sequenceMatchState);
+                }
+            }
+
+            public void AddDependent(SequenceMatchState sequenceMatchState) {
+                _dependents.Add(sequenceMatchState);
+                if (_completedSoFar.Count > 0) {
+                    foreach (var subMatchChain in new List<SubMatchChain>(_completedSoFar)) {
+                        sequenceMatchState.DependencyFulfilled(subMatchChain);
+                    }
+                } else {
+                    _unfulfilledDependents.Add(sequenceMatchState);
+                }
+            }
+
+            public void MatchingFinished() {
+                foreach (var unfulfilledDependent in _unfulfilledDependents) {
+                    unfulfilledDependent.DependencyUnfulfilled();
+                }
+            }
+
+            public IEnumerable<SubMatchChain> Results { get { return _completedSoFar; } }
         }
 
         private class SequenceMatchState {
@@ -72,9 +104,9 @@ namespace parlex {
             private readonly int _sequenceStartingTextToParseIndex;
             private readonly Analyzer.NfaSequence.ProductReference _neededProduct;
             private readonly List<SubMatchChain.Entry> _matchesThusFar;
-            private readonly List<SubMatchChain> _completionResults;
+            private readonly DependencyMediator _dependencyMediator;
 
-            public SequenceMatchState(Parser parser, Analyzer.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, Analyzer.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, List<SubMatchChain> completionResults) {
+            public SequenceMatchState(Parser parser, Analyzer.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, Analyzer.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, DependencyMediator dependencyMediator) {
                 _parser = parser;
                 _sequence = sequence;
                 _counter = counter;
@@ -82,7 +114,7 @@ namespace parlex {
                 _sequenceStartingTextToParseIndex = sequenceStartingTextToParseIndex;
                 _neededProduct = neededProduct;
                 _matchesThusFar = matchesThusFar;
-                _completionResults = completionResults;
+                _dependencyMediator = dependencyMediator;
             }
 
             public void DependencyFulfilled(SubMatchChain subMatchChain) {
@@ -90,12 +122,12 @@ namespace parlex {
                 var nextMatchesThusFar = new List<SubMatchChain.Entry>(_matchesThusFar);
                 nextMatchesThusFar.Add(new SubMatchChain.Entry(_neededProduct.Product, subMatchChain.LengthInParsedText));
                 if (_neededProduct.IsRepetitious) {
-                    CreateNextStates(_counter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, List<SubMatchChain>>(), new Dictionary<Product, List<SequenceMatchState>>());
+                    CreateNextStates(_counter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, DependencyMediator>());
                 } else {
                     if (_neededProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength) {
-                        _completionResults.Add(new SubMatchChain(nextMatchesThusFar, nextTextToParseIndex - _sequenceStartingTextToParseIndex));
+                        _dependencyMediator.AddMatchChain(new SubMatchChain(nextMatchesThusFar, nextTextToParseIndex - _sequenceStartingTextToParseIndex));
                     } else {
-                        CreateNextStates(_neededProduct.ExitSequenceCounter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, List<SubMatchChain>>(), new Dictionary<Product, List<SequenceMatchState>>());
+                        CreateNextStates(_neededProduct.ExitSequenceCounter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, DependencyMediator>());
                     }
                 }
             }
@@ -103,21 +135,23 @@ namespace parlex {
             public void DependencyUnfulfilled() {
                 if (_neededProduct.IsRepetitious) {
                     if (_neededProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength) {
-                        _completionResults.Add(new SubMatchChain(_matchesThusFar, _textToParseIndex));
+                        _dependencyMediator.AddMatchChain(new SubMatchChain(_matchesThusFar, _textToParseIndex - _sequenceStartingTextToParseIndex));
                     } else {
-                        CreateNextStates(_neededProduct.ExitSequenceCounter, _textToParseIndex, _matchesThusFar, new Dictionary<Product, List<SubMatchChain>>(), new Dictionary<Product, List<SequenceMatchState>>());
+                        CreateNextStates(_neededProduct.ExitSequenceCounter, _textToParseIndex, _matchesThusFar, new Dictionary<Product, DependencyMediator>());
                     }
                 }
             }
 
-            public void CreateNextStates(int nextCounter, int nextTextToParseIndex, List<SubMatchChain.Entry> nextMatchesThusFar, Dictionary<Product, List<SubMatchChain>> productsMatchResults, Dictionary<Product, List<SequenceMatchState>> productsLeftRecursions) {
+            public void CreateNextStates(int nextCounter, int nextTextToParseIndex, List<SubMatchChain.Entry> nextMatchesThusFar, Dictionary<Product, DependencyMediator> dependencyMediators) {
                 var nextProducts = _sequence.RelationBranches[nextCounter - _sequence.SpanStart];
                 foreach (var nextProductReference in nextProducts) {
                     var nextProduct = nextProductReference.Product;
-                    bool isNotALeftRecursion = !productsMatchResults.ContainsKey(nextProduct);
-                    var nextSequenceMatchState = new SequenceMatchState(_parser, _sequence, nextCounter, nextTextToParseIndex, _sequenceStartingTextToParseIndex, nextProductReference, nextMatchesThusFar, _completionResults);
-                    if (isNotALeftRecursion) {
-                        List<SubMatchChain> matchResults = _parser.MatchProduct(nextProductReference.Product, nextTextToParseIndex, productsMatchResults, productsLeftRecursions);
+                    var nextSequenceMatchState = new SequenceMatchState(_parser, _sequence, nextCounter, nextTextToParseIndex, _sequenceStartingTextToParseIndex, nextProductReference, nextMatchesThusFar, _dependencyMediator);
+                    List<SubMatchChain> matchResults = null;
+                    if (!dependencyMediators.ContainsKey(nextProduct)) {
+                        matchResults = _parser.MatchProduct(nextProduct, nextTextToParseIndex, dependencyMediators);
+                    }
+                    if (matchResults != null) {
                         if (matchResults.Count > 0) {
                             foreach (var matchResult in matchResults) {
                                 nextSequenceMatchState.DependencyFulfilled(matchResult);
@@ -126,82 +160,75 @@ namespace parlex {
                             nextSequenceMatchState.DependencyUnfulfilled();
                         }
                     } else {
-                        productsLeftRecursions[nextProduct].Add(nextSequenceMatchState);
+                        dependencyMediators[nextProduct].AddDependent(nextSequenceMatchState);
                     }
                 }
             }
         }
 
-        private List<SubMatchChain> MatchProduct(Product product, int textToParseIndex, Dictionary<Product, List<SubMatchChain>> productsMatchResults, Dictionary<Product, List<SequenceMatchState>> productsLeftRecursions) {
-            System.Diagnostics.Debug.Assert(!productsMatchResults.ContainsKey(product));
-            System.Diagnostics.Debug.Assert(!productsLeftRecursions.ContainsKey(product));
+        private List<SubMatchChain> MatchProduct(Product product, int textToParseIndex, Dictionary<Product, DependencyMediator> dependencyMediators) {
+            System.Diagnostics.Debug.Assert(!dependencyMediators.ContainsKey(product));
+            bool isTopRecursionLevel = dependencyMediators.Count == 0;
 
             if (textToParseIndex >= _textCodePoints.Length) {
                 return new List<SubMatchChain>();
+            }
+
+            var builtInCharacterProduct = product as IBuiltInCharacterProduct;
+            if (builtInCharacterProduct != null) {
+                if (builtInCharacterProduct.Match(_textCodePoints[textToParseIndex])) {
+                    var subMatches = new List<SubMatchChain.Entry>();
+                    return new List<SubMatchChain> { new SubMatchChain(subMatches, 1) };
+                }
             }
 
             if (_completedProductMatches[textToParseIndex].ContainsKey(product)) {
                 return _completedProductMatches[textToParseIndex][product].Select(x => x.Value).ToList();
             }
 
-            var results = new List<SubMatchChain>();
+            var dependencyMediator = new DependencyMediator();
+            dependencyMediators.Add(product, dependencyMediator);
 
-            productsMatchResults.Add(product, results);
-            var leftRecursions = new List<SequenceMatchState>();
-            productsLeftRecursions.Add(product, leftRecursions);
+            for (int sequenceNumber = 0; sequenceNumber < product.Sequences.Count; sequenceNumber++) {
+                var sequence = product.Sequences[sequenceNumber];
+                var nextSequenceMatchState = new SequenceMatchState(this, sequence, sequence.SpanStart, textToParseIndex, textToParseIndex, null, null, dependencyMediator);
 
-            var builtInCharacterProduct = product as IBuiltInCharacterProduct;
-            if (builtInCharacterProduct != null) {
-                if (builtInCharacterProduct.Match(_textCodePoints[textToParseIndex])) {
-                    var subMatches = new List<SubMatchChain.Entry>();
-                    results.Add(new SubMatchChain(subMatches, 1));
-                }
-            } else {
-                for (int sequenceNumber = 0; sequenceNumber < product.Sequences.Count; sequenceNumber++) {
-                    var sequence = product.Sequences[sequenceNumber];
-                    var nextSequenceMatchState = new SequenceMatchState(this, sequence, sequence.SpanStart, textToParseIndex, textToParseIndex, null, null, results);
-
-                    nextSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), productsMatchResults, productsLeftRecursions);
-                }
+                nextSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
             }
-            // Do not use foreach or linq here. We expect that results.Count might increase
-            if (results.Count > 0) {
-                for (int resultIndex = 0; resultIndex < results.Count; resultIndex++) {
-                    foreach (SequenceMatchState sequenceMatchState in leftRecursions) {
-                        sequenceMatchState.DependencyFulfilled(results[resultIndex]);
+            
+            if (isTopRecursionLevel) {
+                foreach (var mediator in dependencyMediators) {
+                    mediator.Value.MatchingFinished();
+                    var bestMatchChainsPerLength = new Dictionary<int, SubMatchChain>();
+
+                    foreach (var subMatchChain in mediator.Value.Results) {
+                        int length = subMatchChain.LengthInParsedText;
+                        if (bestMatchChainsPerLength.ContainsKey(length)) {
+                            bestMatchChainsPerLength[length] = ChooseBestSubMatchChain(textToParseIndex, bestMatchChainsPerLength[length], subMatchChain);
+                        } else {
+                            bestMatchChainsPerLength[length] = subMatchChain;
+                        }
                     }
-                }
-            } else {
-                foreach (SequenceMatchState sequenceMatchState in leftRecursions) {
-                    sequenceMatchState.DependencyUnfulfilled();
-                }
-            }
-            productsMatchResults.Remove(product);
-            productsLeftRecursions.Remove(product);
 
-            //do this even with no results, because no match is still a correct result
-            var bestMatchChainsPerLength = new Dictionary<int, SubMatchChain>();
-
-            foreach (var subMatchChain in results) {
-                int length = subMatchChain.LengthInParsedText;
-                if (bestMatchChainsPerLength.ContainsKey(length)) {
-                    bestMatchChainsPerLength[length] = ChooseBestSubMatchChain(textToParseIndex, bestMatchChainsPerLength[length], subMatchChain);
-                } else {
-                    bestMatchChainsPerLength[length] = subMatchChain;
+                    _completedProductMatches[textToParseIndex][mediator.Key] = bestMatchChainsPerLength;
                 }
+
+                return _completedProductMatches[textToParseIndex][product].Select(x => x.Value).ToList();
             }
 
-            _completedProductMatches[textToParseIndex][product] = bestMatchChainsPerLength;
-
-            return results;
+            return null;
         }
 
         int GetSubMatchChainDepthComplexity(int indexInTextParse, SubMatchChain subMatchChain) {
             int resultMinusOne = 0;
             foreach (var entry in subMatchChain.SubMatches) {
-                var childSubMatchChain = _completedProductMatches[indexInTextParse][entry.Product][entry.LengthInParsedText];
-                resultMinusOne = Math.Max(resultMinusOne, GetSubMatchChainDepthComplexity(indexInTextParse, childSubMatchChain));
-                indexInTextParse += childSubMatchChain.LengthInParsedText;
+                int childDepth = 0;
+                if (_completedProductMatches[indexInTextParse].ContainsKey(entry.Product)) {
+                    var childSubMatchChain = _completedProductMatches[indexInTextParse][entry.Product][entry.LengthInParsedText];
+                    childDepth = GetSubMatchChainDepthComplexity(indexInTextParse, childSubMatchChain);
+                }
+                resultMinusOne = Math.Max(resultMinusOne, childDepth);
+                indexInTextParse += entry.LengthInParsedText;
             }
             return resultMinusOne + 1;
         }
@@ -231,12 +258,14 @@ namespace parlex {
             } else {
                 int currentIndexInParsedText = indexInParsedText;
                 var subMatches = new List<ParseResult>();
-                var subMatchChain = _completedProductMatches[indexInParsedText][product][length];
-                foreach (var subMatch in subMatchChain.SubMatches) {
-                    subMatches.Add(Resultify(currentIndexInParsedText, subMatch.Product, subMatch.LengthInParsedText, converted));
-                    currentIndexInParsedText += subMatch.LengthInParsedText;
+                if (_completedProductMatches[indexInParsedText].ContainsKey(product)) {
+                    var subMatchChain = _completedProductMatches[indexInParsedText][product][length];
+                    foreach (var subMatch in subMatchChain.SubMatches) {
+                        subMatches.Add(Resultify(currentIndexInParsedText, subMatch.Product, subMatch.LengthInParsedText, converted));
+                        currentIndexInParsedText += subMatch.LengthInParsedText;
+                    }
                 }
-                result = new ParseResult(product, indexInParsedText, subMatchChain.LengthInParsedText, subMatches);
+                result = new ParseResult(product, indexInParsedText, length, subMatches);
                 productConversions.Add(length, result);
             }
 
