@@ -33,7 +33,7 @@ namespace parlex {
             foreach (var isASource in document.IsASources) {
                 var leftProduct = _userProducts[isASource.LeftProduct];
                 var rightProduct = _userProducts[isASource.RightProduct];
-                var sequence = new NfaSequence(0, 1, false, rightProduct);
+                var sequence = new NfaSequence(0, 1, false, rightProduct, true);
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
                 _userProducts[isASource.RightProduct].Sequences.Add(sequence);
             }
@@ -70,11 +70,13 @@ namespace parlex {
             for (int init = 0; init < length; init++) {
                 sequencesByStartIndex[init] = new List<NfaSequence>();
             }
+            bool isExplicitCodePointSequence = entry.ProductSpans.Count == 1; //if this exemplar/relation is nothing but characters, make sure its one sequence is explicitly kept
             foreach (ProductSpan span in entry.ProductSpans) {
                 var sequence = new NfaSequence(span.SpanStart,
                                                span.SpanLength,
                                                span.IsRepititious,
-                                               span.Product);
+                                               span.Product,
+                                               isExplicitCodePointSequence);
                 sequencesByStartIndex[span.SpanStart].Add(sequence);
                 span.Product.Sequences.Add(sequence);
             }
@@ -117,22 +119,64 @@ namespace parlex {
                 CreateRelations(entry);
             }
             foreach (Product product in _userProducts.Values) {
-                int sequenceIndex = 0;
-                var sequenceIndicesToRemove = new List<int>();
+                bool hasAnyNonCodePointsInSequences;
+                hasAnyNonCodePointsInSequences = RemoveBranchRedundenciesAndCullEmptySequences(product, out hasAnyNonCodePointsInSequences);
+
+                if (hasAnyNonCodePointsInSequences) {
+                    RemoveUnneedCodePointSequences(product);
+                }
+            }
+        }
+
+        private static bool RemoveBranchRedundenciesAndCullEmptySequences(Product product, out bool hasAnyNonCodePointsInSequences) {
+            hasAnyNonCodePointsInSequences = false;
+            int sequenceIndex = 0;
+            var sequenceIndicesToRemove = new List<int>();
+            foreach (NfaSequence sequence in product.Sequences) {
+                bool sequenceContainsNonCodePoints = false;
+                for (int index = 0; index < sequence.RelationBranches.Length; index++) {
+                    sequence.RelationBranches[index] = sequence.RelationBranches[index].Distinct().ToList();
+                    sequenceContainsNonCodePoints |= sequence.RelationBranches[index].Any(x => !(x.Product is CodePointCharacterProduct));
+                }
+                sequence.RelationBranches[0].RemoveAll(x => x.Product == product && x.IsRepetitious == false);
+                if (sequence.RelationBranches[0].Count == 0) {
+                    sequenceIndicesToRemove.Add(sequenceIndex);
+                } else {
+                    hasAnyNonCodePointsInSequences |= sequenceContainsNonCodePoints;
+                }
+                sequenceIndex++;
+            }
+            sequenceIndicesToRemove.Reverse();
+            foreach (var sequenceToRemoveIndex in sequenceIndicesToRemove) {
+                product.Sequences.RemoveAt(sequenceToRemoveIndex);
+            }
+            return hasAnyNonCodePointsInSequences;
+        }
+
+        private static void RemoveUnneedCodePointSequences(Product product) {
+            var sequenceIndicesToRemove = new List<int>();
+            int sequenceIndex = 0;
+                //we have some sequence that contains more than just code points, so delete any sequences that ARE just code points that are not marked explicit
                 foreach (NfaSequence sequence in product.Sequences) {
-                    for (int index = 0; index < sequence.RelationBranches.Length; index++) {
-                        sequence.RelationBranches[index] = sequence.RelationBranches[index].Distinct().ToList();
+                    if (sequence.WasExplicitCharacterSequence) {
+                        continue;
                     }
-                    sequence.RelationBranches[0].RemoveAll(x => x.Product == product && x.IsRepetitious == false);
-                    if (sequence.RelationBranches[0].Count == 0) {
+                    bool sequenceContainsNonCodePoints = false;
+                    for (int index = 0; index < sequence.RelationBranches.Length; index++) {
+                        sequenceContainsNonCodePoints |= sequence.RelationBranches[index].Any(x => !(x.Product is CodePointCharacterProduct));
+                        if (sequenceContainsNonCodePoints) {
+                            break;
+                        }
+                    }
+                    if (!sequenceContainsNonCodePoints) {
                         sequenceIndicesToRemove.Add(sequenceIndex);
                     }
                     sequenceIndex++;
                 }
-                sequenceIndicesToRemove.Reverse();
-                foreach (var sequenceToRemoveIndex in sequenceIndicesToRemove) {
-                    product.Sequences.RemoveAt(sequenceToRemoveIndex);
-                }
+
+            sequenceIndicesToRemove.Reverse();
+            foreach (var sequenceToRemoveIndex in sequenceIndicesToRemove) {
+                product.Sequences.RemoveAt(sequenceToRemoveIndex);
             }
         }
 
@@ -177,8 +221,9 @@ namespace parlex {
             public readonly Product OwnerProduct;
             public readonly int SpanStart;
             public readonly bool IsRepitious;
+            public readonly bool WasExplicitCharacterSequence;
 
-            public NfaSequence(int spanStart, int spanLength, bool isRepitious, Product ownerProduct) {
+            public NfaSequence(int spanStart, int spanLength, bool isRepitious, Product ownerProduct, bool wasExplicitCharacterSequence) {
                 SpanStart = spanStart;
                 RelationBranches = new List<ProductReference>[spanLength + 1]; //+1 to find what comes after this
                 for (int initBranches = 0; initBranches < spanLength + 1; initBranches++) {
@@ -186,6 +231,7 @@ namespace parlex {
                 }
                 IsRepitious = isRepitious;
                 OwnerProduct = ownerProduct;
+                WasExplicitCharacterSequence = wasExplicitCharacterSequence;
             }
 
             public int SpanLength { get { return RelationBranches.Length - 1; } }
