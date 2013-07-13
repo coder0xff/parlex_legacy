@@ -194,9 +194,9 @@ namespace parlex {
 
             for (int sequenceNumber = 0; sequenceNumber < product.Sequences.Count; sequenceNumber++) {
                 var sequence = product.Sequences[sequenceNumber];
-                var nextSequenceMatchState = new SequenceMatchState(this, sequence, sequence.SpanStart, textToParseIndex, textToParseIndex, null, null, dependencyMediator);
+                var precursorSequenceMatchState = new SequenceMatchState(this, sequence, sequence.SpanStart, textToParseIndex, textToParseIndex, null, null, dependencyMediator);
 
-                nextSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
+                precursorSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
             }
 
             bool hadNoResults = dependencyMediators[product].ResultCount == 0;
@@ -246,6 +246,17 @@ namespace parlex {
         }
 
         SubMatchChain ChooseBestSubMatchChain(int indexInTextToParse, SubMatchChain a, SubMatchChain b) {
+            bool aIsBuiltIn = a.SubMatches.Count == 0;
+            bool bIsBuiltIn = b.SubMatches.Count == 0;
+            if (aIsBuiltIn && bIsBuiltIn) throw new ApplicationException();
+            if (aIsBuiltIn) return b;
+            if (bIsBuiltIn) return a;
+            for (int subMatchIndex = 0; subMatchIndex < a.SubMatches.Count; subMatchIndex++) {
+                int aSubLength = a.SubMatches[subMatchIndex].LengthInParsedText;
+                int bSubLength = b.SubMatches[subMatchIndex].LengthInParsedText;
+                if (aSubLength > bSubLength) return a;
+                if (bSubLength > aSubLength) return b;
+            }
             return GetSubMatchChainDescendentCount(indexInTextToParse, a) > GetSubMatchChainDescendentCount(indexInTextToParse, b) ? a : b;
         }
 

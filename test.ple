@@ -23,5 +23,5 @@ a = (b + 5) * 3.14
               |  | : float_constant
               
 identifier is an expression
-
 multiplication is an expression
+assignment is a statement
