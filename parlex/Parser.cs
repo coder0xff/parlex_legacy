@@ -6,8 +6,8 @@ namespace parlex {
     class Parser {
         public class SubMatchChain {
             public class Entry {
-                public Product Product;
-                public int LengthInParsedText;
+                public readonly Product Product;
+                public readonly int LengthInParsedText;
 
                 public Entry(Product product, int lengthInParsedText) {
                     Product = product;
@@ -53,7 +53,6 @@ namespace parlex {
             for (int initCollections = 0; initCollections < _textCodePoints.Length; initCollections++) {
                 _completedProductMatches[initCollections] = new Dictionary<Product, Dictionary<int, SubMatchChain>>();
             }
-            //ProcessBuiltInCharacterProducts(builtInCharacterProducts);
             foreach (Product product in products) {
                 if (product is IBuiltInCharacterProduct) continue;
                 MatchProduct(product, 0, new Dictionary<Product, DependencyMediator>());
@@ -123,8 +122,7 @@ namespace parlex {
 
             public void DependencyFulfilled(int length) {
                 int nextTextToParseIndex = _textToParseIndex + length;
-                var nextMatchesThusFar = new List<SubMatchChain.Entry>(_matchesThusFar);
-                nextMatchesThusFar.Add(new SubMatchChain.Entry(_neededProduct.Product, length));
+                var nextMatchesThusFar = new List<SubMatchChain.Entry>(_matchesThusFar) {new SubMatchChain.Entry(_neededProduct.Product, length)};
                 if (_neededProduct.IsRepetitious) {
                     CreateNextStates(_counter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, DependencyMediator>());
                 } else {
@@ -192,10 +190,8 @@ namespace parlex {
             var dependencyMediator = new DependencyMediator();
             dependencyMediators.Add(product, dependencyMediator);
 
-            for (int sequenceNumber = 0; sequenceNumber < product.Sequences.Count; sequenceNumber++) {
-                var sequence = product.Sequences[sequenceNumber];
+            foreach (var sequence in product.Sequences) {
                 var precursorSequenceMatchState = new SequenceMatchState(this, sequence, sequence.SpanStart, textToParseIndex, textToParseIndex, null, null, dependencyMediator);
-
                 precursorSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
             }
 
