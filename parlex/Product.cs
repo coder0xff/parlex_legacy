@@ -34,5 +34,9 @@ namespace parlex {
             if (obj.GetType() != GetType()) return false;
             return Equals((Product)obj);
         }
+
+        public override string ToString() {
+            return Title;
+        }
     }
 }

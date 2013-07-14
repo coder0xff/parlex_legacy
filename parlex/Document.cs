@@ -59,9 +59,9 @@ namespace parlex {
                             string rightProduct = line.Substring(isAIndex + isALength).Trim();
                             result.IsASources.Add(new IsASource(leftProduct, rightProduct));
                         } else {
-                            currentExemplarSource = new ExemplarSource { Text = line };
+                            currentExemplarSource = new ExemplarSource {Text = line};
                             result.ExemplarSources.Add(currentExemplarSource);
-                        }                
+                        }
                     } else {
                         var productDeclarationParts = line.Split(':');
                         int startPosition = productDeclarationParts[0].IndexOf('|');

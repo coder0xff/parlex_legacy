@@ -11,7 +11,7 @@ namespace parlex {
 
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
-        public readonly Dictionary<String, Product> BuiltInCharacterProducts = new Dictionary<string, Product>();
+        private readonly Dictionary<String, Product> _builtInCharacterProducts = new Dictionary<string, Product>();
 //         private readonly Product _lowerLetterProduct = new Product("lower_letter");
 //         private readonly Product _upperLetterProduct = new Product("upper_letter");
 //         private readonly Product _letterProduct = new Product("letter");
@@ -23,7 +23,7 @@ namespace parlex {
 
         public Analyzer(Document document) {
             InitializeBuiltInProducts();
-            _userProducts = new Dictionary<string, Product>(BuiltInCharacterProducts);
+            _userProducts = new Dictionary<string, Product>(_builtInCharacterProducts);
             var exemplars = document.GetExemplars(_userProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
@@ -49,7 +49,7 @@ namespace parlex {
             _characterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers));
             _characterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
             foreach (var characterClassProduct in _characterClassProducts) {
-                BuiltInCharacterProducts.Add(characterClassProduct.Title, characterClassProduct);
+                _builtInCharacterProducts.Add(characterClassProduct.Title, characterClassProduct);
             }
         }
 
@@ -57,7 +57,7 @@ namespace parlex {
             if (!_codePointProducts.ContainsKey(codePoint)) {
                 var codePointProduct = new CodePointCharacterProduct(codePoint);
                 _codePointProducts.Add(codePoint, codePointProduct);
-                BuiltInCharacterProducts.Add(codePointProduct.Title, codePointProduct);
+                _builtInCharacterProducts.Add(codePointProduct.Title, codePointProduct);
             }
         }
 
@@ -119,11 +119,16 @@ namespace parlex {
                 CreateRelations(entry);
             }
             foreach (Product product in _userProducts.Values) {
+
+                foreach (var nfaSequence in product.Sequences) {
+                    RemoveUnneededCodePointBranches(nfaSequence);
+                }
+
                 bool hasAnyNonCodePointsInSequences;
                 hasAnyNonCodePointsInSequences = RemoveBranchRedundenciesAndCullEmptySequences(product, out hasAnyNonCodePointsInSequences);
 
                 if (hasAnyNonCodePointsInSequences) {
-                    RemoveUnneedCodePointSequences(product);
+                    RemoveUnneededCodePointSequences(product);
                 }
             }
         }
@@ -153,7 +158,11 @@ namespace parlex {
             return hasAnyNonCodePointsInSequences;
         }
 
-        private static void RemoveUnneedCodePointSequences(Product product) {
+        /// <summary>
+        /// If the product has any sequences that aren't just code points, then remove all sequences that ARE just code points
+        /// </summary>
+        /// <param name="product"></param>
+        private static void RemoveUnneededCodePointSequences(Product product) {
             var sequenceIndicesToRemove = new List<int>();
             int sequenceIndex = 0;
                 //we have some sequence that contains more than just code points, so delete any sequences that ARE just code points that are not marked explicit
@@ -162,8 +171,8 @@ namespace parlex {
                         continue;
                     }
                     bool sequenceContainsNonCodePoints = false;
-                    for (int index = 0; index < sequence.RelationBranches.Length; index++) {
-                        sequenceContainsNonCodePoints |= sequence.RelationBranches[index].Any(x => !(x.Product is CodePointCharacterProduct));
+                    foreach (List<NfaSequence.ProductReference> t in sequence.RelationBranches) {
+                        sequenceContainsNonCodePoints |= t.Any(x => !(x.Product is CodePointCharacterProduct));
                         if (sequenceContainsNonCodePoints) {
                             break;
                         }
@@ -177,6 +186,30 @@ namespace parlex {
             sequenceIndicesToRemove.Reverse();
             foreach (var sequenceToRemoveIndex in sequenceIndicesToRemove) {
                 product.Sequences.RemoveAt(sequenceToRemoveIndex);
+            }
+        }
+
+        private static void RemoveUnneededCodePointBranches(NfaSequence sequence) {
+            var hasNonCodePointSubProductAtOffset = new bool[sequence.SpanLength];
+            for (int counter = 0; counter < sequence.SpanLength; counter++) {
+                foreach (var productReference in sequence.RelationBranches[counter]) {
+                    if (productReference.Product is CodePointCharacterProduct) continue;
+                    for (int setRange = counter; setRange < productReference.ExitSequenceCounter - sequence.SpanStart; setRange++) {
+                        hasNonCodePointSubProductAtOffset[setRange] = true;
+                    }
+                }
+            }
+            for (int clearUnneeded = 0; clearUnneeded < sequence.SpanLength; clearUnneeded++) {
+                if (hasNonCodePointSubProductAtOffset[clearUnneeded]) {
+                    var relationBranches = sequence.RelationBranches[clearUnneeded];
+                    for (int branchIndex = 0; branchIndex < relationBranches.Count;) {
+                        if (relationBranches[branchIndex].Product is CodePointCharacterProduct) {
+                            relationBranches.RemoveAt(branchIndex);
+                        } else {
+                            branchIndex++;
+                        }
+                    }
+                }
             }
         }
 
@@ -216,6 +249,10 @@ namespace parlex {
                     Product = product;
                     ExitSequenceCounter = exitSequenceCounter;
                 }
+
+                public override string ToString() {
+                    return Product.Title + (IsRepetitious ? "*" : "");
+                }
             }
             public readonly List<ProductReference>[] RelationBranches;
             public readonly Product OwnerProduct;
@@ -235,6 +272,10 @@ namespace parlex {
             }
 
             public int SpanLength { get { return RelationBranches.Length - 1; } }
+
+            public override string ToString() {
+                return OwnerProduct.Title + (IsRepitious ? "*" : "");
+            }
         }
     }
 }

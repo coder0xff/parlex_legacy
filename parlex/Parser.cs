@@ -45,7 +45,7 @@ namespace parlex {
         private readonly List<ParseResult> _results;
 
         public IEnumerable<ParseResult> Results { get { return _results; } }
-
+        
         public Parser(String text,
                        IEnumerable<Product> products) {
             _textCodePoints = text.GetUtf32CodePoints();
@@ -250,8 +250,12 @@ namespace parlex {
             for (int subMatchIndex = 0; subMatchIndex < a.SubMatches.Count; subMatchIndex++) {
                 int aSubLength = a.SubMatches[subMatchIndex].LengthInParsedText;
                 int bSubLength = b.SubMatches[subMatchIndex].LengthInParsedText;
-                if (aSubLength > bSubLength) return a;
-                if (bSubLength > aSubLength) return b;
+                if (aSubLength > bSubLength) {
+                    return a;
+                }
+                if (bSubLength > aSubLength) {
+                    return b;
+                }
             }
             return GetSubMatchChainDescendentCount(indexInTextToParse, a) > GetSubMatchChainDescendentCount(indexInTextToParse, b) ? a : b;
         }
