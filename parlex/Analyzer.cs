@@ -11,7 +11,6 @@ namespace parlex {
 
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
-        private readonly Dictionary<String, Product> _builtInCharacterProducts = new Dictionary<string, Product>();
 //         private readonly Product _lowerLetterProduct = new Product("lower_letter");
 //         private readonly Product _upperLetterProduct = new Product("upper_letter");
 //         private readonly Product _letterProduct = new Product("letter");
@@ -25,11 +24,60 @@ namespace parlex {
 
         public Analyzer(Document document) {
             InitializeBuiltInProducts();
-            _userProducts = new Dictionary<string, Product>(_builtInCharacterProducts);
+            CreateCustomCharacterSets(document);
+            _userProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
+            foreach (var product in _characterClassProducts) {
+                _userProducts.Add(product.Title, product);
+            }
             var exemplars = document.GetExemplars(_userProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
             _precedents = CreatePrecedesEdges(document);
+        }
+
+        private void CreateCustomCharacterSets(Document document) {
+            foreach (var characterSetSource in document.CharacterSetSources) {
+                switch (characterSetSource.Type) {
+                    case Document.CharacterSetEntry.Types.List:
+                        var items = new List<int>();
+                        foreach (var source in characterSetSource.Params.Skip(1)) {
+                            if (source.Length == "codePoint".Length + 6 && source.StartsWith("codePoint")) {
+                                try {
+                                    items.Add(Convert.ToInt32(source.Substring("codePoint".Length), 16));
+                                } catch (FormatException) {
+                                    items.AddRange(source.GetUtf32CodePoints());
+                                }
+                            } else {
+                                items.AddRange(source.GetUtf32CodePoints());
+                            }
+                        }
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], items));
+                        break;
+                    case Document.CharacterSetEntry.Types.Inversion: {
+                        var source = _characterClassProducts.Find(x => x.Title == characterSetSource.Params[1]);
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], Unicode.All.Except(source.CodePoints)));
+                    }
+                        break;
+                    case Document.CharacterSetEntry.Types.Union: {
+                        IEnumerable<int> current = new int[0];
+                        foreach (var param in characterSetSource.Params.Skip(1)) {
+                            var source = _characterClassProducts.Find(x => x.Title == param);
+                            current = current.Union(source.CodePoints);
+                        }
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current));
+                    }
+                        break;
+                    case Document.CharacterSetEntry.Types.Intersection: {
+                        IEnumerable<int> current = Unicode.All;
+                        foreach (var param in characterSetSource.Params.Skip(1)) {
+                            var source = _characterClassProducts.Find(x => x.Title == param);
+                            current = current.Intersect(source.CodePoints);
+                        }
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current));
+                    }
+                        break;
+                }
+            }
         }
 
         private void CreateIsARelations(Document document) {
@@ -56,16 +104,13 @@ namespace parlex {
             _characterClassProducts.Add(new CharacterClassCharacterProduct("letter", Unicode.Letters));
             _characterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers));
             _characterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
-            foreach (var characterClassProduct in _characterClassProducts) {
-                _builtInCharacterProducts.Add(characterClassProduct.Title, characterClassProduct);
-            }
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("white_space", Unicode.WhiteSpace));
         }
 
         private void CreateCodePointProduct(Int32 codePoint) {
             if (!_codePointProducts.ContainsKey(codePoint)) {
                 var codePointProduct = new CodePointCharacterProduct(codePoint);
                 _codePointProducts.Add(codePoint, codePointProduct);
-                _builtInCharacterProducts.Add(codePointProduct.Title, codePointProduct);
             }
         }
 

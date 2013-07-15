@@ -135,7 +135,6 @@ namespace parlex {
             }
             foreach (Product product in products) {
                 if (product is IBuiltInCharacterProduct) continue;
-                if (product.Title != "addition") continue;
                 MatchProduct(product, 0, new Dictionary<Product, DependencyMediator>());
             }
             _results = new List<ParseResult>();

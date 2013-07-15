@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 
 namespace parlex {
     class CharacterClassCharacterProduct : Product, IBuiltInCharacterProduct {
-        private readonly HashSet<int> _codePoints;
+        public readonly HashSet<int> CodePoints;
         public CharacterClassCharacterProduct(String title, IEnumerable<int> codePoints) : base (title) {
-            _codePoints = new HashSet<int>(codePoints);
+            CodePoints = new HashSet<int>(codePoints);
         }
 
         public bool Match(int codePoint) {
-            return _codePoints.Contains(codePoint);
+            return CodePoints.Contains(codePoint);
         }
     }
 }
