@@ -4,24 +4,41 @@ relation:
 || : identifier
 
 exemplar:
-a = (b + 5) * 3.14
-| : identifier
+a+b
 | : expression
-         | : integer_constant
-     | : identifier
-              |  | : expression
-     | : expression
-         | : expression                 
-|                | : statement
-|                | : assignment
-    |     | : parenthetical_expression
-     |   | : addition
-     |   | : expression
-    |     | : expression
-    |            | : multiplication
-    |            | : expression
-              |  | : float_constant
-              
+  | : expression
+| | : addition
+
+exemplar:
+a-b
+| : expression
+  | : expression
+| | : subtraction
+
+exemplar:
+a*b
+| : expression
+  | : expression
+| | : multiplication
+
+exemplar:
+a/b
+| : expression
+  | : expression
+| | : division
+
+exemplar:
+(a)
+ | : expression
+| | : parenthetical
+
+parenthetical is an expression
 identifier is an expression
+addition is an expression
+subtraction is an expression
 multiplication is an expression
-assignment is a statement
+division is an expression
+multiplication precedes addition
+multiplication precedes subtraction
+division precedes addition
+division precedes subtraction
