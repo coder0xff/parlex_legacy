@@ -4,17 +4,14 @@ relation:
 || : identifier
 
 exemplar:
-a+b
+a+b-c
 | : expression
   | : expression
 | | : addition
-
-exemplar:
-a-b
-| : expression
-  | : expression
-| | : subtraction
-
+| | : expression
+|   | : subtraction
+    | : expression
+    
 exemplar:
 a*b
 | : expression
