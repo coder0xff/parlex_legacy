@@ -362,7 +362,7 @@ namespace parlex {
                 bool bSubProductIsBuiltIn = bSubProduct is IBuiltInCharacterProduct;
                 if (aSubProductIsBuiltIn && !bSubProductIsBuiltIn) return b;
                 if (!aSubProductIsBuiltIn && bSubProductIsBuiltIn) return a;
-                if (aSubProductIsBuiltIn) throw new ApplicationException();
+                if (aSubProductIsBuiltIn) continue;
                 int aSubLength = a.SubMatches[subMatchIndex].LengthInParsedText;
                 int bSubLength = b.SubMatches[subMatchIndex].LengthInParsedText;
                 if (aSubLength > bSubLength) {
