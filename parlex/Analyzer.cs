@@ -18,8 +18,10 @@ namespace parlex {
 //         private readonly Product _digitProduct = new Product("digit");
 //         private readonly Product _letterOrDigitProduct = new Product("letter_or_digit");
         private readonly Dictionary<String, Product> _userProducts;
+        private readonly StrictPartialOrder<Product> _precedents;
 
         public IEnumerable<Product> Products { get { return _userProducts.Values; } }
+        public StrictPartialOrder<Product> Precedents { get { return _precedents; } }
 
         public Analyzer(Document document) {
             InitializeBuiltInProducts();
@@ -27,6 +29,7 @@ namespace parlex {
             var exemplars = document.GetExemplars(_userProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
+            _precedents = CreatePrecedesEdges(document);
         }
 
         private void CreateIsARelations(Document document) {
@@ -37,6 +40,11 @@ namespace parlex {
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
                 _userProducts[isASource.RightProduct].Sequences.Add(sequence);
             }
+        }
+
+        private StrictPartialOrder<Product> CreatePrecedesEdges(Document document) {
+            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(_userProducts[x.From], _userProducts[x.To]));
+            return new StrictPartialOrder<Product>(edges);
         }
 
         private void InitializeBuiltInProducts() {

@@ -4,8 +4,81 @@ using System.Linq;
 
 namespace parlex {
     class Parser {
-        public class SubMatchChain {
-            public class Entry {
+        public class SubMatchChain : IEquatable<SubMatchChain> {
+            public bool Equals(SubMatchChain other) {
+                if (ReferenceEquals(null, other)) {
+                    return false;
+                }
+                if (ReferenceEquals(this, other)) {
+                    return true;
+                }
+                if (_hashCache != other._hashCache) return false;
+                return SubMatches.SequenceEqual(other.SubMatches);
+            }
+
+            public override bool Equals(object obj) {
+                if (ReferenceEquals(null, obj)) {
+                    return false;
+                }
+                if (ReferenceEquals(this, obj)) {
+                    return true;
+                }
+                if (obj.GetType() != GetType()) {
+                    return false;
+                }
+                return Equals((SubMatchChain) obj);
+            }
+
+            public override int GetHashCode() {
+                return _hashCache;
+            }
+
+            public static bool operator ==(SubMatchChain left, SubMatchChain right) {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(SubMatchChain left, SubMatchChain right) {
+                return !Equals(left, right);
+            }
+
+            public class Entry : IEquatable<Entry> {
+                public bool Equals(Entry other) {
+                    if (ReferenceEquals(null, other)) {
+                        return false;
+                    }
+                    if (ReferenceEquals(this, other)) {
+                        return true;
+                    }
+                    return Product.Equals(other.Product) && LengthInParsedText == other.LengthInParsedText;
+                }
+
+                public override bool Equals(object obj) {
+                    if (ReferenceEquals(null, obj)) {
+                        return false;
+                    }
+                    if (ReferenceEquals(this, obj)) {
+                        return true;
+                    }
+                    if (obj.GetType() != GetType()) {
+                        return false;
+                    }
+                    return Equals((Entry) obj);
+                }
+
+                public override int GetHashCode() {
+                    unchecked {
+                        return (Product.GetHashCode() * 397) ^ LengthInParsedText;
+                    }
+                }
+
+                public static bool operator ==(Entry left, Entry right) {
+                    return Equals(left, right);
+                }
+
+                public static bool operator !=(Entry left, Entry right) {
+                    return !Equals(left, right);
+                }
+
                 public readonly Product Product;
                 public readonly int LengthInParsedText;
 
@@ -17,17 +90,23 @@ namespace parlex {
 
             public readonly List<Entry> SubMatches;
             public readonly int LengthInParsedText;
+            private readonly int _hashCache;
 
             public SubMatchChain(List<Entry> subMatches, int lengthInParsedText) {
                 System.Diagnostics.Debug.Assert(lengthInParsedText > 0);
                 SubMatches = subMatches;
                 LengthInParsedText = lengthInParsedText;
+                _hashCache = ComputeHash();
+            }
+
+            int ComputeHash() {
+                return SubMatches.Aggregate(0, (current, subMatch) => current*397 ^ subMatch.GetHashCode());
             }
         }
 
         private readonly Dictionary<Product, Dictionary<int /*length*/, SubMatchChain>>[] _completedProductMatches;
         private readonly Int32[] _textCodePoints;
-
+        private readonly StrictPartialOrder<Product> _precedence;
         public class ParseResult {
             public readonly Product Product;
             public readonly int ParsedTextStartIndex;
@@ -47,14 +126,16 @@ namespace parlex {
         public IEnumerable<ParseResult> Results { get { return _results; } }
         
         public Parser(String text,
-                       IEnumerable<Product> products) {
+                       IEnumerable<Product> products, StrictPartialOrder<Product> precedence) {
             _textCodePoints = text.GetUtf32CodePoints();
+            _precedence = precedence;
             _completedProductMatches = new Dictionary<Product, Dictionary<int, SubMatchChain>>[_textCodePoints.Length];
             for (int initCollections = 0; initCollections < _textCodePoints.Length; initCollections++) {
                 _completedProductMatches[initCollections] = new Dictionary<Product, Dictionary<int, SubMatchChain>>();
             }
             foreach (Product product in products) {
                 if (product is IBuiltInCharacterProduct) continue;
+                if (product.Title != "addition") continue;
                 MatchProduct(product, 0, new Dictionary<Product, DependencyMediator>());
             }
             _results = new List<ParseResult>();
@@ -62,41 +143,40 @@ namespace parlex {
         }
 
         private class DependencyMediator {
-            private readonly List<SubMatchChain> _completedSoFar = new List<SubMatchChain>();
-            private readonly HashSet<int> _completedLengthSoFar = new HashSet<int>();
+            public readonly Dictionary<int, HashSet<SubMatchChain>> CompletedSoFar = new Dictionary<int, HashSet<SubMatchChain>>();
             private readonly List<SequenceMatchState> _dependents = new List<SequenceMatchState>();
-            private readonly HashSet<SequenceMatchState> _unfulfilledDependents = new HashSet<SequenceMatchState>();
 
             public void AddMatchChain(SubMatchChain subMatchChain) {
-                _completedSoFar.Add(subMatchChain);
-                if (_completedLengthSoFar.Add(subMatchChain.LengthInParsedText)) {
-                    foreach (var sequenceMatchState in _dependents) {
-                        sequenceMatchState.DependencyFulfilled(subMatchChain.LengthInParsedText);
-                        _unfulfilledDependents.Remove(sequenceMatchState);
+                int length = subMatchChain.LengthInParsedText;
+                bool newLength = !CompletedSoFar.ContainsKey(length);
+                if (newLength) {
+                    CompletedSoFar.Add(length, new HashSet<SubMatchChain>());
+                }
+                if (CompletedSoFar[length].Add(subMatchChain)) {
+                    if (newLength) {
+                        foreach (var sequenceMatchState in _dependents) {
+                            sequenceMatchState.DependencyFulfilled(length);
+                        }
                     }
                 }
             }
 
             public void AddDependent(SequenceMatchState sequenceMatchState) {
                 _dependents.Add(sequenceMatchState);
-                if (_completedSoFar.Count > 0) {
-                    foreach (var subMatchChain in new List<SubMatchChain>(_completedSoFar)) {
-                        sequenceMatchState.DependencyFulfilled(subMatchChain.LengthInParsedText);
+                if (CompletedSoFar.Count > 0) {
+                    foreach (var length in new List<int>(CompletedSoFar.Keys)) {
+                        sequenceMatchState.DependencyFulfilled(length);
                     }
-                } else {
-                    _unfulfilledDependents.Add(sequenceMatchState);
                 }
             }
 
             public void MatchingFinished() {
-                foreach (var unfulfilledDependent in _unfulfilledDependents) {
-                    unfulfilledDependent.DependencyUnfulfilled();
+                if (CompletedSoFar.Count == 0) {
+                    foreach (var unfulfilledDependent in _dependents) {
+                        unfulfilledDependent.DependencyUnfulfilled();
+                    }
                 }
             }
-
-            public IEnumerable<SubMatchChain> Results { get { return _completedSoFar; } }
-
-            public int ResultCount { get { return _completedSoFar.Count; } }
         }
 
         private class SequenceMatchState {
@@ -181,6 +261,7 @@ namespace parlex {
                 if (builtInCharacterProduct.Match(_textCodePoints[textToParseIndex])) {
                     return new HashSet<int> { 1 };
                 }
+                return new HashSet<int>();
             }
 
             if (_completedProductMatches[textToParseIndex].ContainsKey(product)) {
@@ -195,59 +276,93 @@ namespace parlex {
                 precursorSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
             }
 
-            bool hadNoResults = dependencyMediators[product].ResultCount == 0;
+            bool hadNoResults = dependencyMediators[product].CompletedSoFar.Count == 0;
+
             if (isTopRecursionLevel) {
+                var bestMatchChainsPerLength = new Dictionary<Product, Dictionary<int, HashSet<SubMatchChain>>>();
                 foreach (var mediator in dependencyMediators) {
                     mediator.Value.MatchingFinished();
-
-                    var bestMatchChainsPerLength = new Dictionary<int, SubMatchChain>();
-
-                    foreach (var subMatchChain in mediator.Value.Results) {
-                        int length = subMatchChain.LengthInParsedText;
-                        if (bestMatchChainsPerLength.ContainsKey(length)) {
-                            bestMatchChainsPerLength[length] = ChooseBestSubMatchChain(textToParseIndex, bestMatchChainsPerLength[length], subMatchChain);
-                        } else {
-                            bestMatchChainsPerLength[length] = subMatchChain;
-                        }
-                    }
-
-                    _completedProductMatches[textToParseIndex][mediator.Key] = bestMatchChainsPerLength;
+                    bestMatchChainsPerLength.Add(mediator.Key, new Dictionary<int, HashSet<SubMatchChain>>());
                 }
 
-                if (hadNoResults && dependencyMediators[product].ResultCount > 0) {
+                foreach (var mediator in dependencyMediators) {
+                    foreach (var length in mediator.Value.CompletedSoFar.Keys) {
+                        GetSubMatchChainFromCompletedProductsOrDependencyMediators(new SubMatchChain.Entry(mediator.Key, length), textToParseIndex, dependencyMediators, new Stack<SubMatchChain.Entry>());
+                    }
+                }
+
+                if (hadNoResults && dependencyMediators[product].CompletedSoFar.Count > 0) {
                     int selectedLength = _completedProductMatches[textToParseIndex][product].Keys.Max();
                     SubMatchChain singularResult = _completedProductMatches[textToParseIndex][product][selectedLength];
                     _completedProductMatches[textToParseIndex][product].Clear();
                     _completedProductMatches[textToParseIndex][product].Add(selectedLength, singularResult);
                 }
 
-                return new HashSet<int>(_completedProductMatches[textToParseIndex][product].Keys);
+                if (_completedProductMatches[textToParseIndex].ContainsKey(product)) {
+                    return new HashSet<int>(_completedProductMatches[textToParseIndex][product].Keys);
+                }
             }
 
             return null;
         }
 
-        int GetSubMatchChainDescendentCount(int indexInTextParse, SubMatchChain subMatchChain) {
-            int resultMinusOne = 0;
-            foreach (var entry in subMatchChain.SubMatches) {
-                int childDepth = 0;
-                if (_completedProductMatches[indexInTextParse].ContainsKey(entry.Product)) {
-                    var childSubMatchChain = _completedProductMatches[indexInTextParse][entry.Product][entry.LengthInParsedText];
-                    childDepth = GetSubMatchChainDescendentCount(indexInTextParse, childSubMatchChain);
+        SubMatchChain GetSubMatchChainFromCompletedProductsOrDependencyMediators(SubMatchChain.Entry entry, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
+            if (_completedProductMatches[indexInTextToParse].ContainsKey(entry.Product)) {
+                if (_completedProductMatches[indexInTextToParse][entry.Product].ContainsKey(entry.LengthInParsedText)) {
+                    return _completedProductMatches[indexInTextToParse][entry.Product][entry.LengthInParsedText];
                 }
-                resultMinusOne += childDepth;
-                indexInTextParse += entry.LengthInParsedText;
             }
-            return resultMinusOne + 1;
+            var candidates = dependencyMediators[entry.Product].CompletedSoFar[entry.LengthInParsedText];
+            var candidatesList = new List<SubMatchChain>(candidates);
+            for (int indexA = 0; indexA < candidatesList.Count - 1; indexA++) {
+                for (int indexB = indexA + 1; indexB < candidatesList.Count;) {
+                    var better = ChooseBestSubMatchChain(candidatesList[indexA], candidatesList[indexA + 1], indexInTextToParse, dependencyMediators, stack);
+                    if (better == candidatesList[indexA]) {
+                        candidatesList.RemoveAt(indexB);
+                    } else if (better == candidatesList[indexB]) {
+                        candidatesList[indexA] = candidatesList[indexB];
+                        candidatesList.RemoveAt(indexB);
+                        indexB = indexA + 1;
+                    } else {
+                        indexB++;
+                    }
+                }
+            }
+            candidates.Clear();
+            foreach (var subMatchChain in candidatesList) {
+                candidates.Add(subMatchChain);
+            }
+            if (candidates.Count == 1) {
+                if (!_completedProductMatches[indexInTextToParse].ContainsKey(entry.Product)) {
+                    _completedProductMatches[indexInTextToParse].Add(entry.Product, new Dictionary<int, SubMatchChain>());
+                }
+                _completedProductMatches[indexInTextToParse][entry.Product].Add(entry.LengthInParsedText, candidates.First());
+                return candidates.First();
+            }
+            return null;
         }
 
-        SubMatchChain ChooseBestSubMatchChain(int indexInTextToParse, SubMatchChain a, SubMatchChain b) {
+        int GetOrder(Product a, Product b) {
+            return _precedence.Compare(a, b);
+        }
+
+        SubMatchChain ChooseBestSubMatchChain(SubMatchChain a, SubMatchChain b, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
             bool aIsBuiltIn = a.SubMatches.Count == 0;
             bool bIsBuiltIn = b.SubMatches.Count == 0;
             if (aIsBuiltIn && bIsBuiltIn) throw new ApplicationException();
             if (aIsBuiltIn) return b;
             if (bIsBuiltIn) return a;
             for (int subMatchIndex = 0; subMatchIndex < a.SubMatches.Count; subMatchIndex++) {
+                Product aSubProduct = a.SubMatches[subMatchIndex].Product;
+                Product bSubProduct = b.SubMatches[subMatchIndex].Product;
+                int precedence = GetOrder(aSubProduct, bSubProduct);
+                if (precedence < 0) return b;
+                if (precedence > 0) return a;
+                bool aSubProductIsBuiltIn = aSubProduct is IBuiltInCharacterProduct;
+                bool bSubProductIsBuiltIn = bSubProduct is IBuiltInCharacterProduct;
+                if (aSubProductIsBuiltIn && !bSubProductIsBuiltIn) return b;
+                if (!aSubProductIsBuiltIn && bSubProductIsBuiltIn) return a;
+                if (aSubProductIsBuiltIn) throw new ApplicationException();
                 int aSubLength = a.SubMatches[subMatchIndex].LengthInParsedText;
                 int bSubLength = b.SubMatches[subMatchIndex].LengthInParsedText;
                 if (aSubLength > bSubLength) {
@@ -257,7 +372,24 @@ namespace parlex {
                     return b;
                 }
             }
-            return GetSubMatchChainDescendentCount(indexInTextToParse, a) > GetSubMatchChainDescendentCount(indexInTextToParse, b) ? a : b;
+
+            var firstEntryA = a.SubMatches[0];
+            if (stack.Contains(firstEntryA)) throw new ApplicationException();
+            stack.Push(firstEntryA);
+            SubMatchChain firstEntryChainA = GetSubMatchChainFromCompletedProductsOrDependencyMediators(firstEntryA, indexInTextToParse, dependencyMediators, stack);
+            stack.Pop();
+
+            var firstEntryB = b.SubMatches[0];
+            if (stack.Contains(firstEntryB)) throw new ApplicationException();
+            stack.Push(firstEntryB);
+            SubMatchChain firstEntryChainB = GetSubMatchChainFromCompletedProductsOrDependencyMediators(firstEntryB, indexInTextToParse, dependencyMediators, stack);
+            stack.Pop();
+
+            var subBest = ChooseBestSubMatchChain(firstEntryChainA, firstEntryChainB, indexInTextToParse, dependencyMediators, stack);
+            if (subBest == firstEntryChainA) return a;
+            if (subBest == firstEntryChainB) return b;
+
+            return null;
         }
 
         ParseResult Resultify(int indexInParsedText, Product product, int length, Dictionary<Product, Dictionary<int, ParseResult>>[] converted) {

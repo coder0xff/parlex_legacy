@@ -34,6 +34,7 @@ namespace parlex {
         }
 
         public List<IsASource> IsASources = new List<IsASource>();
+        public List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
 
         public static Document FromText(String source) {
             var result = new Document();
@@ -50,14 +51,20 @@ namespace parlex {
                             result.ExemplarSources.Add(currentExemplarSource);
                         } else if (line.Contains(" is a ") || line.Contains(" is an ")) {
                             int isALength = " is a ".Length;
-                            int isAIndex = line.IndexOf(" is a ");
+                            int isAIndex = line.IndexOf(" is a ", StringComparison.Ordinal);
                             if (isAIndex == -1) {
                                 isALength = " is an ".Length;
-                                isAIndex = line.IndexOf(" is an ");
+                                isAIndex = line.IndexOf(" is an ", StringComparison.Ordinal);
                             }
                             string leftProduct = line.Substring(0, isAIndex).Trim();
                             string rightProduct = line.Substring(isAIndex + isALength).Trim();
                             result.IsASources.Add(new IsASource(leftProduct, rightProduct));
+                        } else if (line.Contains(" precedes ")) {
+                            int precedesLength = " precedes ".Length;
+                            int precedesIndex = line.IndexOf(" precedes ", StringComparison.Ordinal);
+                            string leftProduct = line.Substring(0, precedesIndex).Trim();
+                            string rightProduct = line.Substring(precedesIndex + precedesLength).Trim();
+                            result.PrecedesSources.Add(new StrictPartialOrder<String>.Edge(leftProduct, rightProduct));
                         } else {
                             currentExemplarSource = new ExemplarSource {Text = line};
                             result.ExemplarSources.Add(currentExemplarSource);
