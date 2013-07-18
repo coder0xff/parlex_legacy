@@ -7,9 +7,9 @@ namespace parlex {
         public class ExemplarSource {
             public String Text;
             public class ProductDeclaration {
-                public String Name;
-                public int StartPosition;
-                public int Length;
+                public readonly String Name;
+                public readonly int StartPosition;
+                public readonly int Length;
 
                 public ProductDeclaration(String name, int startPosition, int length) {
                     Name = name;
@@ -18,10 +18,10 @@ namespace parlex {
                 }
             }
 
-            public List<ProductDeclaration> ProductDeclarations = new List<ProductDeclaration>();
+            public readonly List<ProductDeclaration> ProductDeclarations = new List<ProductDeclaration>();
         }
 
-        public List<ExemplarSource> ExemplarSources = new List<ExemplarSource>();
+        private readonly List<ExemplarSource> _exemplarSources = new List<ExemplarSource>();
 
         public struct IsASource {
             public readonly String LeftProduct;
@@ -33,8 +33,8 @@ namespace parlex {
             }
         }
 
-        public List<IsASource> IsASources = new List<IsASource>();
-        public List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
+        public readonly List<IsASource> IsASources = new List<IsASource>();
+        public readonly List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
 
         public struct CharacterSetEntry {
             public readonly string[] Params;
@@ -70,15 +70,15 @@ namespace parlex {
                     currentExemplarSource = null;
                 } else {
                     if (currentExemplarSource == null) {
-                        if (line.Trim() == "exemplar:") {
-                            nextLineStartsExemplar = true;
-                        } else if (nextLineStartsExemplar) {
-                            currentExemplarSource = new ExemplarSource { Text = line };
-                            result.ExemplarSources.Add(currentExemplarSource);
+                        if (nextLineStartsExemplar) {
+                            currentExemplarSource = new ExemplarSource {Text = line};
+                            result._exemplarSources.Add(currentExemplarSource);
                             nextLineStartsExemplar = false;
+                        } else if (line.Trim() == "exemplar:") {
+                            nextLineStartsExemplar = true;
                         } else if (line.Trim() == "relation:") {
                             currentExemplarSource = new ExemplarSource {Text = ""};
-                            result.ExemplarSources.Add(currentExemplarSource);
+                            result._exemplarSources.Add(currentExemplarSource);
                         } else if (line.Contains(" is a ") || line.Contains(" is an ")) {
                             int isALength = " is a ".Length;
                             int isAIndex = line.IndexOf(" is a ", StringComparison.Ordinal);
@@ -121,7 +121,7 @@ namespace parlex {
 
         internal IEnumerable<Exemplar> GetExemplars(Dictionary<string, Product> inOutProducts) {
             var results = new List<Exemplar>();
-            foreach (ExemplarSource exemplarSource in ExemplarSources) {
+            foreach (ExemplarSource exemplarSource in _exemplarSources) {
                 var result = new Exemplar(exemplarSource.Text);
                 results.Add(result);
                 foreach (ExemplarSource.ProductDeclaration productDeclaration in exemplarSource.ProductDeclarations) {

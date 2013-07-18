@@ -15,5 +15,9 @@ namespace parlex {
         public bool Match(int codePoint) {
             return codePoint == CodePoint;
         }
+
+        public override string ToString() {
+            return Title + " '" + char.ConvertFromUtf32(CodePoint) + "'";
+        }
     }
 }

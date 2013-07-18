@@ -134,7 +134,8 @@ namespace parlex {
                 _completedProductMatches[initCollections] = new Dictionary<Product, Dictionary<int, SubMatchChain>>();
             }
             foreach (Product product in products) {
-                if (product is IBuiltInCharacterProduct) continue;
+                //if (product is IBuiltInCharacterProduct) continue;
+                if (product.Title != "document") continue;
                 MatchProduct(product, 0, new Dictionary<Product, DependencyMediator>());
             }
             _results = new List<ParseResult>();
@@ -220,6 +221,10 @@ namespace parlex {
                     } else {
                         CreateNextStates(_neededProduct.ExitSequenceCounter, _textToParseIndex, _matchesThusFar, new Dictionary<Product, DependencyMediator>());
                     }
+                } else {
+                    if (_matchesThusFar.Count > 0) {
+                        System.Diagnostics.Debug.WriteLine("Expected a " + _neededProduct.Product + " at index:" + _textToParseIndex + " to continue a " + _sequence.OwnerProduct.Title + " sequence that started at index:" + _sequenceStartingTextToParseIndex + ".");
+                    }
                 }
             }
 
@@ -241,7 +246,11 @@ namespace parlex {
                             nextSequenceMatchState.DependencyUnfulfilled();
                         }
                     } else {
-                        dependencyMediators[nextProduct].AddDependent(nextSequenceMatchState);
+                        if (dependencyMediators.ContainsKey(nextProduct)) {
+                            dependencyMediators[nextProduct].AddDependent(nextSequenceMatchState);
+                        } else {
+                            nextSequenceMatchState.DependencyUnfulfilled();
+                        }
                     }
                 }
             }
@@ -275,13 +284,11 @@ namespace parlex {
                 precursorSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
             }
 
-            bool hadNoResults = dependencyMediators[product].CompletedSoFar.Count == 0;
+            //bool hadNoResults = dependencyMediators[product].CompletedSoFar.Count == 0;
 
             if (isTopRecursionLevel) {
-                var bestMatchChainsPerLength = new Dictionary<Product, Dictionary<int, HashSet<SubMatchChain>>>();
                 foreach (var mediator in dependencyMediators) {
                     mediator.Value.MatchingFinished();
-                    bestMatchChainsPerLength.Add(mediator.Key, new Dictionary<int, HashSet<SubMatchChain>>());
                 }
 
                 foreach (var mediator in dependencyMediators) {
@@ -290,12 +297,15 @@ namespace parlex {
                     }
                 }
 
-                if (hadNoResults && dependencyMediators[product].CompletedSoFar.Count > 0) {
-                    int selectedLength = _completedProductMatches[textToParseIndex][product].Keys.Max();
-                    SubMatchChain singularResult = _completedProductMatches[textToParseIndex][product][selectedLength];
-                    _completedProductMatches[textToParseIndex][product].Clear();
-                    _completedProductMatches[textToParseIndex][product].Add(selectedLength, singularResult);
-                }
+                ////If results where only finally made by calling DependencyUnfulfilled, then we assume we had some repetitious recursion. In this case, only the longest match is valid.
+                //if (hadNoResults && dependencyMediators[product].CompletedSoFar.Count > 0) {
+                //    int selectedLength = _completedProductMatches[textToParseIndex][product].Keys.Max();
+                //    SubMatchChain singularResult = _completedProductMatches[textToParseIndex][product][selectedLength];
+                //    _completedProductMatches[textToParseIndex][product].Clear();
+                //    _completedProductMatches[textToParseIndex][product].Add(selectedLength, singularResult);
+                //}
+
+                dependencyMediators.Clear();
 
                 if (_completedProductMatches[textToParseIndex].ContainsKey(product)) {
                     return new HashSet<int>(_completedProductMatches[textToParseIndex][product].Keys);
@@ -305,6 +315,14 @@ namespace parlex {
             return null;
         }
 
+        /// <summary>
+        /// Based on several possible matches of the same length, which one is best. This is decided by repeatedly calling ChooseBestSubMatchChain, which may recursively call this function
+        /// </summary>
+        /// <param name="entry"></param>
+        /// <param name="indexInTextToParse"></param>
+        /// <param name="dependencyMediators"></param>
+        /// <param name="stack"></param>
+        /// <returns></returns>
         SubMatchChain GetSubMatchChainFromCompletedProductsOrDependencyMediators(SubMatchChain.Entry entry, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
             if (_completedProductMatches[indexInTextToParse].ContainsKey(entry.Product)) {
                 if (_completedProductMatches[indexInTextToParse][entry.Product].ContainsKey(entry.LengthInParsedText)) {
