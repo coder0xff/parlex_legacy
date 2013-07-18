@@ -1,41 +1,216 @@
+character set: cr_lf codePoint00000A codePoint00000D
+character set inverted: not_cr_not_lf cr_lf
+character set: hex_digit 0123456789abcdefABCDEF
+character set inverted: not_white_space white_space
+character set intersection: not_white_space_not_cr_not_lf not_white_space not_cr_not_lf
+character set intersection: white_space_not_cr_not_lf white_space not_cr_not_lf
+
 relation:
-| : letter
- | : letter_or_digit*
-|| : identifier
+| : codePoint00000A
+ | : codePoint00000D
+|| : newline
+
+relation:
+| : codePoint00000D
+ | : codePoint00000A
+|| : newline
 
 exemplar:
-a+b-c
-| : expression
-  | : expression
-| | : addition
-| | : expression
-|   | : subtraction
-    | : expression
-    
-exemplar:
-a*b
-| : expression
-  | : expression
-| | : multiplication
+_
+| : letter_or_digit_or_underscore
+
+letter is a letter_or_digit_or_underscore
+digit is a letter_or_digit_or_underscore
+
+relation:
+| : letter_or_digit_or_underscore
+ | : letter_or_digit_or_underscore*
+|| : name
 
 exemplar:
-a/b
-| : expression
-  | : expression
-| | : division
+a*
+| : name
+|| : product_name
+
+name is a product_name
 
 exemplar:
-(a)
- | : expression
-| | : parenthetical
+ | | : a_product
+| : codePoint000020*
+  | : codePoint000020*
+    | : white_space
+      | : white_space
+       |       | : product_name
+|              | : product_span_without_newline
 
-parenthetical is an expression
-identifier is an expression
-addition is an expression
-subtraction is an expression
-multiplication is an expression
-division is an expression
-multiplication precedes addition
-multiplication precedes subtraction
-division precedes addition
-division precedes subtraction
+exemplar:
+ | : a_product
+| : codePoint000020*
+  | : white_space
+    | : white_space
+     |       | : product_name
+|            | : product_span_without_newline
+
+relation: 
+| : product_span_without_newline
+ | : newline
+|| : product_span
+
+exemplar:
+relation: 
+         | : white_space_not_cr_not_lf*
+|        | : relation_start
+
+relation:
+| : product_span*
+ | : newline
+|| : product_span_set
+
+relation:
+| : relation_start
+ | : newline
+  | : product_span_set
+| | : relation
+
+exemplar:
+exemplar: 
+         | : white_space_not_cr_not_lf*
+|        | : exemplar_start
+
+relation:
+| : not_cr_not_lf
+ | : not_cr_not_lf*
+|| : exemplar_text
+
+relation:
+| : exemplar_start
+ | : newline
+  | : exemplar_text
+   | : newline
+    | : product_span_set
+|   | : exemplar
+
+exemplar:
+a is a b
+| : product_name
+       | : product_name
+|      | : is_a_relation_without_newline
+
+exemplar:
+a is an b
+| : product_name
+        | : product_name
+|       | : is_a_relation_without_newline
+
+relation:
+| : is_a_relation_without_newline
+ | : newline
+|| : is_a_relation
+
+exemplar:
+a precedes b
+| : product_name
+           | : product_name
+|          | : precedes_without_newline
+
+relation:
+| : precedes_without_newline
+ | : newline
+|| : precedes
+
+exemplar:
+codePoint000000
+         | : hex_digit
+          | : hex_digit
+           | : hex_digit
+            | : hex_digit
+             | : hex_digit
+              | : hex_digit
+|             | : code_point_name
+
+relation:
+| : not_white_space_not_cr_not_lf
+ | : not_white_space_not_cr_not_lf*
+|| : character_list
+
+character_list is a character_set_list_entry
+code_point_name is a character_set_list_entry
+code_point_name precedes character_list
+
+relation:
+| : white_space_not_cr_not_lf
+ | : white_space_not_cr_not_lf*
+  | : character_set_list_entry
+| | : character_set_list_entry_with_white_space
+
+exemplar:
+character set: my_char_set foobar
+               |         | : name
+                          |     | : character_set_list_entry_with_white_space*
+|                               | : character_set_without_newline
+
+relation:
+| : character_set_without_newline
+ | : white_space_not_cr_not_lf*
+  | : newline
+| | : character_set
+
+relation:
+| : white_space_not_cr_not_lf
+ | : white_space_not_cr_not_lf*
+  | : name
+| | : character_set_name_with_white_space
+
+exemplar:
+character set inverted: my_char_set foobar
+                        |         | : name
+                                   |     | : character_set_name_with_white_space
+|                                        | : character_set_inverted_without_newline
+
+relation:
+| : character_set_inverted_without_newline
+ | : white_space_not_cr_not_lf*
+  | : newline
+   | : newline*
+| | : character_set_inverted
+
+exemplar:
+character set union: my_char_set foobar
+                     |         | : name
+                                |     | : character_set_name_with_white_space*
+|                                     | : character_set_union_without_newline
+
+relation:
+| : character_set_union_without_newline
+ | : white_space_not_cr_not_lf*
+  | : newline
+   | : newline*
+| | : character_set_union
+
+exemplar:
+character set intersection: my_char_set foobar
+                            |         | : name
+                                       |     | : character_set_name_with_white_space*
+|                                            | : character_set_intersection_without_newline
+
+relation:
+| : character_set_intersection_without_newline
+ | : white_space_not_cr_not_lf*
+  | : newline
+| | : character_set_intersection
+
+relation is a top_level_entry
+exemplar is a top_level_entry
+is_a_relation is a top_level_entry
+precedes is a top_level_entry
+character_set is a top_level_entry
+character_set_inverted is a top_level_entry
+character_set_union is a top_level_entry
+character_set_intersection is a top_level_entry
+newline is a top_level_entry
+
+relation:
+| : top_level_entry
+ | : top_level_entry*
+|| : document
+
