@@ -4,59 +4,60 @@ using System.Text.RegularExpressions;
 
 namespace parlex {
     class Document {
-        public class ExemplarSource {
-            public String Text;
-            public class ProductDeclaration {
-                public readonly String Name;
-                public readonly int StartPosition;
-                public readonly int Length;
+        private class ExemplarSource {
+            internal String Text;
 
-                public ProductDeclaration(String name, int startPosition, int length) {
+            internal class ProductDeclaration {
+                internal readonly String Name;
+                internal readonly int StartPosition;
+                internal readonly int Length;
+
+                internal ProductDeclaration(String name, int startPosition, int length) {
                     Name = name;
                     StartPosition = startPosition;
                     Length = length;
                 }
             }
 
-            public readonly List<ProductDeclaration> ProductDeclarations = new List<ProductDeclaration>();
+            internal readonly List<ProductDeclaration> ProductDeclarations = new List<ProductDeclaration>();
         }
 
         private readonly List<ExemplarSource> _exemplarSources = new List<ExemplarSource>();
 
-        public struct IsASource {
-            public readonly String LeftProduct;
-            public readonly String RightProduct;
+        internal struct IsASource {
+            internal readonly String LeftProduct;
+            internal readonly String RightProduct;
 
-            public IsASource(string leftProduct, string rightProduct) : this() {
+            internal IsASource(string leftProduct, string rightProduct) : this() {
                 LeftProduct = leftProduct;
                 RightProduct = rightProduct;
             }
         }
 
-        public readonly List<IsASource> IsASources = new List<IsASource>();
-        public readonly List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
+        internal readonly List<IsASource> IsASources = new List<IsASource>();
+        internal readonly List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
 
-        public struct CharacterSetEntry {
-            public readonly string[] Params;
+        internal struct CharacterSetEntry {
+            internal readonly string[] Params;
 
-            public enum Types {
+            internal enum Types {
                 List,
                 Inversion,
                 Union,
                 Intersection
             }
 
-            public readonly Types Type;
+            internal readonly Types Type;
 
-            public CharacterSetEntry(string[] @params, Types type) : this() {
+            internal CharacterSetEntry(string[] @params, Types type) : this() {
                 Params = @params;
                 Type = type;
             }
         }
 
-        public readonly List<CharacterSetEntry> CharacterSetSources = new List<CharacterSetEntry>();
+        internal readonly List<CharacterSetEntry> CharacterSetSources = new List<CharacterSetEntry>();
 
-        public static Document FromText(String source) {
+        private static Document FromText(String source) {
             var result = new Document();
             var lines = Regex.Split(source, "\r\n|\r|\n");
             ExemplarSource currentExemplarSource = null;

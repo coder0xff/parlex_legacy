@@ -2,12 +2,12 @@
 
 namespace parlex {
     class ProductSpan : ICloneable {
-        public Product Product;
-        public int SpanStart;
-        public int SpanLength;
-        public bool IsRepititious;
+        internal readonly Product Product;
+        internal readonly int SpanStart;
+        internal readonly int SpanLength;
+        internal readonly bool IsRepititious;
 
-        public ProductSpan(Product product, int spanStart, int spanLength, bool isRepititious) {
+        internal ProductSpan(Product product, int spanStart, int spanLength, bool isRepititious) {
             Product = product;
             SpanStart = spanStart;
             SpanLength = spanLength;

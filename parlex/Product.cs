@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 namespace parlex {
-    internal class Product : IEquatable<Product> {
+    public class Product : IEquatable<Product> {
         public bool Equals(Product other) {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -22,9 +22,9 @@ namespace parlex {
         }
 
         public readonly String Title;
-        public List<Analyzer.NfaSequence> Sequences = new List<Analyzer.NfaSequence>();
+        internal readonly List<GrammarAnalyzer.NfaSequence> Sequences = new List<GrammarAnalyzer.NfaSequence>();
 
-        public Product(String title) {
+        internal Product(String title) {
             Title = title;
         }
 

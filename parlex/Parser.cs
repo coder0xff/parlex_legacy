@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace parlex {
     class Parser {
-        public class SubMatchChain : IEquatable<SubMatchChain> {
+        private class SubMatchChain : IEquatable<SubMatchChain> {
             public bool Equals(SubMatchChain other) {
                 if (ReferenceEquals(null, other)) {
                     return false;
@@ -41,7 +41,7 @@ namespace parlex {
                 return !Equals(left, right);
             }
 
-            public class Entry : IEquatable<Entry> {
+            internal class Entry : IEquatable<Entry> {
                 public bool Equals(Entry other) {
                     if (ReferenceEquals(null, other)) {
                         return false;
@@ -79,20 +79,20 @@ namespace parlex {
                     return !Equals(left, right);
                 }
 
-                public readonly Product Product;
-                public readonly int LengthInParsedText;
+                internal readonly Product Product;
+                internal readonly int LengthInParsedText;
 
-                public Entry(Product product, int lengthInParsedText) {
+                internal Entry(Product product, int lengthInParsedText) {
                     Product = product;
                     LengthInParsedText = lengthInParsedText;
                 }
             }
 
-            public readonly List<Entry> SubMatches;
-            public readonly int LengthInParsedText;
+            internal readonly List<Entry> SubMatches;
+            internal readonly int LengthInParsedText;
             private readonly int _hashCache;
 
-            public SubMatchChain(List<Entry> subMatches, int lengthInParsedText) {
+            internal SubMatchChain(List<Entry> subMatches, int lengthInParsedText) {
                 System.Diagnostics.Debug.Assert(lengthInParsedText > 0);
                 SubMatches = subMatches;
                 LengthInParsedText = lengthInParsedText;
@@ -107,25 +107,12 @@ namespace parlex {
         private readonly Dictionary<Product, Dictionary<int /*length*/, SubMatchChain>>[] _completedProductMatches;
         private readonly Int32[] _textCodePoints;
         private readonly StrictPartialOrder<Product> _precedence;
-        public class ParseResult {
-            public readonly Product Product;
-            public readonly int ParsedTextStartIndex;
-            public readonly int ParsedTextLength;
-            public readonly IReadOnlyList<ParseResult> SubResults;
-
-            public ParseResult(Product product, int parsedTextStartIndex, int parsedTextLength, List<ParseResult> subResults) {
-                Product = product;
-                ParsedTextStartIndex = parsedTextStartIndex;
-                ParsedTextLength = parsedTextLength;
-                SubResults = subResults.AsReadOnly();
-            }
-        }
 
         private readonly List<ParseResult> _results;
 
-        public IEnumerable<ParseResult> Results { get { return _results; } }
+        private IEnumerable<ParseResult> Results { get { return _results; } }
         
-        public Parser(String text,
+        private Parser(String text,
                        IEnumerable<Product> products, StrictPartialOrder<Product> precedence) {
             _textCodePoints = text.GetUtf32CodePoints();
             _precedence = precedence;
@@ -143,10 +130,10 @@ namespace parlex {
         }
 
         private class DependencyMediator {
-            public readonly Dictionary<int, HashSet<SubMatchChain>> CompletedSoFar = new Dictionary<int, HashSet<SubMatchChain>>();
+            internal readonly Dictionary<int, HashSet<SubMatchChain>> CompletedSoFar = new Dictionary<int, HashSet<SubMatchChain>>();
             private readonly List<SequenceMatchState> _dependents = new List<SequenceMatchState>();
 
-            public void AddMatchChain(SubMatchChain subMatchChain) {
+            internal void AddMatchChain(SubMatchChain subMatchChain) {
                 int length = subMatchChain.LengthInParsedText;
                 bool newLength = !CompletedSoFar.ContainsKey(length);
                 if (newLength) {
@@ -161,7 +148,7 @@ namespace parlex {
                 }
             }
 
-            public void AddDependent(SequenceMatchState sequenceMatchState) {
+            internal void AddDependent(SequenceMatchState sequenceMatchState) {
                 _dependents.Add(sequenceMatchState);
                 if (CompletedSoFar.Count > 0) {
                     foreach (var length in new List<int>(CompletedSoFar.Keys)) {
@@ -170,7 +157,7 @@ namespace parlex {
                 }
             }
 
-            public void MatchingFinished() {
+            internal void MatchingFinished() {
                 if (CompletedSoFar.Count == 0) {
                     foreach (var unfulfilledDependent in _dependents) {
                         unfulfilledDependent.DependencyUnfulfilled();
@@ -181,15 +168,15 @@ namespace parlex {
 
         private class SequenceMatchState {
             private readonly Parser _parser;
-            private readonly Analyzer.NfaSequence _sequence;
+            private readonly GrammarAnalyzer.NfaSequence _sequence;
             private readonly int _counter;
             private readonly int _textToParseIndex;
             private readonly int _sequenceStartingTextToParseIndex;
-            private readonly Analyzer.NfaSequence.ProductReference _neededProduct;
+            private readonly GrammarAnalyzer.NfaSequence.ProductReference _neededProduct;
             private readonly List<SubMatchChain.Entry> _matchesThusFar;
             private readonly DependencyMediator _dependencyMediator;
 
-            public SequenceMatchState(Parser parser, Analyzer.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, Analyzer.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, DependencyMediator dependencyMediator) {
+            internal SequenceMatchState(Parser parser, GrammarAnalyzer.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, GrammarAnalyzer.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, DependencyMediator dependencyMediator) {
                 _parser = parser;
                 _sequence = sequence;
                 _counter = counter;
@@ -200,7 +187,7 @@ namespace parlex {
                 _dependencyMediator = dependencyMediator;
             }
 
-            public void DependencyFulfilled(int length) {
+            internal void DependencyFulfilled(int length) {
                 int nextTextToParseIndex = _textToParseIndex + length;
                 var nextMatchesThusFar = new List<SubMatchChain.Entry>(_matchesThusFar) {new SubMatchChain.Entry(_neededProduct.Product, length)};
                 if (_neededProduct.IsRepetitious) {
@@ -214,7 +201,7 @@ namespace parlex {
                 }
             }
 
-            public void DependencyUnfulfilled() {
+            internal void DependencyUnfulfilled() {
                 if (_neededProduct.IsRepetitious) {
                     if (_neededProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength) {
                         _dependencyMediator.AddMatchChain(new SubMatchChain(_matchesThusFar, _textToParseIndex - _sequenceStartingTextToParseIndex));
@@ -228,7 +215,7 @@ namespace parlex {
                 }
             }
 
-            public void CreateNextStates(int nextCounter, int nextTextToParseIndex, List<SubMatchChain.Entry> nextMatchesThusFar, Dictionary<Product, DependencyMediator> dependencyMediators) {
+            internal void CreateNextStates(int nextCounter, int nextTextToParseIndex, List<SubMatchChain.Entry> nextMatchesThusFar, Dictionary<Product, DependencyMediator> dependencyMediators) {
                 var nextProducts = _sequence.RelationBranches[nextCounter - _sequence.SpanStart];
                 foreach (var nextProductReference in nextProducts) {
                     var nextProduct = nextProductReference.Product;

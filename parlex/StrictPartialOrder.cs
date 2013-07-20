@@ -4,16 +4,11 @@ using System.Linq;
 using System.Text;
 
 namespace parlex {
-    public class StrictPartialOrder<T> : IComparer<T> {
-        public class Node {
-            public readonly HashSet<Node> AdjacentNodes = new HashSet<Node>();
-            public readonly T Value;
+    class StrictPartialOrder<T> : IComparer<T> {
+        private class Node {
+            internal readonly HashSet<Node> AdjacentNodes = new HashSet<Node>();
 
-            public Node(T value) {
-                Value = value;
-            }
-
-            public void ApplyTransitivity() {
+            internal void ApplyTransitivity() {
                 ApplyTransitivityRecursively(this);
             }
 
@@ -25,11 +20,11 @@ namespace parlex {
             }
         }
 
-        public struct Edge {
-            public readonly T From;
-            public readonly T To;
+        internal struct Edge {
+            internal readonly T From;
+            internal readonly T To;
 
-            public Edge(T @from, T to) : this() {
+            internal Edge(T @from, T to) : this() {
                 From = @from;
                 To = to;
             }
@@ -68,14 +63,14 @@ namespace parlex {
 
         private readonly Dictionary<T, Node> _valueToNode;
 
-        public StrictPartialOrder(IEnumerable<Edge> edges) {
+        internal StrictPartialOrder(IEnumerable<Edge> edges) {
             var values = new HashSet<T>();
             foreach (var edge in edges) {
                 values.Add(edge.From);
                 values.Add(edge.To);
             }
 
-            _valueToNode = values.ToDictionary(x => x, x => new Node(x));
+            _valueToNode = values.ToDictionary(x => x, x => new Node());
 
             foreach (var edge in edges) {
                 Node fromNode = _valueToNode[edge.From];

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace parlex {
     class Exemplar : ICloneable {
-        public String Text;
-        public List<ProductSpan> ProductSpans = new List<ProductSpan>();
+        internal readonly String Text;
+        internal readonly List<ProductSpan> ProductSpans = new List<ProductSpan>();
 
-        public Exemplar(String text) {
+        internal Exemplar(String text) {
             Text = text;
         }
 

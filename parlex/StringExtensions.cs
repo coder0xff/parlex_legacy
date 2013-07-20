@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace parlex {
     static class StringExtensions {
-        public static Int32[] GetUtf32CodePoints(this string s) {
+        internal static Int32[] GetUtf32CodePoints(this string s) {
             var chars = new List<int>((s.Length * 3) / 2);
 
             var ee = StringInfo.GetTextElementEnumerator(s);
