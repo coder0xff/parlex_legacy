@@ -12,7 +12,7 @@ namespace parlex {
 
         private IEnumerable<Product> Products { get { return UserProducts.Values; } }
 
-        private CompiledGrammar(Document document) {
+        private CompiledGrammar(GrammarDocument document) {
             InitializeBuiltInProducts();
             CreateCustomCharacterSets(document);
             UserProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
@@ -25,10 +25,10 @@ namespace parlex {
             Precedences = CreatePrecedesEdges(document);
         }
 
-        private void CreateCustomCharacterSets(Document document) {
+        private void CreateCustomCharacterSets(GrammarDocument document) {
             foreach (var characterSetSource in document.CharacterSetSources) {
                 switch (characterSetSource.Type) {
-                    case Document.CharacterSetEntry.Types.List:
+                    case GrammarDocument.CharacterSetEntry.Types.List:
                         var items = new List<int>();
                         foreach (var source in characterSetSource.Params.Skip(1)) {
                             if (source.Length == "codePoint".Length + 6 && source.StartsWith("codePoint")) {
@@ -43,12 +43,12 @@ namespace parlex {
                         }
                         _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], items));
                         break;
-                    case Document.CharacterSetEntry.Types.Inversion: {
+                    case GrammarDocument.CharacterSetEntry.Types.Inversion: {
                         var source = _characterClassProducts.Find(x => x.Title == characterSetSource.Params[1]);
                         _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], Unicode.All.Except(source.CodePoints)));
                     }
                         break;
-                    case Document.CharacterSetEntry.Types.Union: {
+                    case GrammarDocument.CharacterSetEntry.Types.Union: {
                         IEnumerable<int> current = new int[0];
                         foreach (var param in characterSetSource.Params.Skip(1)) {
                             var source = _characterClassProducts.Find(x => x.Title == param);
@@ -57,7 +57,7 @@ namespace parlex {
                         _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current));
                     }
                         break;
-                    case Document.CharacterSetEntry.Types.Intersection: {
+                    case GrammarDocument.CharacterSetEntry.Types.Intersection: {
                         IEnumerable<int> current = Unicode.All;
                         foreach (var param in characterSetSource.Params.Skip(1)) {
                             var source = _characterClassProducts.Find(x => x.Title == param);
@@ -70,7 +70,7 @@ namespace parlex {
             }
         }
 
-        private void CreateIsARelations(Document document) {
+        private void CreateIsARelations(GrammarDocument document) {
             foreach (var isASource in document.IsASources) {
                 var leftProduct = UserProducts[isASource.LeftProduct];
                 var rightProduct = UserProducts[isASource.RightProduct];
@@ -80,7 +80,7 @@ namespace parlex {
             }
         }
 
-        private StrictPartialOrder<Product> CreatePrecedesEdges(Document document) {
+        private StrictPartialOrder<Product> CreatePrecedesEdges(GrammarDocument document) {
             var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(UserProducts[x.From], UserProducts[x.To]));
             return new StrictPartialOrder<Product>(edges);
         }

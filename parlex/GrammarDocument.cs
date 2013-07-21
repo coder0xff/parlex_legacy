@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace parlex {
-    class Document {
+    class GrammarDocument {
         private class ExemplarSource {
             internal String Text;
 
@@ -57,8 +57,8 @@ namespace parlex {
 
         internal readonly List<CharacterSetEntry> CharacterSetSources = new List<CharacterSetEntry>();
 
-        private static Document FromText(String source) {
-            var result = new Document();
+        private static GrammarDocument FromText(String source) {
+            var result = new GrammarDocument();
             var lines = Regex.Split(source, "\r\n|\r|\n");
             ExemplarSource currentExemplarSource = null;
             bool nextLineStartsExemplar = false;
