@@ -4,26 +4,25 @@ using System.Globalization;
 using System.Linq;
 
 namespace parlex {
-    internal class GrammarAnalyzer {
+    internal class CompiledGrammar {
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
-        private readonly Dictionary<String, Product> _userProducts;
-        private readonly StrictPartialOrder<Product> _precedents;
+        internal readonly Dictionary<String, Product> UserProducts;
+        internal readonly StrictPartialOrder<Product> Precedences;
 
-        private IEnumerable<Product> Products { get { return _userProducts.Values; } }
-        private StrictPartialOrder<Product> Precedents { get { return _precedents; } }
+        private IEnumerable<Product> Products { get { return UserProducts.Values; } }
 
-        private GrammarAnalyzer(Document document) {
+        private CompiledGrammar(Document document) {
             InitializeBuiltInProducts();
             CreateCustomCharacterSets(document);
-            _userProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
+            UserProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
             foreach (var product in _characterClassProducts) {
-                _userProducts.Add(product.Title, product);
+                UserProducts.Add(product.Title, product);
             }
-            var exemplars = document.GetExemplars(_userProducts);
+            var exemplars = document.GetExemplars(UserProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
-            _precedents = CreatePrecedesEdges(document);
+            Precedences = CreatePrecedesEdges(document);
         }
 
         private void CreateCustomCharacterSets(Document document) {
@@ -73,16 +72,16 @@ namespace parlex {
 
         private void CreateIsARelations(Document document) {
             foreach (var isASource in document.IsASources) {
-                var leftProduct = _userProducts[isASource.LeftProduct];
-                var rightProduct = _userProducts[isASource.RightProduct];
+                var leftProduct = UserProducts[isASource.LeftProduct];
+                var rightProduct = UserProducts[isASource.RightProduct];
                 var sequence = new NfaSequence(0, 1, false, rightProduct, true);
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
-                _userProducts[isASource.RightProduct].Sequences.Add(sequence);
+                UserProducts[isASource.RightProduct].Sequences.Add(sequence);
             }
         }
 
         private StrictPartialOrder<Product> CreatePrecedesEdges(Document document) {
-            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(_userProducts[x.From], _userProducts[x.To]));
+            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(UserProducts[x.From], UserProducts[x.To]));
             return new StrictPartialOrder<Product>(edges);
         }
 
@@ -162,7 +161,7 @@ namespace parlex {
             foreach (Exemplar entry in entries) {
                 CreateRelations(entry);
             }
-            foreach (Product product in _userProducts.Values) {
+            foreach (Product product in UserProducts.Values) {
 
                 foreach (var nfaSequence in product.Sequences) {
                     RemoveUnneededCodePointBranches(nfaSequence);

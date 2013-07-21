@@ -22,7 +22,7 @@ namespace parlex {
         }
 
         public readonly String Title;
-        internal readonly List<GrammarAnalyzer.NfaSequence> Sequences = new List<GrammarAnalyzer.NfaSequence>();
+        internal readonly List<CompiledGrammar.NfaSequence> Sequences = new List<CompiledGrammar.NfaSequence>();
 
         internal Product(String title) {
             Title = title;

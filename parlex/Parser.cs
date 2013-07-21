@@ -107,26 +107,22 @@ namespace parlex {
         private readonly Dictionary<Product, Dictionary<int /*length*/, SubMatchChain>>[] _completedProductMatches;
         private readonly Int32[] _textCodePoints;
         private readonly StrictPartialOrder<Product> _precedence;
+        private readonly ParseResult _result;
 
-        private readonly List<ParseResult> _results;
-
-        private IEnumerable<ParseResult> Results { get { return _results; } }
-        
-        private Parser(String text,
-                       IEnumerable<Product> products, StrictPartialOrder<Product> precedence) {
+        private Parser(String text, Product toMatch, StrictPartialOrder<Product> precedence) {
             _textCodePoints = text.GetUtf32CodePoints();
-            _precedence = precedence;
             _completedProductMatches = new Dictionary<Product, Dictionary<int, SubMatchChain>>[_textCodePoints.Length];
             for (int initCollections = 0; initCollections < _textCodePoints.Length; initCollections++) {
                 _completedProductMatches[initCollections] = new Dictionary<Product, Dictionary<int, SubMatchChain>>();
             }
-            foreach (Product product in products) {
-                //if (product is IBuiltInCharacterProduct) continue;
-                if (product.Title != "document") continue;
-                MatchProduct(product, 0, new Dictionary<Product, DependencyMediator>());
-            }
-            _results = new List<ParseResult>();
-            PrepareResults();
+            _precedence = precedence;
+            MatchProduct(toMatch, 0, new Dictionary<Product, DependencyMediator>());
+            _result = PrepareResult(toMatch, text.Length);
+        }
+
+        static public ParseResult Parse(String text, String productName, CompiledGrammar grammar) {
+            var toMatch = grammar.UserProducts[productName];
+            return new Parser(text, toMatch, grammar.Precedences)._result;
         }
 
         private class DependencyMediator {
@@ -168,15 +164,15 @@ namespace parlex {
 
         private class SequenceMatchState {
             private readonly Parser _parser;
-            private readonly GrammarAnalyzer.NfaSequence _sequence;
+            private readonly CompiledGrammar.NfaSequence _sequence;
             private readonly int _counter;
             private readonly int _textToParseIndex;
             private readonly int _sequenceStartingTextToParseIndex;
-            private readonly GrammarAnalyzer.NfaSequence.ProductReference _neededProduct;
+            private readonly CompiledGrammar.NfaSequence.ProductReference _neededProduct;
             private readonly List<SubMatchChain.Entry> _matchesThusFar;
             private readonly DependencyMediator _dependencyMediator;
 
-            internal SequenceMatchState(Parser parser, GrammarAnalyzer.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, GrammarAnalyzer.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, DependencyMediator dependencyMediator) {
+            internal SequenceMatchState(Parser parser, CompiledGrammar.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, CompiledGrammar.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, DependencyMediator dependencyMediator) {
                 _parser = parser;
                 _sequence = sequence;
                 _counter = counter;
@@ -310,7 +306,7 @@ namespace parlex {
         /// <param name="dependencyMediators"></param>
         /// <param name="stack"></param>
         /// <returns></returns>
-        SubMatchChain GetSubMatchChainFromCompletedProductsOrDependencyMediators(SubMatchChain.Entry entry, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
+        private SubMatchChain GetSubMatchChainFromCompletedProductsOrDependencyMediators(SubMatchChain.Entry entry, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
             if (_completedProductMatches[indexInTextToParse].ContainsKey(entry.Product)) {
                 if (_completedProductMatches[indexInTextToParse][entry.Product].ContainsKey(entry.LengthInParsedText)) {
                     return _completedProductMatches[indexInTextToParse][entry.Product][entry.LengthInParsedText];
@@ -346,11 +342,11 @@ namespace parlex {
             return null;
         }
 
-        int GetOrder(Product a, Product b) {
+        private int GetOrder(Product a, Product b) {
             return _precedence.Compare(a, b);
         }
 
-        SubMatchChain ChooseBestSubMatchChain(SubMatchChain a, SubMatchChain b, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
+        private SubMatchChain ChooseBestSubMatchChain(SubMatchChain a, SubMatchChain b, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
             bool aIsBuiltIn = a.SubMatches.Count == 0;
             bool bIsBuiltIn = b.SubMatches.Count == 0;
             if (aIsBuiltIn && bIsBuiltIn) throw new ApplicationException();
@@ -396,7 +392,7 @@ namespace parlex {
             return null;
         }
 
-        ParseResult Resultify(int indexInParsedText, Product product, int length, Dictionary<Product, Dictionary<int, ParseResult>>[] converted) {
+        private ParseResult Resultify(int indexInParsedText, Product product, int length, Dictionary<Product, Dictionary<int, ParseResult>>[] converted) {
             var indexConversions = converted[indexInParsedText];
             if (indexConversions == null) {
                 indexConversions = new Dictionary<Product, Dictionary<int, ParseResult>>();
@@ -431,13 +427,14 @@ namespace parlex {
             return result;
         }
 
-        void PrepareResults() {
+        private ParseResult PrepareResult(Product toMatch, int length) {
             var converted = new Dictionary<Product, Dictionary<int, ParseResult>>[_textCodePoints.Length];
-            foreach (var completedProductMatch in _completedProductMatches[0]) {
-                if (completedProductMatch.Value.ContainsKey(_textCodePoints.Length)) {
-                    _results.Add(Resultify(0, completedProductMatch.Key, _textCodePoints.Length, converted));
+            if (_completedProductMatches[0].ContainsKey(toMatch)) {
+                if (_completedProductMatches[0][toMatch].ContainsKey(length)) {
+                    return Resultify(0, toMatch, length, converted);
                 }
             }
+            return null;
         }
     }
 }
