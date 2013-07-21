@@ -5,25 +5,56 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace parlex {
-    class GrammarDocument {
+    public class GrammarDocument {
         public class ExemplarSource {
             public String Text;
 
-            internal class ProductDeclaration {
+            internal class ProductSpanSource {
                 public String Name;
                 public int StartPosition;
                 public int Length;
 
-                public ProductDeclaration(String name, int startPosition, int length) {
+                public ProductSpanSource(String name, int startPosition, int length) {
                     Name = name;
                     StartPosition = startPosition;
                     Length = length;
                 }
 
-                public ProductDeclaration() {}
+                public ProductSpanSource() {}
+
+                public override string ToString() {
+                    var resultBuilder = new StringBuilder();
+                    resultBuilder.Append(' ', StartPosition);
+                    resultBuilder.Append('|');
+                    if (Length > 1) {
+                        resultBuilder.Append(' ', Length - 2);
+                        resultBuilder.Append('|');
+                    }
+                    resultBuilder.Append(" : ");
+                    resultBuilder.AppendLine(Name);
+                    return resultBuilder.ToString();
+                }
             }
 
-            internal readonly List<ProductDeclaration> ProductDeclarations = new List<ProductDeclaration>();
+            internal readonly List<ProductSpanSource> ProductDeclarations = new List<ProductSpanSource>();
+
+            public override string ToString() {
+                var resultBuilder = new StringBuilder();
+                if (String.IsNullOrWhiteSpace(Text)) {
+                    resultBuilder.AppendLine("relation:");
+                } else {
+                    resultBuilder.AppendLine("exemplar:");
+                    if (Text.IndexOfAny(new[] {'\r', '\n'}) != -1) {
+                        throw new ArgumentException("The text of an exemplar cannot contain either the line feed character or the carriage return character. The text representation cannot be generated.");
+                    }
+                    resultBuilder.AppendLine(Text);
+                }
+                foreach (var productDeclaration in ProductDeclarations) {
+                    resultBuilder.Append(productDeclaration);
+                }
+                resultBuilder.AppendLine("");
+                return resultBuilder.ToString();
+            }
         }
 
         public readonly List<ExemplarSource> ExemplarSources = new List<ExemplarSource>();
@@ -36,10 +67,43 @@ namespace parlex {
                 LeftProduct = leftProduct;
                 RightProduct = rightProduct;
             }
+
+            public override string ToString() {
+                var resultBuilder = new StringBuilder();
+                resultBuilder.Append(LeftProduct);
+                resultBuilder.Append(" is ");
+                if (RightProduct.IndexOfAny("AEIOUaeiou".ToCharArray()) == 0) {
+                    resultBuilder.Append("an ");
+                } else {
+                    resultBuilder.Append("a ");
+                }
+                resultBuilder.AppendLine(RightProduct);
+                return resultBuilder.ToString();
+            }
         }
 
         public readonly List<IsA> IsASources = new List<IsA>();
-        public readonly List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
+
+        public struct Precedes {
+            public String LeftProduct;
+            public String RightProduct;
+
+            public Precedes(string leftProduct, string rightProduct)
+                : this() {
+                LeftProduct = leftProduct;
+                RightProduct = rightProduct;
+            }
+
+            public override string ToString() {
+                var resultBuilder = new StringBuilder();
+                resultBuilder.Append(LeftProduct);
+                resultBuilder.Append(" precedes ");
+                resultBuilder.AppendLine(RightProduct);
+                return resultBuilder.ToString();
+            }
+        }
+
+        public readonly List<Precedes> PrecedesSources = new List<Precedes>();
 
         public struct CharacterSetEntry {
             public List<string> Params;
@@ -61,6 +125,21 @@ namespace parlex {
             public CharacterSetEntry(Types type) {
                 Params = new List<string>();
                 Type = type;
+            }
+
+            public override string ToString() {
+                switch (Type) {
+                    case Types.List:
+                        return "character set: " + String.Join(" ", Params) + Environment.NewLine;
+                    case Types.Inversion:
+                        return "character set inverted: " + String.Join(" ", Params.Take(2)) + Environment.NewLine;
+                    case Types.Union:
+                        return "character set union: " + String.Join(" ", Params) + Environment.NewLine;
+                    case Types.Intersection:
+                        return "character set intersection: " + String.Join(" ", Params) + Environment.NewLine;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
         }
 
@@ -104,7 +183,7 @@ namespace parlex {
                             int precedesIndex = line.IndexOf(" precedes ", StringComparison.Ordinal);
                             string leftProduct = line.Substring(0, precedesIndex).Trim();
                             string rightProduct = line.Substring(precedesIndex + precedesLength).Trim();
-                            result.PrecedesSources.Add(new StrictPartialOrder<String>.Edge(leftProduct, rightProduct));
+                            result.PrecedesSources.Add(new Precedes(leftProduct, rightProduct));
                         } else if (line.Trim().StartsWith("character set:")) {
                             var names = line.Trim().Substring("character set:".Length).Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
                             result.CharacterSetSources.Add(new CharacterSetEntry(names.ToList(), CharacterSetEntry.Types.List));
@@ -122,12 +201,22 @@ namespace parlex {
                         var productDeclarationParts = line.Split(':');
                         int startPosition = productDeclarationParts[0].IndexOf('|');
                         int length = productDeclarationParts[0].LastIndexOf('|') - startPosition + 1;
-                        currentExemplarSource.ProductDeclarations.Add(new ExemplarSource.ProductDeclaration(productDeclarationParts[1].Trim(), startPosition, length));
+                        currentExemplarSource.ProductDeclarations.Add(new ExemplarSource.ProductSpanSource(productDeclarationParts[1].Trim(), startPosition, length));
                     }
                 }
             }
             return result;
         }
 
+        public override string ToString() {
+            var resultBuilder = new StringBuilder();
+            resultBuilder.Append(String.Join("", CharacterSetSources));
+            if (CharacterSetSources.Count > 0) resultBuilder.AppendLine();
+            resultBuilder.Append(String.Join("", ExemplarSources));
+            resultBuilder.Append(String.Join("", IsASources));
+            if (IsASources.Count > 0) resultBuilder.AppendLine("");
+            resultBuilder.Append(String.Join("", PrecedesSources));
+            return resultBuilder.ToString();
+        }
     }
 }

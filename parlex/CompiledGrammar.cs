@@ -75,7 +75,7 @@ namespace parlex {
             foreach (GrammarDocument.ExemplarSource exemplarSource in exemplarSources) {
                 var result = new Exemplar(exemplarSource.Text);
                 results.Add(result);
-                foreach (GrammarDocument.ExemplarSource.ProductDeclaration productDeclaration in exemplarSource.ProductDeclarations) {
+                foreach (GrammarDocument.ExemplarSource.ProductSpanSource productDeclaration in exemplarSource.ProductDeclarations) {
                     bool isRepititious = productDeclaration.Name.EndsWith("*");
                     string properName = productDeclaration.Name.Replace("*", "");
                     if (!inOutProducts.ContainsKey(properName)) {
@@ -102,7 +102,7 @@ namespace parlex {
         }
 
         private StrictPartialOrder<Product> CreatePrecedesEdges(GrammarDocument document) {
-            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(UserProducts[x.From], UserProducts[x.To]));
+            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(UserProducts[x.LeftProduct], UserProducts[x.RightProduct]));
             return new StrictPartialOrder<Product>(edges);
         }
 
