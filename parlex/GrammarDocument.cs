@@ -9,7 +9,7 @@ namespace parlex {
         public class ExemplarSource {
             public String Text;
 
-            internal class ProductSpanSource {
+            public class ProductSpanSource {
                 public String Name;
                 public int StartPosition;
                 public int Length;
@@ -36,7 +36,7 @@ namespace parlex {
                 }
             }
 
-            internal readonly List<ProductSpanSource> ProductDeclarations = new List<ProductSpanSource>();
+            public readonly List<ProductSpanSource> ProductDeclarations = new List<ProductSpanSource>();
 
             public override string ToString() {
                 var resultBuilder = new StringBuilder();

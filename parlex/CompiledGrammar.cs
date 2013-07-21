@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 
 namespace parlex {
-    internal class CompiledGrammar {
+    public class CompiledGrammar : IReadOnlyDictionary<string, Product> {
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
         internal readonly Dictionary<String, Product> UserProducts;
@@ -342,6 +342,38 @@ namespace parlex {
             public override string ToString() {
                 return OwnerProduct.Title + (IsRepitious ? "*" : "");
             }
+        }
+
+        bool IReadOnlyDictionary<string, Product>.ContainsKey(string key) {
+            return UserProducts.ContainsKey(key);
+        }
+
+        IEnumerable<string> IReadOnlyDictionary<string, Product>.Keys {
+            get { return UserProducts.Keys; }
+        }
+
+        bool IReadOnlyDictionary<string, Product>.TryGetValue(string key, out Product value) {
+            return UserProducts.TryGetValue(key, out value);
+        }
+
+        IEnumerable<Product> IReadOnlyDictionary<string, Product>.Values {
+            get { return UserProducts.Values; }
+        }
+
+        Product IReadOnlyDictionary<string, Product>.this[string key] {
+            get { return UserProducts[key]; }
+        }
+
+        int IReadOnlyCollection<KeyValuePair<string, Product>>.Count {
+            get { return UserProducts.Count; }
+        }
+
+        IEnumerator<KeyValuePair<string, Product>> IEnumerable<KeyValuePair<string, Product>>.GetEnumerator() {
+            return UserProducts.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return UserProducts.GetEnumerator();
         }
     }
 }
