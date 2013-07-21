@@ -41,7 +41,7 @@
   <ItemGroup>
     <Compile Include="CharacterClassCharacterProduct.cs" />
     <Compile Include="CodePointCharacterProduct.cs" />
-    <Compile Include="Document.cs" />
+    <Compile Include="GrammarDocument.cs" />
     <Compile Include="Exemplar.cs" />
     <Compile Include="CompiledGrammar.cs" />
     <Compile Include="IBuiltInCharacterProduct.cs" />

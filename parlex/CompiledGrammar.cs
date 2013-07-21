@@ -19,7 +19,7 @@ namespace parlex {
             foreach (var product in _characterClassProducts) {
                 UserProducts.Add(product.Title, product);
             }
-            var exemplars = document.GetExemplars(UserProducts);
+            var exemplars = GetExemplars(document.ExemplarSources, UserProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
             Precedences = CreatePrecedesEdges(document);
@@ -70,6 +70,27 @@ namespace parlex {
             }
         }
 
+        private static IEnumerable<Exemplar> GetExemplars(IEnumerable<GrammarDocument.ExemplarSource> exemplarSources, Dictionary<string, Product> inOutProducts) {
+            var results = new List<Exemplar>();
+            foreach (GrammarDocument.ExemplarSource exemplarSource in exemplarSources) {
+                var result = new Exemplar(exemplarSource.Text);
+                results.Add(result);
+                foreach (GrammarDocument.ExemplarSource.ProductDeclaration productDeclaration in exemplarSource.ProductDeclarations) {
+                    bool isRepititious = productDeclaration.Name.EndsWith("*");
+                    string properName = productDeclaration.Name.Replace("*", "");
+                    if (!inOutProducts.ContainsKey(properName)) {
+                        inOutProducts.Add(properName, new Product(properName));
+                    }
+                    result.ProductSpans.Add(new ProductSpan(
+                        inOutProducts[properName],
+                        productDeclaration.StartPosition,
+                        productDeclaration.Length,
+                        isRepititious)
+                    );
+                }
+            }
+            return results;
+        }
         private void CreateIsARelations(GrammarDocument document) {
             foreach (var isASource in document.IsASources) {
                 var leftProduct = UserProducts[isASource.LeftProduct];

@@ -1,63 +1,72 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace parlex {
     class GrammarDocument {
-        private class ExemplarSource {
-            internal String Text;
+        public class ExemplarSource {
+            public String Text;
 
             internal class ProductDeclaration {
-                internal readonly String Name;
-                internal readonly int StartPosition;
-                internal readonly int Length;
+                public String Name;
+                public int StartPosition;
+                public int Length;
 
-                internal ProductDeclaration(String name, int startPosition, int length) {
+                public ProductDeclaration(String name, int startPosition, int length) {
                     Name = name;
                     StartPosition = startPosition;
                     Length = length;
                 }
+
+                public ProductDeclaration() {}
             }
 
             internal readonly List<ProductDeclaration> ProductDeclarations = new List<ProductDeclaration>();
         }
 
-        private readonly List<ExemplarSource> _exemplarSources = new List<ExemplarSource>();
+        public readonly List<ExemplarSource> ExemplarSources = new List<ExemplarSource>();
 
-        internal struct IsASource {
-            internal readonly String LeftProduct;
-            internal readonly String RightProduct;
+        public struct IsA {
+            public String LeftProduct;
+            public String RightProduct;
 
-            internal IsASource(string leftProduct, string rightProduct) : this() {
+            public IsA(string leftProduct, string rightProduct) : this() {
                 LeftProduct = leftProduct;
                 RightProduct = rightProduct;
             }
         }
 
-        internal readonly List<IsASource> IsASources = new List<IsASource>();
-        internal readonly List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
+        public readonly List<IsA> IsASources = new List<IsA>();
+        public readonly List<StrictPartialOrder<String>.Edge> PrecedesSources = new List<StrictPartialOrder<String>.Edge>();
 
-        internal struct CharacterSetEntry {
-            internal readonly string[] Params;
+        public struct CharacterSetEntry {
+            public List<string> Params;
 
-            internal enum Types {
+            public enum Types {
                 List,
                 Inversion,
                 Union,
                 Intersection
             }
 
-            internal readonly Types Type;
+            public readonly Types Type;
 
-            internal CharacterSetEntry(string[] @params, Types type) : this() {
+            public CharacterSetEntry(List<string> @params, Types type) {
                 Params = @params;
+                Type = type;
+            }
+
+            public CharacterSetEntry(Types type) {
+                Params = new List<string>();
                 Type = type;
             }
         }
 
-        internal readonly List<CharacterSetEntry> CharacterSetSources = new List<CharacterSetEntry>();
+        public readonly List<CharacterSetEntry> CharacterSetSources = new List<CharacterSetEntry>();
 
-        private static GrammarDocument FromText(String source) {
+        public static GrammarDocument FromString(String source) {
             var result = new GrammarDocument();
             var lines = Regex.Split(source, "\r\n|\r|\n");
             ExemplarSource currentExemplarSource = null;
@@ -73,13 +82,13 @@ namespace parlex {
                     if (currentExemplarSource == null) {
                         if (nextLineStartsExemplar) {
                             currentExemplarSource = new ExemplarSource {Text = line};
-                            result._exemplarSources.Add(currentExemplarSource);
+                            result.ExemplarSources.Add(currentExemplarSource);
                             nextLineStartsExemplar = false;
                         } else if (line.Trim() == "exemplar:") {
                             nextLineStartsExemplar = true;
                         } else if (line.Trim() == "relation:") {
                             currentExemplarSource = new ExemplarSource {Text = ""};
-                            result._exemplarSources.Add(currentExemplarSource);
+                            result.ExemplarSources.Add(currentExemplarSource);
                         } else if (line.Contains(" is a ") || line.Contains(" is an ")) {
                             int isALength = " is a ".Length;
                             int isAIndex = line.IndexOf(" is a ", StringComparison.Ordinal);
@@ -89,7 +98,7 @@ namespace parlex {
                             }
                             string leftProduct = line.Substring(0, isAIndex).Trim();
                             string rightProduct = line.Substring(isAIndex + isALength).Trim();
-                            result.IsASources.Add(new IsASource(leftProduct, rightProduct));
+                            result.IsASources.Add(new IsA(leftProduct, rightProduct));
                         } else if (line.Contains(" precedes ")) {
                             int precedesLength = " precedes ".Length;
                             int precedesIndex = line.IndexOf(" precedes ", StringComparison.Ordinal);
@@ -98,16 +107,16 @@ namespace parlex {
                             result.PrecedesSources.Add(new StrictPartialOrder<String>.Edge(leftProduct, rightProduct));
                         } else if (line.Trim().StartsWith("character set:")) {
                             var names = line.Trim().Substring("character set:".Length).Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                            result.CharacterSetSources.Add(new CharacterSetEntry(names, CharacterSetEntry.Types.List));
+                            result.CharacterSetSources.Add(new CharacterSetEntry(names.ToList(), CharacterSetEntry.Types.List));
                         } else if (line.Trim().StartsWith("character set inverted:")) {
                             var names = line.Trim().Substring("character set inverted:".Length).Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                            result.CharacterSetSources.Add(new CharacterSetEntry(names, CharacterSetEntry.Types.Inversion));
+                            result.CharacterSetSources.Add(new CharacterSetEntry(names.ToList(), CharacterSetEntry.Types.Inversion));
                         } else if (line.Trim().StartsWith("character set union:")) {
                             var names = line.Trim().Substring("character set union:".Length).Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                            result.CharacterSetSources.Add(new CharacterSetEntry(names, CharacterSetEntry.Types.Union));
+                            result.CharacterSetSources.Add(new CharacterSetEntry(names.ToList(), CharacterSetEntry.Types.Union));
                         } else if (line.Trim().StartsWith("character set intersection:")) {
                             var names = line.Trim().Substring("character set intersection:".Length).Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
-                            result.CharacterSetSources.Add(new CharacterSetEntry(names, CharacterSetEntry.Types.Intersection));
+                            result.CharacterSetSources.Add(new CharacterSetEntry(names.ToList(), CharacterSetEntry.Types.Intersection));
                         }
                     } else {
                         var productDeclarationParts = line.Split(':');
@@ -120,26 +129,5 @@ namespace parlex {
             return result;
         }
 
-        internal IEnumerable<Exemplar> GetExemplars(Dictionary<string, Product> inOutProducts) {
-            var results = new List<Exemplar>();
-            foreach (ExemplarSource exemplarSource in _exemplarSources) {
-                var result = new Exemplar(exemplarSource.Text);
-                results.Add(result);
-                foreach (ExemplarSource.ProductDeclaration productDeclaration in exemplarSource.ProductDeclarations) {
-                    bool isRepititious = productDeclaration.Name.EndsWith("*");
-                    string properName = productDeclaration.Name.Replace("*", "");
-                    if (!inOutProducts.ContainsKey(properName)) {
-                        inOutProducts.Add(properName, new Product(properName));
-                    }
-                    result.ProductSpans.Add(new ProductSpan(
-                        inOutProducts[properName],
-                        productDeclaration.StartPosition,
-                        productDeclaration.Length,
-                        isRepititious)
-                    );
-                }
-            }
-            return results;
-        }
     }
 }
