@@ -1,0 +1,13 @@
+﻿<Window x:Class="IDE.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="350" Width="525">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>        
+        <GridSplitter HorizontalAlignment="Right" Grid.Column="0" VerticalAlignment="Stretch" Width="3"/>
+        <StackPanel Grid.Column="1" x:Name="exemplars"></StackPanel>
+    </Grid>
+</Window>

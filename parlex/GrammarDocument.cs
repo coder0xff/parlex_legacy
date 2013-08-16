@@ -6,50 +6,102 @@ using System.Text.RegularExpressions;
 
 namespace parlex {
     public class GrammarDocument {
-        public class ExemplarSource {
-            public String Text;
+        public class ProductSpanSource : IPropertyChangedNotifier {
+            private String _name;
+            private int _startPosition;
+            private int _length;
 
-            public class ProductSpanSource {
-                public String Name;
-                public int StartPosition;
-                public int Length;
+            public event Action<Object, String> PropertyChanged = delegate { };
 
-                public ProductSpanSource(String name, int startPosition, int length) {
-                    Name = name;
-                    StartPosition = startPosition;
-                    Length = length;
-                }
+            public ProductSpanSource(String name, int startPosition, int length) {
+                _name = name;
+                _startPosition = startPosition;
+                _length = length;
+            }
 
-                public ProductSpanSource() {}
+            public ProductSpanSource() {}
 
-                public override string ToString() {
-                    var resultBuilder = new StringBuilder();
-                    resultBuilder.Append(' ', StartPosition);
-                    resultBuilder.Append('|');
-                    if (Length > 1) {
-                        resultBuilder.Append(' ', Length - 2);
-                        resultBuilder.Append('|');
+            public string Name {
+                get { return _name; }
+                set {
+                    if (_name == value) {
+                        return;
                     }
-                    resultBuilder.Append(" : ");
-                    resultBuilder.AppendLine(Name);
-                    return resultBuilder.ToString();
+                    _name = value;
+                    PropertyChanged(this, "Name");
                 }
             }
 
-            public readonly List<ProductSpanSource> ProductDeclarations = new List<ProductSpanSource>();
+            public int StartPosition {
+                get { return _startPosition; }
+                set {
+                    if (_startPosition == value) {
+                        return;
+                    }
+                    _startPosition = value;
+                    PropertyChanged(this, "StartPosition");
+                }
+            }
+
+            public int Length {
+                get { return _length; }
+                set {
+                    if (_length != value) {
+                        _length = value;
+                        PropertyChanged(this, "Length");
+                    }
+                }
+            }
 
             public override string ToString() {
                 var resultBuilder = new StringBuilder();
-                if (String.IsNullOrWhiteSpace(Text)) {
+                resultBuilder.Append(' ', _startPosition);
+                resultBuilder.Append('|');
+                if (_length > 1) {
+                    resultBuilder.Append(' ', _length - 2);
+                    resultBuilder.Append('|');
+                }
+                resultBuilder.Append(" : ");
+                resultBuilder.AppendLine(_name);
+                return resultBuilder.ToString();
+            }
+        }
+
+        public class ExemplarSource : ObservableList<ProductSpanSource>, IPropertyChangedNotifier {
+            private String _text;
+
+            public ExemplarSource() {
+            }
+
+            public ExemplarSource(String text) {
+                _text = text;
+            }
+
+            public string Text {
+                get { return _text; }
+                set {
+                    if (_text == value) {
+                        return;
+                    }
+                    _text = value;
+                    PropertyChanged(this, "Text");
+                }
+            }
+
+            public event Action<Object, String> PropertyChanged = delegate { };
+
+            public override string ToString() {
+                var resultBuilder = new StringBuilder();
+                if (String.IsNullOrWhiteSpace(_text)) {
                     resultBuilder.AppendLine("relation:");
                 } else {
                     resultBuilder.AppendLine("exemplar:");
-                    if (Text.IndexOfAny(new[] {'\r', '\n'}) != -1) {
+                    if (_text.IndexOfAny(new[] {'\r', '\n'}) != -1) {
                         throw new ArgumentException("The text of an exemplar cannot contain either the line feed character or the carriage return character. The text representation cannot be generated.");
                     }
-                    resultBuilder.AppendLine(Text);
+                    resultBuilder.AppendLine(_text);
                 }
-                foreach (var productDeclaration in ProductDeclarations) {
+                foreach (var productDeclaration in this) {
                     resultBuilder.Append(productDeclaration);
                 }
                 resultBuilder.AppendLine("");
@@ -59,51 +111,113 @@ namespace parlex {
 
         public readonly List<ExemplarSource> ExemplarSources = new List<ExemplarSource>();
 
-        public struct IsA {
-            public String LeftProduct;
-            public String RightProduct;
+        public class IsA : IPropertyChangedNotifier {
+            private String _leftProduct;
+            private String _rightProduct;
 
-            public IsA(string leftProduct, string rightProduct) : this() {
-                LeftProduct = leftProduct;
-                RightProduct = rightProduct;
+            public IsA() {
             }
 
-            public override string ToString() {
-                var resultBuilder = new StringBuilder();
-                resultBuilder.Append(LeftProduct);
-                resultBuilder.Append(" is ");
-                if (RightProduct.IndexOfAny("AEIOUaeiou".ToCharArray()) == 0) {
-                    resultBuilder.Append("an ");
-                } else {
-                    resultBuilder.Append("a ");
+            public IsA(string leftProduct, string rightProduct) {
+                _leftProduct = leftProduct;
+                _rightProduct = rightProduct;
+            }
+
+            public string LeftProduct {
+                get { return _leftProduct; }
+                set {
+                    if (_leftProduct == value) {
+                        return;
+                    }
+                    _leftProduct = value;
+                    PropertyChanged(this, "LeftProduct");
                 }
-                resultBuilder.AppendLine(RightProduct);
-                return resultBuilder.ToString();
             }
-        }
 
-        public readonly List<IsA> IsASources = new List<IsA>();
-
-        public struct Precedes {
-            public String LeftProduct;
-            public String RightProduct;
-
-            public Precedes(string leftProduct, string rightProduct)
-                : this() {
-                LeftProduct = leftProduct;
-                RightProduct = rightProduct;
+            public string RightProduct {
+                get { return _rightProduct; }
+                set {
+                    if (_rightProduct == value) {
+                        return;
+                    }
+                    _rightProduct = value;
+                    PropertyChanged(this, "RightProduct");
+                }
             }
+
+            public event Action<Object, String> PropertyChanged = delegate { };
 
             public override string ToString() {
                 var resultBuilder = new StringBuilder();
-                resultBuilder.Append(LeftProduct);
-                resultBuilder.Append(" precedes ");
-                resultBuilder.AppendLine(RightProduct);
+                resultBuilder.Append(_leftProduct);
+                resultBuilder.Append(" is ");
+                resultBuilder.Append(_rightProduct.IndexOfAny("AEIOUaeiou".ToCharArray()) == 0 ? "an " : "a ");
+                resultBuilder.AppendLine(_rightProduct);
                 return resultBuilder.ToString();
             }
         }
 
-        public readonly List<Precedes> PrecedesSources = new List<Precedes>();
+        public readonly ObservableList<IsA> IsASources = new ObservableList<IsA>();
+
+        public class Precedes : IPropertyChangedNotifier {
+            private String _leftProduct;
+            private String _rightProduct;
+
+            public Precedes(string leftProduct, string rightProduct) {
+                _leftProduct = leftProduct;
+                _rightProduct = rightProduct;
+            }
+
+            public string LeftProduct {
+                get { return _leftProduct; }
+                set {
+                    if (_leftProduct == value) {
+                        return;
+                    }
+                    _leftProduct = value;
+                    PropertyChanged(this, "LeftProduct");
+                }
+            }
+
+            public string RightProduct {
+                get { return _rightProduct; }
+                set {
+                    if (_rightProduct == value) {
+                        return;
+                    }
+                    _rightProduct = value;
+                    PropertyChanged(this, "RightProduct");
+                }
+            }
+
+            public event Action<Object, String> PropertyChanged = delegate { };
+
+            public override string ToString() {
+                var resultBuilder = new StringBuilder();
+                resultBuilder.Append(_leftProduct);
+                resultBuilder.Append(" precedes ");
+                resultBuilder.AppendLine(_rightProduct);
+                return resultBuilder.ToString();
+            }
+        }
+
+        public readonly ObservableList<Precedes> PrecedesSources = new ObservableList<Precedes>();
+
+        public class CharacterSetList : ObservableListOfImmutable<int>, IPropertyChangedNotifier {
+            private String _name;
+
+            public event Action<Object, String> PropertyChanged;
+
+            public string Name {
+                get { return _name; }
+                set {
+                    if (_name != value) {
+                        _name = value;
+                        PropertyChanged(this, "Name");
+                    }
+                }
+            }
+        }
 
         public struct CharacterSetEntry {
             public List<string> Params;
@@ -160,13 +274,13 @@ namespace parlex {
                 } else {
                     if (currentExemplarSource == null) {
                         if (nextLineStartsExemplar) {
-                            currentExemplarSource = new ExemplarSource {Text = line};
+                            currentExemplarSource = new ExemplarSource(line);
                             result.ExemplarSources.Add(currentExemplarSource);
                             nextLineStartsExemplar = false;
                         } else if (line.Trim() == "exemplar:") {
                             nextLineStartsExemplar = true;
                         } else if (line.Trim() == "relation:") {
-                            currentExemplarSource = new ExemplarSource {Text = ""};
+                            currentExemplarSource = new ExemplarSource("");
                             result.ExemplarSources.Add(currentExemplarSource);
                         } else if (line.Contains(" is a ") || line.Contains(" is an ")) {
                             int isALength = " is a ".Length;
@@ -201,7 +315,7 @@ namespace parlex {
                         var productDeclarationParts = line.Split(':');
                         int startPosition = productDeclarationParts[0].IndexOf('|');
                         int length = productDeclarationParts[0].LastIndexOf('|') - startPosition + 1;
-                        currentExemplarSource.ProductDeclarations.Add(new ExemplarSource.ProductSpanSource(productDeclarationParts[1].Trim(), startPosition, length));
+                        currentExemplarSource.Add(new ProductSpanSource(productDeclarationParts[1].Trim(), startPosition, length));
                     }
                 }
             }

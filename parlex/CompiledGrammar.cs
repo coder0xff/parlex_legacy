@@ -75,7 +75,7 @@ namespace parlex {
             foreach (GrammarDocument.ExemplarSource exemplarSource in exemplarSources) {
                 var result = new Exemplar(exemplarSource.Text);
                 results.Add(result);
-                foreach (GrammarDocument.ExemplarSource.ProductSpanSource productDeclaration in exemplarSource.ProductDeclarations) {
+                foreach (GrammarDocument.ProductSpanSource productDeclaration in exemplarSource) {
                     bool isRepititious = productDeclaration.Name.EndsWith("*");
                     string properName = productDeclaration.Name.Replace("*", "");
                     if (!inOutProducts.ContainsKey(properName)) {
@@ -374,6 +374,18 @@ namespace parlex {
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             return UserProducts.GetEnumerator();
+        }
+
+        public static bool IsBuiltInProductName(string productName) {
+            if (productName.Length == "codePoint000000".Length && productName.StartsWith("codePoint")) {
+                Int32 codePoint;
+                if (Int32.TryParse(productName.Substring("codePoint".Length), out codePoint)) {
+                    if (Unicode.All.Contains(codePoint)) {
+                        return true;
+                    }
+                }
+            }
+            return new[] {"lower_letter", "upper_letter", "letter", "digit", "letter_or_digit", "white_space"}.Contains(productName);
         }
     }
 }
