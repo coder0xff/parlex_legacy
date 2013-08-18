@@ -3,22 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Common
 {
     //A more convenient way to have a Dictionary<K, HashSet<T>>
     public class AutoDictionary<TK, TV> : IEnumerable<KeyValuePair<TK, TV>> {
-        private readonly Dictionary<TK, TV> _storage = new Dictionary<TK, TV>();
+        private readonly ConcurrentDictionary<TK, TV> _storage = new ConcurrentDictionary<TK, TV>();
 
         public TV this[TK key] {
             get {
-                TV result;
-                if (_storage.TryGetValue(key, out result)) {
-                    return result;
-                }
-                result = _valueFactory();
-                _storage.Add(key, result);
-                return result;
+                return _storage.GetOrAdd(key, x => _valueFactory());
             }
             set {
                 _storage[key] = value;

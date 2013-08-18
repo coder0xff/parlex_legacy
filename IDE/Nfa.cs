@@ -13,12 +13,12 @@ namespace IDE {
     /// </summary>
     /// <typeparam name="TAlphabet">The domain of the transition function is S x TAlphabet, where S is the set of states.</typeparam>
     /// <typeparam name="TAssignment">The type of the value associated with a state.</typeparam>
-    partial class Nfa<TAlphabet, TAssignment> {
+    public partial class Nfa<TAlphabet, TAssignment> {
 
         /// <summary>
         /// A State of an NFA
         /// </summary>
-        internal class State {
+        public class State {
             public TAssignment value;
 
             public State(TAssignment value) {
@@ -101,27 +101,33 @@ namespace IDE {
             var resultAcceptStates = new ConcurrentBag<Nfa<TAlphabet, HashSet<State>>.State>();
 
             Func<Configuration, Nfa<TAlphabet, HashSet<State>>.State> adder = null;
-            adder = (Configuration configuration) =>
-            configurationToDState.GetOrAdd(configuration, configurationProxy => {
+            adder = (Configuration configuration) => configurationToDState.GetOrAdd(configuration, configurationProxy => {
                 var newState = new Nfa<TAlphabet, HashSet<State>>.State(new HashSet<State>(configurationProxy));
                 Task.Factory.StartNew(() => {
                     bool isAcceptState = configurationProxy.Any(x => AcceptStates.Contains(x));
-                    if (isAcceptState) { resultAcceptStates.Add(newState); }
+                    if (isAcceptState) {
+                        resultAcceptStates.Add(newState);
+                    }
                     IEnumerable<TAlphabet> awayInputs = configurationProxy.Select(x => TransitionFunction[x]).SelectMany(y => y.Keys).Distinct();
                     Parallel.ForEach(awayInputs, input => {
                         HashSet<State> nextConfiguration = TransitionFunctionEx(configurationProxy, input);
                         Nfa<TAlphabet, HashSet<State>>.State nextState = adder(new Configuration(nextConfiguration));
-                        result.TransitionFunction[newState][input] = new HashSet<Nfa<TAlphabet, HashSet<State>>.State> { nextState };
+                        result.TransitionFunction[newState][input] = new HashSet<Nfa<TAlphabet, HashSet<State>>.State> {nextState};
                     });
                 }, TaskCreationOptions.AttachedToParent);
                 return newState;
             });
 
             var startConfiguration = new Configuration(StartStates);
-            Task.Factory.StartNew(() => adder(startConfiguration)).Wait();
+            Task.Factory.StartNew(() => {
+                result.StartStates.Add(adder(startConfiguration));
+            }).Wait();
+            foreach (var value in configurationToDState.Values) {
+                result.States.Add(value);
+            }
             result.AcceptStates = new HashSet<Nfa<TAlphabet, HashSet<State>>.State>(resultAcceptStates);
             return result;
         }
-
+        
     }
 }
