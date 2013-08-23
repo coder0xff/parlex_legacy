@@ -49,5 +49,12 @@ namespace UnitTestProject1 {
             var sm = TestNfa.MakeStateMap();
             var rsm = nfa.ReduceStateMap(sm);
         }
+
+        [TestMethod]
+        public void TestComputePrimeGrids() {
+            var sm = TestNfa.MakeStateMap();
+            var rsm = nfa.ReduceStateMap(sm);
+            var primeGrids = nfa.ComputePrimeGrids(rsm);
+        }
     }
 }

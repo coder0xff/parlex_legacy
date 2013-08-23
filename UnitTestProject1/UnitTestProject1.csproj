@@ -63,9 +63,6 @@
       <Name>IDE</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Fakes Include="Fakes\IDE.fakes" />
-  </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

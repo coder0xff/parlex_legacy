@@ -41,6 +41,7 @@
   <ItemGroup>
     <Compile Include="AutoDictionary.cs" />
     <Compile Include="Bimap.cs" />
+    <Compile Include="ConcurrentSet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="JaggedAutoDictionary.cs" />
     <Compile Include="ReadOnlyHashSet.cs" />

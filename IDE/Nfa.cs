@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic.More;
+using System.Diagnostics;
 using Common;
 using System;
 using System.Collections.Concurrent;
@@ -168,18 +169,19 @@ namespace IDE {
             return result;
         }
 
-        public static ReducedStateMap ReduceStateMap(StateMap stateMap) {
-            //assign an order to the configurations
-            var orderedRows = Enumerable.Range(0, stateMap.Rows.Count);
-            var orderedColumns = Enumerable.Range(0, stateMap.Columns.Count);
-
-            //construct an elementary automata matrix (EAM) [1]
-            var elementaryAutomataMatrix = new bool[stateMap.Rows.Count, stateMap.Columns.Count];
+        public static bool[,] MakeElementaryAutomataMatrix(StateMap stateMap) {
+            var result = new bool[stateMap.Rows.Count, stateMap.Columns.Count];
             for (var rowIndex = 0; rowIndex < stateMap.Rows.Count; rowIndex++) {
                 for (var columnIndex = 0; columnIndex < stateMap.Columns.Count; columnIndex++) {
-                    elementaryAutomataMatrix[rowIndex, columnIndex] = stateMap.Map[rowIndex, columnIndex].Count > 0;
+                    result[rowIndex, columnIndex] = stateMap.Map[rowIndex, columnIndex].Count > 0;
                 }
             }
+            return result;
+        }
+
+        public static ReducedStateMap ReduceStateMap(StateMap stateMap) {
+            //construct an elementary automata matrix (EAM) [1]
+            var elementaryAutomataMatrix = MakeElementaryAutomataMatrix(stateMap);
 
             //determine which rows can be merged
             var rowsToMerge = new List<HashSet<int>>();
@@ -260,17 +262,136 @@ namespace IDE {
             return result;
         }
 
-        public class Grid {
-            public readonly HashSet<int> Rows = new HashSet<int>();
-            public readonly HashSet<int> Columns = new HashSet<int>();
+        public static bool[,] MakeReducedAutomataMatrix(ReducedStateMap reducedStateMap) {
+            var result = new bool[reducedStateMap.Rows.Count, reducedStateMap.Columns.Count];
+            for (var rowIndex = 0; rowIndex < reducedStateMap.Rows.Count; rowIndex++) {
+                for (var columnIndex = 0; columnIndex < reducedStateMap.Columns.Count; columnIndex++) {
+                    result[rowIndex, columnIndex] = reducedStateMap.Map[rowIndex, columnIndex].Count > 0;
+                }
+            }
+            return result;            
+        }
 
-            public Grid(HashSet<int> rows, HashSet<int> columns) {
-                Rows.UnionWith(rows);
-                Columns.UnionWith(columns);
+        public class Grid {
+            protected bool Equals(Grid other) {
+                return Columns.Equals(other.Columns) && Rows.Equals(other.Rows);
+            }
+
+            public override bool Equals(object obj) {
+                if (ReferenceEquals(null, obj)) {
+                    return false;
+                }
+                if (ReferenceEquals(this, obj)) {
+                    return true;
+                }
+                if (obj.GetType() != GetType()) {
+                    return false;
+                }
+                return Equals((Grid) obj);
+            }
+
+            public override int GetHashCode() {
+                unchecked {
+                    return (Columns.GetHashCode() * 397) ^ Rows.GetHashCode();
+                }
+            }
+
+            public static bool operator ==(Grid left, Grid right) {
+                return Equals(left, right);
+            }
+
+            public static bool operator !=(Grid left, Grid right) {
+                return !Equals(left, right);
+            }
+
+            public readonly ReadOnlyHashSet<int> Rows;
+            public readonly ReadOnlyHashSet<int> Columns;
+
+            public Grid(IEnumerable<int> rows, IEnumerable<int> columns) {
+                Rows = new ReadOnlyHashSet<int>(rows);
+                Columns = new ReadOnlyHashSet<int>(columns);
+            }
+
+            public bool IsProperSupersetOf(Grid other) {
+                return Rows.IsProperSupersetOf(other.Rows) && Columns.IsProperSupersetOf(other.Columns);
             }
         }
 
-        public class Cover : HashSet<Grid> {}
+        public static Grid[] ComputePrimeGrids(ReducedStateMap reducedStateMap) {
+            var reducedAutomataMatrix = MakeReducedAutomataMatrix(reducedStateMap);
+            var gridsToProcess = new ConcurrentQueue<Grid>();
+            var gridsThatHaveBeenQueued = new ConcurrentSet<Grid>();
+            int rowCount = reducedAutomataMatrix.GetUpperBound(0) + 1;
+            int columnCount = reducedAutomataMatrix.GetUpperBound(1) + 1;
+
+            Action<Grid> tryQueueGrid = grid => {
+                if (gridsThatHaveBeenQueued.TryAdd(grid)) {
+                    gridsToProcess.Enqueue(grid);
+                }
+            };
+
+            //make initial grids which contain only one element
+            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
+                    if (reducedAutomataMatrix[rowIndex, columnIndex]) {
+                        var grid = new Grid(new[] {rowIndex}, new[] {columnIndex});
+                        tryQueueGrid(grid);
+                    }
+                }
+            }
+
+            //then, grow them incrementally, adding them back into the queue
+            //or saving them if they cannot be grown
+            var results = new ConcurrentSet<Grid>();
+            while(gridsToProcess.Count > 0) {
+                Parallel.ForEach(Enumerable.Range(0, gridsToProcess.Count), index => {
+                    Grid grid;
+                    if (gridsToProcess.TryDequeue(out grid)) {
+                        Debug.Assert(grid != null);
+                        var isPrime = true;
+                        //try expanding to other rows
+                        {
+                            int comparisonRow = grid.Rows.First();
+                            foreach (var testRow in Enumerable.Range(0, rowCount).Except(grid.Rows)) {
+                                var canExpand = grid.Columns.All(columnIndex => reducedAutomataMatrix[testRow, columnIndex] == reducedAutomataMatrix[comparisonRow, columnIndex]);
+                                if (!canExpand) {
+                                    continue;
+                                }
+                                var newGrid = new Grid(grid.Rows.Concat(new[] {testRow}), grid.Columns);
+                                tryQueueGrid(newGrid);
+                                isPrime = false;
+                            }
+                        }
+                        //try expanding to other columns
+                        {
+                            int comparisonColumn = grid.Columns.First();
+                            foreach (var testColumn in Enumerable.Range(0, columnCount).Except(grid.Columns)) {
+                                var canExpand = grid.Rows.All(rowIndex => reducedAutomataMatrix[rowIndex, testColumn] == reducedAutomataMatrix[rowIndex, comparisonColumn]);
+                                if (!canExpand) {
+                                    continue;
+                                }
+                                var newGrid = new Grid(grid.Rows, grid.Columns.Concat(new[] {testColumn}));
+                                tryQueueGrid(newGrid);
+                                isPrime = false;
+                            }
+                        }
+                        //if it's prime, then save it to the results
+                        if (isPrime) {
+                            results.TryAdd(grid);
+                        }
+                    } else {
+                        throw new ApplicationException();
+                    }
+                });
+            }
+            return results.ToArray();
+        }
+
+        public class Cover : ReadOnlyHashSet<Grid> {
+            public Cover(IEnumerable<Grid> items)
+                : base(items) {
+            }
+        }
 
         /// <summary>
         /// Construct a new Nfa from the given RSM and cover using the intersection rule [1]

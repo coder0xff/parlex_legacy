@@ -9,7 +9,7 @@ namespace Common {
     /// An immutable set of States that can be quickly tested for set inequality.
     /// Note that returning 'true' from equals is still O(n) as it requires comparing every element.
     /// </summary>
-    public class ReadOnlyHashSet<T> : IEnumerable<T> {
+    public class ReadOnlyHashSet<T> : ISet<T> {
         public bool Equals(ReadOnlyHashSet<T> other) {
             return _hashCode == other._hashCode && _items.SetEquals(other._items);
         }
@@ -53,6 +53,78 @@ namespace Common {
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             return _items.GetEnumerator();
+        }
+
+        public void UnionWith(IEnumerable<T> other) {
+            throw new InvalidOperationException();
+        }
+
+        public void IntersectWith(IEnumerable<T> other) {
+            throw new InvalidOperationException();
+        }
+
+        public void ExceptWith(IEnumerable<T> other) {
+            throw new InvalidOperationException();
+        }
+
+        public void SymmetricExceptWith(IEnumerable<T> other) {
+            throw new InvalidOperationException();
+        }
+
+        public bool IsSubsetOf(IEnumerable<T> other) {
+            return _items.IsSubsetOf(other);
+        }
+
+        public bool IsSupersetOf(IEnumerable<T> other) {
+            return _items.IsSupersetOf(other);
+        }
+
+        public bool IsProperSupersetOf(IEnumerable<T> other) {
+            return _items.IsProperSupersetOf(other);
+        }
+
+        public bool IsProperSubsetOf(IEnumerable<T> other) {
+            return _items.IsProperSubsetOf(other);
+        }
+
+        public bool Overlaps(IEnumerable<T> other) {
+            return _items.Overlaps(other);
+        }
+
+        public bool SetEquals(IEnumerable<T> other) {
+            return _items.SetEquals(other);
+        }
+
+        public bool Add(T item) {
+            throw new InvalidOperationException();
+        }
+
+        void ICollection<T>.Add(T item) {
+            throw new InvalidOperationException();
+        }
+
+        public void Clear() {
+            throw new InvalidOperationException();
+        }
+
+        public bool Contains(T item) {
+            return _items.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex) {
+            _items.CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(T item) {
+            throw new InvalidOperationException();
+        }
+
+        public int Count {
+            get { return _items.Count; }
+        }
+
+        public bool IsReadOnly {
+            get { return true; }
         }
     }
 }
