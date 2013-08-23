@@ -317,8 +317,7 @@ namespace IDE {
             }
         }
 
-        public static Grid[] ComputePrimeGrids(ReducedStateMap reducedStateMap) {
-            var reducedAutomataMatrix = MakeReducedAutomataMatrix(reducedStateMap);
+        public static Grid[] ComputePrimeGrids(bool[,] reducedAutomataMatrix) {
             var gridsToProcess = new ConcurrentQueue<Grid>();
             var gridsThatHaveBeenQueued = new ConcurrentSet<Grid>();
             int rowCount = reducedAutomataMatrix.GetUpperBound(0) + 1;
@@ -390,6 +389,61 @@ namespace IDE {
         public class Cover : ReadOnlyHashSet<Grid> {
             public Cover(IEnumerable<Grid> items)
                 : base(items) {
+            }
+        }
+
+        static IEnumerable<Cover> EnumerateCovers(Grid[] primeGrids, int firstGridIndex, Dictionary<Grid, HashSet<int>> gridToFlattenedIndicesSet, HashSet<int> flattenedIndicesWithTrue, int gridCount) {
+            if (gridCount > primeGrids.Length - firstGridIndex) { //can't reach gridCount == 0 before the recursion runs out of grids
+                yield break;
+            }
+            for (int gridIndex = firstGridIndex; gridIndex < primeGrids.Length; gridIndex++) {
+                var primeGrid = primeGrids[gridIndex];
+                var primeGridAsEnumerable = new[] {primeGrid};
+                var remainingFlattenedIndicesWithTrueToSatisfy = new HashSet<int>(flattenedIndicesWithTrue);
+                remainingFlattenedIndicesWithTrueToSatisfy.ExceptWith(gridToFlattenedIndicesSet[primeGrid]);
+                if (gridCount == 1) {
+                    if (remainingFlattenedIndicesWithTrueToSatisfy.Count == 0) {
+                        yield return new Cover(primeGridAsEnumerable);
+                    }
+                } else {
+                    foreach (var enumerateCover in EnumerateCovers(primeGrids, gridIndex + 1, gridToFlattenedIndicesSet, remainingFlattenedIndicesWithTrueToSatisfy, gridCount - 1)) {
+                        yield return new Cover(enumerateCover.Concat(primeGridAsEnumerable));
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<Cover> EnumerateCovers(bool[,] reducedAutomataMatrix, Grid[] primeGrids) {
+            var rowCount = reducedAutomataMatrix.GetUpperBound(0) + 1;
+            var columnCount = reducedAutomataMatrix.GetUpperBound(1) + 1;
+
+            var flattenedIndicesWithTrue = new HashSet<int>();
+            for (var row = 0; row < rowCount; row++) {
+                for (var column = 0; column < columnCount; column++) {
+                    if (reducedAutomataMatrix[row, column]) {
+                        flattenedIndicesWithTrue.Add(column * rowCount + row);
+                    }
+                }
+            }
+
+            if (flattenedIndicesWithTrue.Count == 0) {
+                yield break;
+            }
+
+            var gridToFlattenedIndicesSet = primeGrids.ToDictionary(grid => grid, grid => {
+                var flattenedIndices = new HashSet<int>();
+                foreach (var row in grid.Rows) {
+                    foreach (var column in grid.Columns) {
+                        flattenedIndices.Add(column * rowCount + row);
+                    }
+                }
+                return flattenedIndices;
+            });
+
+            for (var gridCount = 1; gridCount <= primeGrids.Length; gridCount++) {
+                foreach (var enumerateCover in EnumerateCovers(primeGrids, 0, gridToFlattenedIndicesSet, flattenedIndicesWithTrue, gridCount)) {
+                    yield return enumerateCover;
+                }
             }
         }
 

@@ -54,7 +54,18 @@ namespace UnitTestProject1 {
         public void TestComputePrimeGrids() {
             var sm = TestNfa.MakeStateMap();
             var rsm = nfa.ReduceStateMap(sm);
-            var primeGrids = nfa.ComputePrimeGrids(rsm);
+            var ram = nfa.MakeReducedAutomataMatrix(rsm);
+            var primeGrids = nfa.ComputePrimeGrids(ram);
+        }
+
+        [TestMethod]
+        public void TestEmumerateCovers() {
+            var sm = TestNfa.MakeStateMap();
+            var rsm = nfa.ReduceStateMap(sm);
+            var ram = nfa.MakeReducedAutomataMatrix(rsm);
+            var primeGrids = nfa.ComputePrimeGrids(ram);
+            foreach (var enumerateCover in nfa.EnumerateCovers(ram, primeGrids)) {
+            }
         }
     }
 }
