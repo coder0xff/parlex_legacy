@@ -13,21 +13,21 @@ namespace Common
 
         public TV this[TK key] {
             get {
-                return _storage.GetOrAdd(key, x => _valueFactory());
+                return _storage.GetOrAdd(key, x => _valueFactory(x));
             }
             set {
                 _storage[key] = value;
             }
         }
 
-        private readonly Func<TV> _valueFactory;
+        private readonly Func<TK, TV> _valueFactory;
 
-        public AutoDictionary(Func<TV> valueFactory) {
+        public AutoDictionary(Func<TK, TV> valueFactory) {
             _valueFactory = valueFactory;
         }
 
         public AutoDictionary() {
-            _valueFactory = () => default(TV);
+            _valueFactory = (dontCare) => default(TV);
         }
 
         public IEnumerator<KeyValuePair<TK, TV>> GetEnumerator() {

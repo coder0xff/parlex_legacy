@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using IDE;
 
@@ -41,31 +42,52 @@ namespace UnitTestProject1 {
 
         [TestMethod]
         public void TestMakeStateMap() {
-            var sm = TestNfa.MakeStateMap();
+            Nfa<int, nfa.Configuration> determinized;
+            var sm = TestNfa.MakeStateMap(out determinized);
         }
 
         [TestMethod]
         public void TestReduceStateMap() {
-            var sm = TestNfa.MakeStateMap();
-            var rsm = nfa.ReduceStateMap(sm);
+            Nfa<int, nfa.Configuration> determinized;
+            var sm = TestNfa.MakeStateMap(out determinized);
+            Nfa<int, int> reducedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
         }
 
         [TestMethod]
         public void TestComputePrimeGrids() {
-            var sm = TestNfa.MakeStateMap();
-            var rsm = nfa.ReduceStateMap(sm);
+            Nfa<int, nfa.Configuration> determinized;
+            var sm = TestNfa.MakeStateMap(out determinized);
+            Nfa<int, int> reducedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
         }
 
         [TestMethod]
         public void TestEmumerateCovers() {
-            var sm = TestNfa.MakeStateMap();
-            var rsm = nfa.ReduceStateMap(sm);
+            Nfa<int, nfa.Configuration> determinized;
+            var sm = TestNfa.MakeStateMap(out determinized);
+            Nfa<int, int> reducedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
-            foreach (var enumerateCover in nfa.EnumerateCovers(ram, primeGrids)) {
+            var covers = nfa.EnumerateCovers(ram, primeGrids);
+            foreach (var enumerateCover in covers) {
             }
+        }
+
+        [TestMethod]
+        public void TestConstructNfa() {
+            Nfa<int, nfa.Configuration> determinized;
+            var sm = TestNfa.MakeStateMap(out determinized);
+            Nfa<int, int> reducedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
+            var ram = nfa.MakeReducedAutomataMatrix(rsm);
+            var primeGrids = nfa.ComputePrimeGrids(ram);
+            var covers = nfa.EnumerateCovers(ram, primeGrids);
+            var cover = covers.First();
+            var result = nfa.FromIntersectionRule(reducedSubsetConstructionDfa, cover);
         }
     }
 }

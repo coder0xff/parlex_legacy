@@ -28,7 +28,7 @@ namespace IDE {
         }
 
         public readonly HashSet<State> States = new HashSet<State>();
-        public readonly JaggedAutoDictionary<State, TAlphabet, HashSet<State>> TransitionFunction = new JaggedAutoDictionary<State, TAlphabet, HashSet<State>>(() => new HashSet<State>());
+        public readonly JaggedAutoDictionary<State, TAlphabet, HashSet<State>> TransitionFunction = new JaggedAutoDictionary<State, TAlphabet, HashSet<State>>((dontCare0, dontCare1) => new HashSet<State>());
         public readonly HashSet<State> StartStates = new HashSet<State>();
         public HashSet<State> AcceptStates = new HashSet<State>();
 
@@ -62,14 +62,14 @@ namespace IDE {
         /// Creates a new Nfa that has only one transition for each input symbol for each state - i.e. it is deterministic
         /// </summary>
         /// <returns>The new DFA</returns>
-        public Nfa<TAlphabet, HashSet<State>> Determinize() {
-            var configurationToDState = new ConcurrentDictionary<Configuration, Nfa<TAlphabet, HashSet<State>>.State>();
-            var result = new Nfa<TAlphabet, HashSet<State>>();
-            var resultAcceptStates = new ConcurrentBag<Nfa<TAlphabet, HashSet<State>>.State>();
+        public Nfa<TAlphabet, Configuration> Determinize() {
+            var configurationToDState = new ConcurrentDictionary<Configuration, Nfa<TAlphabet, Configuration>.State>();
+            var result = new Nfa<TAlphabet, Configuration>();
+            var resultAcceptStates = new ConcurrentBag<Nfa<TAlphabet, Configuration>.State>();
 
-            Func<Configuration, Nfa<TAlphabet, HashSet<State>>.State> adder = null;
+            Func<Configuration, Nfa<TAlphabet, Configuration>.State> adder = null;
             adder = configuration => configurationToDState.GetOrAdd(configuration, configurationProxy => {
-                var newState = new Nfa<TAlphabet, HashSet<State>>.State(new HashSet<State>(configurationProxy));
+                var newState = new Nfa<TAlphabet, Configuration>.State(configurationProxy);
                 Task.Factory.StartNew(() => {
                     bool isAcceptState = configurationProxy.Any(x => AcceptStates.Contains(x));
                     if (isAcceptState) {
@@ -79,8 +79,8 @@ namespace IDE {
                     Parallel.ForEach(awayInputs, input => {
                         HashSet<State> nextConfiguration = TransitionFunctionEx(configurationProxy, input);
                         if (nextConfiguration.Count > 0) {
-                            Nfa<TAlphabet, HashSet<State>>.State nextState = adder(new Configuration(nextConfiguration));
-                            result.TransitionFunction[newState][input] = new HashSet<Nfa<TAlphabet, HashSet<State>>.State> {nextState};
+                            Nfa<TAlphabet, Configuration>.State nextState = adder(new Configuration(nextConfiguration));
+                            result.TransitionFunction[newState][input].Add(nextState);
                         }
                     });
                 }, TaskCreationOptions.AttachedToParent);
@@ -92,7 +92,7 @@ namespace IDE {
                 result.StartStates.Add(adder(startConfiguration));
             }).Wait();
             result.States.UnionWith(configurationToDState.Values);
-            result.AcceptStates = new HashSet<Nfa<TAlphabet, HashSet<State>>.State>(resultAcceptStates);
+            result.AcceptStates = new HashSet<Nfa<TAlphabet, Configuration>.State>(resultAcceptStates);
             return result;
         }
 
@@ -138,8 +138,8 @@ namespace IDE {
         /// Creates a state map (SM) as described in [1]
         /// </summary>
         /// <returns></returns>
-        public StateMap MakeStateMap() {
-            var determinized = Determinize();
+        public StateMap MakeStateMap(out Nfa<TAlphabet, Configuration> determinized) {
+            determinized = Determinize();
             var determinizedDual = Dual().Determinize();
 
             var orderedRows = determinized.States.ToList();
@@ -179,7 +179,28 @@ namespace IDE {
             return result;
         }
 
-        public static ReducedStateMap ReduceStateMap(StateMap stateMap) {
+        public static Nfa<TAlphabet, int> GenerateEquivalenceClassReducedDfa(Nfa<TAlphabet, Configuration> subsetConstructionDfa, Dictionary<Configuration, int> equivalenceClassLookup) {
+            var result = new Nfa<TAlphabet, int>();
+            var intToResultState = new AutoDictionary<int, Nfa<TAlphabet, int>.State>(i => new Nfa<TAlphabet, int>.State(i));
+            result.StartStates.Add(intToResultState[equivalenceClassLookup[subsetConstructionDfa.StartStates.First().Value]]);
+            foreach (var acceptState in subsetConstructionDfa.AcceptStates) {
+                result.AcceptStates.Add(intToResultState[equivalenceClassLookup[acceptState.Value]]);
+            }
+            foreach (var keyValuePair in subsetConstructionDfa.TransitionFunction) {
+                Nfa<TAlphabet, int>.State fromState = intToResultState[equivalenceClassLookup[keyValuePair.Key.Value]];
+                foreach (var valuePair in keyValuePair.Value) {
+                    TAlphabet inputSymbol = valuePair.Key;
+                    foreach (var state in valuePair.Value) {
+                        Nfa<TAlphabet, int>.State toState = intToResultState[equivalenceClassLookup[state.Value]];
+                        result.TransitionFunction[fromState][inputSymbol].Add(toState);
+                    }
+                }
+            }
+            result.States.UnionWith(intToResultState.Values);
+            return result;
+        }
+
+        public static ReducedStateMap ReduceStateMap(StateMap stateMap, Nfa<TAlphabet, Configuration> subsetConstructionDfa, out Nfa<TAlphabet, int> reducedSubsetConstructionDfa) {
             //construct an elementary automata matrix (EAM) [1]
             var elementaryAutomataMatrix = MakeElementaryAutomataMatrix(stateMap);
 
@@ -227,11 +248,16 @@ namespace IDE {
                 }
             }
 
-            var result = new ReducedStateMap(rowsToMerge.Count, columnsToMerge.Count);
+            var result = new ReducedStateMap(rowsToMerge.Count, columnsToMerge.Count);            
+            var configurationToEquivalenceClassRowIndex = new Dictionary<Configuration, int>();
             for (var equivalenceClassRowIndex = 0; equivalenceClassRowIndex < rowsToMerge.Count; equivalenceClassRowIndex++) {
+                foreach (var row in rowsToMerge[equivalenceClassRowIndex]) {
+                    configurationToEquivalenceClassRowIndex[stateMap.Rows.Right[row]] = equivalenceClassRowIndex;
+                }
                 var rowName = new ReadOnlyHashSet<int>(rowsToMerge[equivalenceClassRowIndex]);
                 result.Rows.Left.Add(rowName, equivalenceClassRowIndex);
             }
+            reducedSubsetConstructionDfa = GenerateEquivalenceClassReducedDfa(subsetConstructionDfa, configurationToEquivalenceClassRowIndex);
 
             for (var equivalenceClassColumnIndex = 0; equivalenceClassColumnIndex < columnsToMerge.Count; equivalenceClassColumnIndex++) {
                 var columnName = new ReadOnlyHashSet<int>(columnsToMerge[equivalenceClassColumnIndex]);
@@ -249,16 +275,6 @@ namespace IDE {
                 }
             }
 
-            return result;
-        }
-
-        public JaggedAutoDictionary<int, int, bool> MakeReducedAutomataMatrix(JaggedAutoDictionary<int, int, HashSet<State>> reducedStateMap) {
-            var result = new JaggedAutoDictionary<int, int, bool>();
-            foreach (var keyValuePair in reducedStateMap) {
-                foreach (var valuePair in keyValuePair.Value) {
-                    result[keyValuePair.Key][valuePair.Key] = valuePair.Value.Count > 0;
-                }
-            }
             return result;
         }
 
@@ -447,18 +463,46 @@ namespace IDE {
             }
         }
 
-        /// <summary>
-        /// Construct a new Nfa from the given RSM and cover using the intersection rule [1]
-        /// </summary>
-        /// <param name="reducedStateMap"></param>
-        /// <param name="cover"></param>
-        /// <returns></returns>
-        static Nfa<TAlphabet, int> Construct(JaggedAutoDictionary<int, int, HashSet<State>> reducedStateMap, Cover cover) {
-            throw new NotImplementedException();
-            var result = new Nfa<TAlphabet, int>();
+        static AutoDictionary<int, HashSet<Grid>> MakeSubsetAssignmentFunction(Cover cover) {
+            var result = new AutoDictionary<int, HashSet<Grid>>(dontCare0 => new HashSet<Grid>());
             foreach (var grid in cover) {
-                
+                foreach (var row in grid.Rows) {
+                    result[row].Add(grid);
+                }
             }
+            return result;
+        }
+
+        public static Nfa<TAlphabet, int> FromIntersectionRule(Nfa<TAlphabet, int> reducedDfa, Cover cover) {
+            var orderedReducedDfaStates = reducedDfa.States.OrderBy(x => x.Value).ToList();
+            var subsetAssignmentFunction = MakeSubsetAssignmentFunction(cover);
+            var counter = 0;
+            var orderedGrids = cover.ToBimap(x => counter++, x => x);
+            var result = new Nfa<TAlphabet, int>();
+            var intToResultState = new AutoDictionary<int, Nfa<TAlphabet, int>.State>(i => new Nfa<TAlphabet, int>.State(i));
+            for (var resultStateIndex = 0; resultStateIndex < orderedGrids.Count; resultStateIndex++) {
+                var grid = orderedGrids.Left[resultStateIndex];
+                var resultState = intToResultState[resultStateIndex];
+                var resultTransitionPartialLambda = result.TransitionFunction[resultState];
+                var rows = grid.Rows.Select(rowIndex => orderedReducedDfaStates[rowIndex]);
+                var symbols = ReadOnlyHashSet<TAlphabet>.MultiIntersect(rows.Select(row => reducedDfa.TransitionFunction[row].Keys));
+                foreach (var symbol in symbols) {
+                    var gridSets = rows.Select(row => subsetAssignmentFunction[reducedDfa.TransitionFunction[row][symbol].First().Value]);
+                    var nextGrids = ReadOnlyHashSet<Grid>.MultiIntersect(gridSets);
+                    var nextIndices = nextGrids.Select(nextGrid => orderedGrids.Right[nextGrid]);
+                    var nextStates = nextIndices.Select(gridIndex => intToResultState[gridIndex]);
+                    resultTransitionPartialLambda[symbol].UnionWith(nextStates);
+                }
+                if (grid.Columns.Contains(0)) {
+                    result.AcceptStates.Add(resultState);
+                }
+                if (grid.Rows.Contains(0)) {
+                    result.StartStates.Add(resultState);
+                }
+            }
+
+            result.States.UnionWith(intToResultState.Values);
+            return result;
         }
 
         bool CoverIsLegitimate(JaggedAutoDictionary<int, int, HashSet<State>> reducedStateMap, Cover cover) {

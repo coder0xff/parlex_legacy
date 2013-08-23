@@ -126,5 +126,17 @@ namespace Common {
         public bool IsReadOnly {
             get { return true; }
         }
+
+        public static ReadOnlyHashSet<T> MultiIntersect(IEnumerable<IEnumerable<T>> sets) {
+            var firstSet = sets.FirstOrDefault();
+            var temp = new HashSet<T>();
+            if (firstSet != null) {
+                temp.UnionWith(firstSet);
+                foreach (var source in sets.Skip(1)) {
+                    temp.IntersectWith(source);
+                }
+            }
+            return new ReadOnlyHashSet<T>(temp);
+        }
     }
 }
