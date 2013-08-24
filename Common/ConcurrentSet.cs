@@ -1,65 +1,65 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace System.Collections.Concurrent {
-    public class ConcurrentSet<T> : ICollection<T>, IEnumerable<T>, IEnumerable {
-        ConcurrentDictionary<T, byte> storage;
+namespace System.Collections.Concurrent.More {
+    public class ConcurrentSet<T> : ICollection<T> {
+        private readonly ConcurrentDictionary<T, byte> _storage;
 
         public ConcurrentSet() {
-            storage = new ConcurrentDictionary<T, byte>();
+            _storage = new ConcurrentDictionary<T, byte>();
         }
 
         public ConcurrentSet(IEnumerable<T> collection) {
-            storage = new ConcurrentDictionary<T, byte>(collection.Select(_ => new KeyValuePair<T, byte>(_, 0)));
+            _storage = new ConcurrentDictionary<T, byte>(collection.Select(_ => new KeyValuePair<T, byte>(_, 0)));
         }
 
         public ConcurrentSet(IEqualityComparer<T> comparer) {
-            storage = new ConcurrentDictionary<T, byte>(comparer);
+            _storage = new ConcurrentDictionary<T, byte>(comparer);
         }
 
         public ConcurrentSet(IEnumerable<T> collection, IEqualityComparer<T> comparer) {
-            storage = new ConcurrentDictionary<T, byte>(collection.Select(_ => new KeyValuePair<T, byte>(_, 0)), comparer);
+            _storage = new ConcurrentDictionary<T, byte>(collection.Select(_ => new KeyValuePair<T, byte>(_, 0)), comparer);
         }
 
         public ConcurrentSet(int concurrencyLevel, int capacity) {
-            storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity);
+            _storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity);
         }
 
         public ConcurrentSet(int concurrencyLevel, IEnumerable<T> collection, IEqualityComparer<T> comparer) {
-            storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, collection.Select(_ => new KeyValuePair<T, byte>(_, 0)), comparer);
+            _storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, collection.Select(_ => new KeyValuePair<T, byte>(_, 0)), comparer);
         }
 
         public ConcurrentSet(int concurrencyLevel, int capacity, IEqualityComparer<T> comparer) {
-            storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity, comparer);
+            _storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity, comparer);
         }
 
-        public int Count { get { return storage.Count; } }
+        public int Count { get { return _storage.Count; } }
 
-        public bool IsEmptry { get { return storage.IsEmpty; } }
+        public bool IsEmptry { get { return _storage.IsEmpty; } }
 
         public void Clear() {
-            storage.Clear();
+            _storage.Clear();
         }
 
         public bool Contains(T item) {
-            return storage.ContainsKey(item);
+            return _storage.ContainsKey(item);
         }
 
         public bool TryAdd(T item) {
-            return storage.TryAdd(item, 0);
+            return _storage.TryAdd(item, 0);
         }
 
         public bool TryRemove(T item) {
             byte dontCare;
-            return storage.TryRemove(item, out dontCare);
+            return _storage.TryRemove(item, out dontCare);
         }
 
         void ICollection<T>.Add(T item) {
-            ((ICollection<KeyValuePair<T, byte>>)storage).Add(new KeyValuePair<T, byte>(item, 0));
+            ((ICollection<KeyValuePair<T, byte>>)_storage).Add(new KeyValuePair<T, byte>(item, 0));
         }
 
         void ICollection<T>.CopyTo(T[] array, int arrayIndex) {
-            foreach (KeyValuePair<T, byte> pair in storage)
+            foreach (KeyValuePair<T, byte> pair in _storage)
                 array[arrayIndex++] = pair.Key;
         }
 
@@ -72,11 +72,11 @@ namespace System.Collections.Concurrent {
         }
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() {
-            return storage.Keys.GetEnumerator();
+            return _storage.Keys.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator() {
-            return storage.Keys.GetEnumerator();
+            return _storage.Keys.GetEnumerator();
         }
     }
 }

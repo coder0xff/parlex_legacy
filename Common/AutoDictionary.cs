@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Collections.Concurrent;
+﻿using System.Collections.Generic;
 
-namespace Common
+namespace System.Collections.Concurrent.More
 {
     //A more convenient way to have a Dictionary<K, HashSet<T>>
     public class AutoDictionary<TK, TV> : IEnumerable<KeyValuePair<TK, TV>> {
@@ -27,7 +22,7 @@ namespace Common
         }
 
         public AutoDictionary() {
-            _valueFactory = (dontCare) => default(TV);
+            _valueFactory = dontCare => default(TV);
         }
 
         public IEnumerator<KeyValuePair<TK, TV>> GetEnumerator() {

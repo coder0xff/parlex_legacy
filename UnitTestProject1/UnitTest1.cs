@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic.More;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using IDE;
@@ -50,16 +51,16 @@ namespace UnitTestProject1 {
         public void TestReduceStateMap() {
             Nfa<int, nfa.Configuration> determinized;
             var sm = TestNfa.MakeStateMap(out determinized);
-            Nfa<int, int> reducedSubsetConstructionDfa;
-            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
+            Nfa<int, int> minimizedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
         }
 
         [TestMethod]
         public void TestComputePrimeGrids() {
             Nfa<int, nfa.Configuration> determinized;
             var sm = TestNfa.MakeStateMap(out determinized);
-            Nfa<int, int> reducedSubsetConstructionDfa;
-            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
+            Nfa<int, int> minimizedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
         }
@@ -68,8 +69,8 @@ namespace UnitTestProject1 {
         public void TestEmumerateCovers() {
             Nfa<int, nfa.Configuration> determinized;
             var sm = TestNfa.MakeStateMap(out determinized);
-            Nfa<int, int> reducedSubsetConstructionDfa;
-            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
+            Nfa<int, int> minimizedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
             var covers = nfa.EnumerateCovers(ram, primeGrids);
@@ -78,16 +79,37 @@ namespace UnitTestProject1 {
         }
 
         [TestMethod]
-        public void TestConstructNfa() {
+        public void TestFromIntersectionRule() {
             Nfa<int, nfa.Configuration> determinized;
             var sm = TestNfa.MakeStateMap(out determinized);
-            Nfa<int, int> reducedSubsetConstructionDfa;
-            var rsm = nfa.ReduceStateMap(sm, determinized, out reducedSubsetConstructionDfa);
+            Nfa<int, int> minimizedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
+            var ram = nfa.MakeReducedAutomataMatrix(rsm);
+            var primeGrids = nfa.ComputePrimeGrids(ram);
+            var covers = nfa.EnumerateCovers(ram, primeGrids);
+            var cover = covers.First();            
+            Bimap<int, Nfa<int, int>.Grid> orderedGrids;
+            var result = nfa.FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
+        }
+
+        [TestMethod]
+        public void TestSubsetAssignmentIsLegitimate() {
+            Nfa<int, nfa.Configuration> determinized;
+            var sm = TestNfa.MakeStateMap(out determinized);
+            Nfa<int, int> minimizedSubsetConstructionDfa;
+            var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
             var covers = nfa.EnumerateCovers(ram, primeGrids);
             var cover = covers.First();
-            var result = nfa.FromIntersectionRule(reducedSubsetConstructionDfa, cover);
+            Bimap<int, nfa.Grid> orderedGrids;
+            var minNfa = nfa.FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
+            var result = nfa.SubsetAssignmentIsLegitimate(minNfa, minimizedSubsetConstructionDfa, ram, orderedGrids);
+        }
+
+        [TestMethod]
+        public void TestMinimize() {
+            var result = TestNfa.Minimize();
         }
     }
 }

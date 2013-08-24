@@ -129,16 +129,16 @@ namespace System.Collections.Generic.More {
 
 namespace System.Linq.More {
     public static class BimapIEnumerableExtensions {
-        public static System.Collections.Generic.More.Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
-            var result = new System.Collections.Generic.More.Bimap<TLeft, TRight>();
+        public static Collections.Generic.More.Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
+            var result = new Collections.Generic.More.Bimap<TLeft, TRight>();
             foreach (var variable in enumerable) {
                 result.Left.Add(leftFunc(variable), rightFunc(variable));
             }
             return result;
         }
 
-        public static System.Collections.Generic.More.Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
-            var result = new System.Collections.Generic.More.Bimap<TLeft, TRight>();
+        public static Collections.Generic.More.Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
+            var result = new Collections.Generic.More.Bimap<TLeft, TRight>();
             int indexCounter = 0;
             foreach (var variable in enumerable) {
                 result.Left.Add(leftFunc(variable, indexCounter), rightFunc(variable, indexCounter));

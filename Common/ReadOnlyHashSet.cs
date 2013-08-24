@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 
-namespace Common {
+namespace System.Collections.Generic.More {
     /// <summary>
     /// An immutable set of States that can be quickly tested for set inequality.
     /// Note that returning 'true' from equals is still O(n) as it requires comparing every element.
@@ -26,11 +22,11 @@ namespace Common {
         }
 
         public static bool operator ==(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
-            return left.Equals(right);
+            return left != null && left.Equals(right);
         }
 
         public static bool operator !=(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
-            return !left.Equals(right);
+            return left != null && !left.Equals(right);
         }
 
         private readonly HashSet<T> _items;
@@ -51,7 +47,7 @@ namespace Common {
             return _items.GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+        IEnumerator IEnumerable.GetEnumerator() {
             return _items.GetEnumerator();
         }
 

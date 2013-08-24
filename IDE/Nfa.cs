@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic.More;
-using System.Diagnostics;
+﻿using System.Collections.Concurrent.More;
 using Common;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Generic.More;
 using System.Linq;
 using System.Linq.More;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace IDE {
@@ -14,13 +15,13 @@ namespace IDE {
     /// </summary>
     /// <typeparam name="TAlphabet">The domain of the transition function is S x TAlphabet, where S is the set of states.</typeparam>
     /// <typeparam name="TAssignment">The type of the value associated with a state.</typeparam>
-    public partial class Nfa<TAlphabet, TAssignment> {
+    public class Nfa<TAlphabet, TAssignment> {
 
         /// <summary>
         /// A State of an NFA
         /// </summary>
         public class State {
-            public TAssignment Value;
+            public readonly TAssignment Value;
 
             public State(TAssignment value) {
                 Value = value;
@@ -200,7 +201,7 @@ namespace IDE {
             return result;
         }
 
-        public static ReducedStateMap ReduceStateMap(StateMap stateMap, Nfa<TAlphabet, Configuration> subsetConstructionDfa, out Nfa<TAlphabet, int> reducedSubsetConstructionDfa) {
+        public static ReducedStateMap ReduceStateMap(StateMap stateMap, Nfa<TAlphabet, Configuration> subsetConstructionDfa, out Nfa<TAlphabet, int> minimizedSubsetConstructionDfa) {
             //construct an elementary automata matrix (EAM) [1]
             var elementaryAutomataMatrix = MakeElementaryAutomataMatrix(stateMap);
 
@@ -257,7 +258,7 @@ namespace IDE {
                 var rowName = new ReadOnlyHashSet<int>(rowsToMerge[equivalenceClassRowIndex]);
                 result.Rows.Left.Add(rowName, equivalenceClassRowIndex);
             }
-            reducedSubsetConstructionDfa = GenerateEquivalenceClassReducedDfa(subsetConstructionDfa, configurationToEquivalenceClassRowIndex);
+            minimizedSubsetConstructionDfa = GenerateEquivalenceClassReducedDfa(subsetConstructionDfa, configurationToEquivalenceClassRowIndex);
 
             for (var equivalenceClassColumnIndex = 0; equivalenceClassColumnIndex < columnsToMerge.Count; equivalenceClassColumnIndex++) {
                 var columnName = new ReadOnlyHashSet<int>(columnsToMerge[equivalenceClassColumnIndex]);
@@ -327,30 +328,19 @@ namespace IDE {
                 Rows = new ReadOnlyHashSet<int>(rows);
                 Columns = new ReadOnlyHashSet<int>(columns);
             }
-
-            public bool IsProperSupersetOf(Grid other) {
-                return Rows.IsProperSupersetOf(other.Rows) && Columns.IsProperSupersetOf(other.Columns);
-            }
         }
 
         public static Grid[] ComputePrimeGrids(bool[,] reducedAutomataMatrix) {
-            var gridsToProcess = new ConcurrentQueue<Grid>();
-            var gridsThatHaveBeenQueued = new ConcurrentSet<Grid>();
+            var gridsToProcess = new DistinctRecursiveAlgorithmProcessor<Grid>();
             int rowCount = reducedAutomataMatrix.GetUpperBound(0) + 1;
             int columnCount = reducedAutomataMatrix.GetUpperBound(1) + 1;
-
-            Action<Grid> tryQueueGrid = grid => {
-                if (gridsThatHaveBeenQueued.TryAdd(grid)) {
-                    gridsToProcess.Enqueue(grid);
-                }
-            };
 
             //make initial grids which contain only one element
             for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
                 for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
                     if (reducedAutomataMatrix[rowIndex, columnIndex]) {
                         var grid = new Grid(new[] {rowIndex}, new[] {columnIndex});
-                        tryQueueGrid(grid);
+                        gridsToProcess.Add(grid);
                     }
                 }
             }
@@ -358,47 +348,39 @@ namespace IDE {
             //then, grow them incrementally, adding them back into the queue
             //or saving them if they cannot be grown
             var results = new ConcurrentSet<Grid>();
-            while(gridsToProcess.Count > 0) {
-                Parallel.ForEach(Enumerable.Range(0, gridsToProcess.Count), index => {
-                    Grid grid;
-                    if (gridsToProcess.TryDequeue(out grid)) {
-                        Debug.Assert(grid != null);
-                        var isPrime = true;
-                        //try expanding to other rows
-                        {
-                            int comparisonRow = grid.Rows.First();
-                            foreach (var testRow in Enumerable.Range(0, rowCount).Except(grid.Rows)) {
-                                var canExpand = grid.Columns.All(columnIndex => reducedAutomataMatrix[testRow, columnIndex] == reducedAutomataMatrix[comparisonRow, columnIndex]);
-                                if (!canExpand) {
-                                    continue;
-                                }
-                                var newGrid = new Grid(grid.Rows.Concat(new[] {testRow}), grid.Columns);
-                                tryQueueGrid(newGrid);
-                                isPrime = false;
-                            }
+            gridsToProcess.Run(grid => {
+                var isPrime = true;
+                //try expanding to other rows
+                {
+                    int comparisonRow = grid.Rows.First();
+                    foreach (var testRow in Enumerable.Range(0, rowCount).Except(grid.Rows)) {
+                        var canExpand = grid.Columns.All(columnIndex => reducedAutomataMatrix[testRow, columnIndex] == reducedAutomataMatrix[comparisonRow, columnIndex]);
+                        if (!canExpand) {
+                            continue;
                         }
-                        //try expanding to other columns
-                        {
-                            int comparisonColumn = grid.Columns.First();
-                            foreach (var testColumn in Enumerable.Range(0, columnCount).Except(grid.Columns)) {
-                                var canExpand = grid.Rows.All(rowIndex => reducedAutomataMatrix[rowIndex, testColumn] == reducedAutomataMatrix[rowIndex, comparisonColumn]);
-                                if (!canExpand) {
-                                    continue;
-                                }
-                                var newGrid = new Grid(grid.Rows, grid.Columns.Concat(new[] {testColumn}));
-                                tryQueueGrid(newGrid);
-                                isPrime = false;
-                            }
-                        }
-                        //if it's prime, then save it to the results
-                        if (isPrime) {
-                            results.TryAdd(grid);
-                        }
-                    } else {
-                        throw new ApplicationException();
+                        var newGrid = new Grid(grid.Rows.Concat(new[] {testRow}), grid.Columns);
+                        gridsToProcess.Add(newGrid);
+                        isPrime = false;
                     }
-                });
-            }
+                }
+                //try expanding to other columns
+                {
+                    int comparisonColumn = grid.Columns.First();
+                    foreach (var testColumn in Enumerable.Range(0, columnCount).Except(grid.Columns)) {
+                        var canExpand = grid.Rows.All(rowIndex => reducedAutomataMatrix[rowIndex, testColumn] == reducedAutomataMatrix[rowIndex, comparisonColumn]);
+                        if (!canExpand) {
+                            continue;
+                        }
+                        var newGrid = new Grid(grid.Rows, grid.Columns.Concat(new[] {testColumn}));
+                        gridsToProcess.Add(newGrid);
+                        isPrime = false;
+                    }
+                }
+                //if it's prime, then save it to the results
+                if (isPrime) {
+                    results.TryAdd(grid);
+                }
+            });
             return results.ToArray();
         }
 
@@ -473,23 +455,24 @@ namespace IDE {
             return result;
         }
 
-        public static Nfa<TAlphabet, int> FromIntersectionRule(Nfa<TAlphabet, int> reducedDfa, Cover cover) {
+        public static Nfa<TAlphabet, int> FromIntersectionRule(Nfa<TAlphabet, int> reducedDfa, Cover cover, out Bimap<int, Grid> orderedGrids) {
             var orderedReducedDfaStates = reducedDfa.States.OrderBy(x => x.Value).ToList();
             var subsetAssignmentFunction = MakeSubsetAssignmentFunction(cover);
             var counter = 0;
-            var orderedGrids = cover.ToBimap(x => counter++, x => x);
+            var orderedGridsTemp = cover.ToBimap(x => counter++, x => x);
             var result = new Nfa<TAlphabet, int>();
             var intToResultState = new AutoDictionary<int, Nfa<TAlphabet, int>.State>(i => new Nfa<TAlphabet, int>.State(i));
-            for (var resultStateIndex = 0; resultStateIndex < orderedGrids.Count; resultStateIndex++) {
-                var grid = orderedGrids.Left[resultStateIndex];
+            for (var resultStateIndex = 0; resultStateIndex < orderedGridsTemp.Count; resultStateIndex++) {
+                var grid = orderedGridsTemp.Left[resultStateIndex];
                 var resultState = intToResultState[resultStateIndex];
                 var resultTransitionPartialLambda = result.TransitionFunction[resultState];
                 var rows = grid.Rows.Select(rowIndex => orderedReducedDfaStates[rowIndex]);
                 var symbols = ReadOnlyHashSet<TAlphabet>.MultiIntersect(rows.Select(row => reducedDfa.TransitionFunction[row].Keys));
                 foreach (var symbol in symbols) {
-                    var gridSets = rows.Select(row => subsetAssignmentFunction[reducedDfa.TransitionFunction[row][symbol].First().Value]);
+                    var symbol1 = symbol;
+                    var gridSets = rows.Select(row => subsetAssignmentFunction[reducedDfa.TransitionFunction[row][symbol1].First().Value]);
                     var nextGrids = ReadOnlyHashSet<Grid>.MultiIntersect(gridSets);
-                    var nextIndices = nextGrids.Select(nextGrid => orderedGrids.Right[nextGrid]);
+                    var nextIndices = nextGrids.Select(nextGrid => orderedGridsTemp.Right[nextGrid]);
                     var nextStates = nextIndices.Select(gridIndex => intToResultState[gridIndex]);
                     resultTransitionPartialLambda[symbol].UnionWith(nextStates);
                 }
@@ -502,11 +485,71 @@ namespace IDE {
             }
 
             result.States.UnionWith(intToResultState.Values);
+            orderedGrids = orderedGridsTemp;
             return result;
         }
 
-        bool CoverIsLegitimate(JaggedAutoDictionary<int, int, HashSet<State>> reducedStateMap, Cover cover) {
-            throw new NotImplementedException();
+        public static bool GridSetSpansRow(Bimap<int, Grid> orderedGrids, IEnumerable<int> gridIndices, bool[,] reducedAutomataMatrix, int rowIndex) {
+            var neededColumns = new HashSet<int>(Enumerable.Range(0, reducedAutomataMatrix.GetUpperBound(0) + 1).Where(columnIndex => reducedAutomataMatrix[rowIndex, columnIndex]));
+            foreach (var gridIndex in gridIndices) {
+                var grid = orderedGrids.Left[gridIndex];
+                if (grid.Rows.Contains(rowIndex)) {
+                    neededColumns.ExceptWith(grid.Columns);
+                    if (neededColumns.Count == 0) {
+                        break;
+                    }
+                }
+            }
+            return neededColumns.Count == 0;
+        }
+
+        public static bool SubsetAssignmentIsLegitimate(Nfa<TAlphabet, int> intersectionRuleNfa, Nfa<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
+            var intersectionRuleDfa = intersectionRuleNfa.Determinize();
+            var intersectionRuleDfaOrderedStates = intersectionRuleDfa.States.ToList();
+            intersectionRuleDfaOrderedStates.Remove(intersectionRuleDfa.StartStates.First());
+            intersectionRuleDfaOrderedStates.Insert(0, intersectionRuleDfa.StartStates.First());
+
+            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<Nfa<TAlphabet, int>.State /*minimized*/, Nfa<TAlphabet, Nfa<TAlphabet, int>.Configuration>.State /*intersection rule*/>>();
+            processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, Nfa<TAlphabet, int>.Configuration>.State>(minimizedDfa.StartStates.First(), intersectionRuleDfa.StartStates.First()));
+            var isLegitimate = true;
+            processor.Run(pair => {
+                if (Volatile.Read(ref isLegitimate)) {
+                    var minimizedDfaState = pair.Key;
+                    var intersectionRuleDfaState = pair.Value;
+                    var inputSymbols = minimizedDfa.TransitionFunction[minimizedDfaState].Keys;
+                    foreach (var inputSymbol in inputSymbols) {
+                        var nextIntersectionRuleDfaState = intersectionRuleDfa.TransitionFunction[intersectionRuleDfaState][inputSymbol].First();
+                        var nextMinimizedDfaState = minimizedDfa.TransitionFunction[minimizedDfaState][inputSymbol].First();
+                        if (!intersectionRuleDfa.AcceptStates.Contains(nextIntersectionRuleDfaState) && minimizedDfa.AcceptStates.Contains(nextMinimizedDfaState)) {
+                            Volatile.Write(ref isLegitimate, false);
+                        } else if (!GridSetSpansRow(orderedGrids, nextIntersectionRuleDfaState.Value.Select(s => s.Value), reducedAutomataMatrix, nextMinimizedDfaState.Value)) {
+                            Volatile.Write(ref isLegitimate, false);
+                        } else {
+                            processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, Nfa<TAlphabet, int>.Configuration>.State>(nextMinimizedDfaState, nextIntersectionRuleDfaState));
+                        }
+                    }
+                }
+            });
+            return isLegitimate;
+        }
+
+        public Nfa<TAlphabet, int> Minimize() {
+            Nfa<TAlphabet, Configuration> determinized;
+            var sm = MakeStateMap(out determinized);
+            Nfa<TAlphabet, int> minimizedSubsetConstructionDfa;
+            var rsm = ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
+            var ram = MakeReducedAutomataMatrix(rsm);
+            var primeGrids = ComputePrimeGrids(ram);
+            var covers = EnumerateCovers(ram, primeGrids);
+            foreach (var cover in covers) {
+                Bimap<int, Grid> orderedGrids;
+                var minNfa = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
+                var isLegitimate = SubsetAssignmentIsLegitimate(minNfa, minimizedSubsetConstructionDfa, ram, orderedGrids);
+                if (isLegitimate) {
+                    return minNfa;
+                }
+            }
+            return null; //this code is unreachable and null is not a valid return value
         }
     }
 }
