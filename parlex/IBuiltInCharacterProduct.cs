@@ -1,7 +1,8 @@
 ﻿using System;
 
 namespace parlex {
-    interface IBuiltInCharacterProduct {
+    public interface IBuiltInCharacterProduct {
         bool Match(Int32 codePoint);
+        Int32 GetExample();
     }
 }

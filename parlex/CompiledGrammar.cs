@@ -303,8 +303,8 @@ namespace parlex {
             CreateRelations(entries);
         }
 
-        internal class NfaSequence {
-            internal class ProductReference {
+        public class NfaSequence {
+            public class ProductReference {
                 internal readonly Product Product;
                 internal readonly bool IsRepetitious;
                 internal readonly int ExitSequenceCounter;
@@ -320,7 +320,7 @@ namespace parlex {
                 }
             }
 
-            internal readonly List<ProductReference>[] RelationBranches;
+            public readonly List<ProductReference>[] RelationBranches;
             internal readonly Product OwnerProduct;
             internal readonly int SpanStart;
             internal readonly bool IsRepitious;

@@ -33,6 +33,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>IDE.App</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -79,6 +82,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Nfa.cs" />
+    <Compile Include="NfaSequenceExtensions.cs" />
+    <Compile Include="ProductExtensions.cs" />
     <Compile Include="ProductSpanEditor.xaml.cs">
       <DependentUpon>ProductSpanEditor.xaml</DependentUpon>
     </Compile>

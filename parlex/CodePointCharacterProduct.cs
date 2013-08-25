@@ -12,6 +12,10 @@ namespace parlex {
             return codePoint == CodePoint;
         }
 
+        public Int32 GetExample() {
+            return CodePoint;
+        }
+
         public override string ToString() {
             return Title + " '" + char.ConvertFromUtf32(CodePoint) + "'";
         }

@@ -533,6 +533,10 @@ namespace IDE {
             return isLegitimate;
         }
 
+        /// <summary>
+        /// Minimize this Nfa using the Kameda-Weiner algorithm [1]
+        /// </summary>
+        /// <returns>A minimal-state Nfa accepting the same language</returns>
         public Nfa<TAlphabet, int> Minimize() {
             Nfa<TAlphabet, Configuration> determinized;
             var sm = MakeStateMap(out determinized);

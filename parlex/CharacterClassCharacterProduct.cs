@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace parlex {
     class CharacterClassCharacterProduct : Product, IBuiltInCharacterProduct {
@@ -11,6 +12,10 @@ namespace parlex {
 
         public bool Match(int codePoint) {
             return CodePoints.Contains(codePoint);
+        }
+
+        public Int32 GetExample() {
+            return CodePoints.First();
         }
     }
 }
