@@ -12,7 +12,7 @@ namespace parlex {
 
         private IEnumerable<Product> Products { get { return UserProducts.Values; } }
 
-        private CompiledGrammar(GrammarDocument document) {
+        public CompiledGrammar(GrammarDocument document) {
             InitializeBuiltInProducts();
             CreateCustomCharacterSets(document);
             UserProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
@@ -162,8 +162,8 @@ namespace parlex {
                 }
                 foreach (NfaSequence node in currentlyEnteredSequences) {
                     foreach (NfaSequence sequence in sequencesByStartIndex[startIndex]) {
-                        int lastCharacterIndexOfSequence = sequence.SpanStart + sequence.RelationBranches.Length - 2;
-                        int lastCharacterIndexOfNode = node.SpanStart + node.RelationBranches.Length - 2;
+                        int lastCharacterIndexOfSequence = sequence.SpanStart + sequence.RelationBranches.Length - 1;
+                        int lastCharacterIndexOfNode = node.SpanStart + node.RelationBranches.Length - 1;
                         bool sequenceIsNestedInNode = (startIndex > node.SpanStart &&
                                                        lastCharacterIndexOfSequence <= lastCharacterIndexOfNode) ||
                                                       (lastCharacterIndexOfSequence < lastCharacterIndexOfNode
@@ -328,8 +328,8 @@ namespace parlex {
 
             internal NfaSequence(int spanStart, int spanLength, bool isRepitious, Product ownerProduct, bool wasExplicitCharacterSequence) {
                 SpanStart = spanStart;
-                RelationBranches = new List<ProductReference>[spanLength + 1]; //+1 to find what comes after this
-                for (int initBranches = 0; initBranches < spanLength + 1; initBranches++) {
+                RelationBranches = new List<ProductReference>[spanLength]; //+1 to find what comes after this
+                for (int initBranches = 0; initBranches < spanLength; initBranches++) {
                     RelationBranches[initBranches] = new List<ProductReference>();
                 }
                 IsRepitious = isRepitious;
@@ -337,7 +337,7 @@ namespace parlex {
                 WasExplicitCharacterSequence = wasExplicitCharacterSequence;
             }
 
-            internal int SpanLength { get { return RelationBranches.Length - 1; } }
+            internal int SpanLength { get { return RelationBranches.Length; } }
 
             public override string ToString() {
                 return OwnerProduct.Title + (IsRepitious ? "*" : "");
