@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace parlex {
-    class Parser {
+    public class Parser {
         private class SubMatchChain : IEquatable<SubMatchChain> {
             public bool Equals(SubMatchChain other) {
                 if (ReferenceEquals(null, other)) {

@@ -50,7 +50,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="GrammarTest.cs" />
+    <Compile Include="NfaTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -61,6 +62,10 @@
     <ProjectReference Include="..\IDE\IDE.csproj">
       <Project>{e5ae1544-3d3d-4a9c-8e13-6cc67d3cb7a4}</Project>
       <Name>IDE</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\parlex\parlex.csproj">
+      <Project>{5E9DDC58-4C19-4E62-B37C-9682B08D2960}</Project>
+      <Name>parlex</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

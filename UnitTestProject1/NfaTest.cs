@@ -8,9 +8,9 @@ using nfa = IDE.Nfa<int, int>;
 
 namespace UnitTestProject1 {
     [TestClass]
-    public class UnitTest1 {
+    public class NfaTest {
         private static readonly nfa TestNfa;
-        static UnitTest1() {
+        static NfaTest() {
             TestNfa = new nfa();
             var state1 = new nfa.State(1);
             var state2 = new nfa.State(2);
