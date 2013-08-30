@@ -8,10 +8,11 @@ using parlex;
 namespace IDE {
     public static class ProductExtensions {
         public static Nfa<Product, int> ToNfa(this Product product) {
-            
+            return Nfa<Product, int>.Union(product.Sequences.Select(sequence => sequence.ToNfa()));
         }
-        public static GrammarDocument.ExemplarSource[] GenerateExemplarSources(this Product product) {
 
+        public static GrammarDocument.ExemplarSource[] GenerateExemplarSources(this Product product) {
+            throw new NotImplementedException();
         }
     }
 }

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace parlex {
     public class Product : IEquatable<Product> {
-        private readonly String _title;
-        internal readonly List<CompiledGrammar.NfaSequence> Sequences = new List<CompiledGrammar.NfaSequence>();
+        public readonly String _title;
+        public readonly List<CompiledGrammar.NfaSequence> Sequences = new List<CompiledGrammar.NfaSequence>();
 
-        internal Product(String title) {
+        public Product(String title) {
             _title = title;
         }
 

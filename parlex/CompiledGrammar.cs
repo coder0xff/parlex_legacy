@@ -305,9 +305,9 @@ namespace parlex {
 
         public class NfaSequence {
             public class ProductReference {
-                internal readonly Product Product;
-                internal readonly bool IsRepetitious;
-                internal readonly int ExitSequenceCounter;
+                public readonly Product Product;
+                public readonly bool IsRepetitious;
+                public readonly int ExitSequenceCounter;
 
                 internal ProductReference(Product product, bool isRepetitious, int exitSequenceCounter) {
                     IsRepetitious = isRepetitious;
@@ -322,7 +322,7 @@ namespace parlex {
 
             public readonly List<ProductReference>[] RelationBranches;
             internal readonly Product OwnerProduct;
-            internal readonly int SpanStart;
+            public readonly int SpanStart;
             internal readonly bool IsRepitious;
             internal readonly bool WasExplicitCharacterSequence;
 

@@ -555,6 +555,21 @@ namespace IDE {
             }
             return null; //this code is unreachable and null is not a valid return value
         }
+
+        public static Nfa<TAlphabet, TAssignment> Union(IEnumerable<Nfa<TAlphabet, TAssignment>> nfas) {
+            var result = new Nfa<TAlphabet, TAssignment>();
+            foreach (var nfa in nfas) {
+                //don't need to clone the states because they are immutable
+                result.StartStates.UnionWith(nfa.StartStates);
+                result.AcceptStates.UnionWith(nfa.AcceptStates);
+                foreach (var fromState in nfa.TransitionFunction.Keys) {
+                    foreach (var inputSymbol in nfa.TransitionFunction[fromState].Keys) {
+                        result.TransitionFunction[fromState][inputSymbol].UnionWith(nfa.TransitionFunction[fromState][inputSymbol]);
+                    }
+                }
+            }
+            return result;
+        }
     }
 }
 
