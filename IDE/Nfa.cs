@@ -211,17 +211,17 @@ namespace IDE {
                 var unmergedRows = Enumerable.Range(0, stateMap.Rows.Count).ToList();
                 while(unmergedRows.Count > 0) {
                     rowsToMerge.Add(new HashSet<int> {unmergedRows[0]});
-                    for (var rowIndex1 = 1; rowIndex1 < unmergedRows.Count; rowIndex1++) {
+                    for (var rowIndex = 1; rowIndex < unmergedRows.Count; rowIndex++) {
                         int columnIndex;
                         for (columnIndex = 0; columnIndex < stateMap.Columns.Count; columnIndex++) {
-                            if (elementaryAutomataMatrix[unmergedRows[0], columnIndex] != elementaryAutomataMatrix[unmergedRows[rowIndex1], columnIndex]) break;
+                            if (elementaryAutomataMatrix[unmergedRows[0], columnIndex] != elementaryAutomataMatrix[unmergedRows[rowIndex], columnIndex]) break;
                         }
                         if (columnIndex != stateMap.Columns.Count) {
                             continue;
                         }
-                        rowsToMerge[rowsToMerge.Count - 1].Add(unmergedRows[rowIndex1]);
-                        unmergedRows.RemoveAt(rowIndex1);
-                        rowIndex1--;
+                        rowsToMerge[rowsToMerge.Count - 1].Add(unmergedRows[rowIndex]);
+                        unmergedRows.RemoveAt(rowIndex);
+                        rowIndex--;
                     }
                     unmergedRows.RemoveAt(0);
                 }
@@ -241,7 +241,7 @@ namespace IDE {
                         if (rowIndex != stateMap.Rows.Count) {
                             continue;
                         }
-                        rowsToMerge[rowsToMerge.Count - 1].Add(unmergedColumns[columnIndex]);
+                        columnsToMerge[columnsToMerge.Count - 1].Add(unmergedColumns[columnIndex]);
                         unmergedColumns.RemoveAt(columnIndex);
                         columnIndex--;
                     }
@@ -552,6 +552,7 @@ namespace IDE {
             }
             result.StartStates.UnionWith(StartStates.Select(state => stateMapper[state]));
             result.AcceptStates.UnionWith(AcceptStates.Select(state => stateMapper[state]));
+            result.States.UnionWith(stateMapper.Values);
             return result;
         }
 
@@ -559,7 +560,7 @@ namespace IDE {
         /// Minimize this Nfa using the Kameda-Weiner algorithm [1]
         /// </summary>
         /// <returns>A minimal-state Nfa accepting the same language</returns>
-        public Nfa<TAlphabet, int> Minimize() {
+        public Nfa<TAlphabet, int> Minimized() {
             Nfa<TAlphabet, Configuration> determinized;
             var sm = MakeStateMap(out determinized);
             Nfa<TAlphabet, int> minimizedSubsetConstructionDfa;

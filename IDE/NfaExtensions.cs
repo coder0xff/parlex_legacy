@@ -96,13 +96,13 @@ namespace IDE {
                     macroCycleSpans.Add(productSpan);
                 }
                 var endSpanIndex = GetCurrentSpanIndex(existingSpans);
-                var cycleSpan = new ProductSpan(null, startSpanIndex, endSpanIndex - startSpanIndex);
+                var cycleSpan = new ProductSpan("anon-" + Guid.NewGuid() + "*", startSpanIndex, endSpanIndex - startSpanIndex);
                 existingSpans.Add(cycleSpan);
                 macroCycleSpans.Add(cycleSpan);
             }, true);
             if (cycleCount > 1) {
                 var nextSpanIndex = GetCurrentSpanIndex(existingSpans);
-                var macroCycleSpan = new ProductSpan(null, currentSpanIndex, nextSpanIndex - currentSpanIndex);
+                var macroCycleSpan = new ProductSpan("anon-" + Guid.NewGuid() + "*", currentSpanIndex, nextSpanIndex - currentSpanIndex);
                 existingSpans.Add(macroCycleSpan);
                 macroCycleSpans.Add(macroCycleSpan);
             }
@@ -113,33 +113,23 @@ namespace IDE {
         }
 
         private static void Process(Nfa productNfa, List<ProductSpan> existingSpans, State currentState, State tailState, HashSet<State> ignoredToStates, Action followUpAction, bool forceIteration = false) {
-            if (currentState == tailState && !forceIteration) {
-                followUpAction();
+            bool isTailState = currentState == tailState;
+            var macroCycles = ComputeMacroCycles(productNfa, ignoredToStates);
+            var ignoredToStatesContainsCurrent = ignoredToStates.Contains(currentState);
+            ignoredToStates.Add(currentState);
+            var currentSpanIndex = GetCurrentSpanIndex(existingSpans);
+            var currentMacroCycle = SelectMacroCycle(currentState, macroCycles);
+            var isMacroCycleEntrance = currentMacroCycle != null;
+            var branches = productNfa.TransitionFunction[currentState].SelectMany(x => x.Value.Where(s => !ignoredToStates.Contains(s) || s == tailState).Select(y => new KeyValuePair<Product, State>(x.Key, y))).ToList(); //list of key-value pairs of transition product and to state
+            if (isMacroCycleEntrance) {
+                if (isTailState && !forceIteration) {
+                    UnfoldMacroCycle(productNfa, existingSpans, currentState, currentState, currentMacroCycle, followUpAction);
+                } else {
+                    UnfoldMacroCycle(productNfa, existingSpans, currentState, currentState, currentMacroCycle, () => Process(productNfa, existingSpans, currentState, tailState, ignoredToStates, followUpAction));                    
+                }
             } else {
-                var macroCycles = ComputeMacroCycles(productNfa, ignoredToStates);
-                var ignoredToStatesContainsCurrent = ignoredToStates.Contains(currentState);
-                ignoredToStates.Add(currentState);
-                var currentSpanIndex = GetCurrentSpanIndex(existingSpans);
-                var currentMacroCycle = SelectMacroCycle(currentState, macroCycles);
-                var isMacroCycleEntrance = currentMacroCycle != null;
-                var branches = productNfa.TransitionFunction[currentState].SelectMany(x => x.Value.Where(s => !ignoredToStates.Contains(s) || s == tailState).Select(y => new KeyValuePair<Product, State>(x.Key, y))).ToList(); //list of key-value pairs of transition product and to state
-                var isBranch = branches.Count > 1;
-                if (isMacroCycleEntrance && isBranch) {
-                    Action<int> followUpLambda = null;
-                    followUpLambda = nextBranchIndex => {
-                        var nextSpanIndex = GetCurrentSpanIndex(existingSpans);
-                        if (nextBranchIndex < branches.Count) {
-                            existingSpans.Add(new ProductSpan(branches[nextBranchIndex].Key.Title, nextSpanIndex, 1));
-                            UnfoldMacroCycle(productNfa, existingSpans, branches[nextBranchIndex].Value, currentState, currentMacroCycle, () => followUpLambda(nextBranchIndex + 1));
-                            existingSpans.RemoveAt(existingSpans.Count - 1);
-                        } else {
-                            existingSpans.Add(new ProductSpan(null, currentSpanIndex, nextBranchIndex - currentSpanIndex));
-                            Process(productNfa, existingSpans, currentState, tailState, ignoredToStates, followUpAction);
-                            existingSpans.RemoveAt(existingSpans.Count - 1);
-                        }
-                    };
-                } else if (isMacroCycleEntrance) {
-                    UnfoldMacroCycle(productNfa, existingSpans, currentState, currentState, currentMacroCycle, () => Process(productNfa, existingSpans, currentState, tailState, ignoredToStates, followUpAction));
+                if (isTailState && !forceIteration) {
+                    followUpAction();
                 } else {
                     foreach (var branch in branches) {
                         existingSpans.Add(new ProductSpan(branch.Key.Title, currentSpanIndex, 1));
@@ -147,13 +137,13 @@ namespace IDE {
                         existingSpans.RemoveAt(existingSpans.Count - 1);
                     }
                 }
-                if (!ignoredToStatesContainsCurrent) {
-                    ignoredToStates.Remove(currentState);
-                }
+            }
+            if (!ignoredToStatesContainsCurrent) {
+                ignoredToStates.Remove(currentState);
             }
         }
 
-        public static GrammarDocument.ExemplarSource[] ToExemplarSources(this Nfa productNfa) {
+        public static GrammarDocument.ExemplarSource[] ToExemplarSources(this Nfa productNfa, String name) {
             var resultList = new List<GrammarDocument.ExemplarSource>();
             foreach (var startState in productNfa.StartStates) {
                 foreach (var acceptState in productNfa.AcceptStates) {
@@ -163,6 +153,8 @@ namespace IDE {
                         foreach (var productSpanSource in productSpans) {
                             item.Add(productSpanSource);
                         }
+                        var length = GetCurrentSpanIndex(productSpans);
+                        item.Add(new ProductSpan(name, 0, length));
                         resultList.Add(item);
                     });
                 }
