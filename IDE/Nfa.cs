@@ -533,6 +533,28 @@ namespace IDE {
             return isLegitimate;
         }
 
+        public Nfa<TAlphabet, TAssignment2> Reassign<TAssignment2>(Func<State, TAssignment2> func) {
+            var result = new Nfa<TAlphabet, TAssignment2>();
+            var stateMapper = new AutoDictionary<State, Nfa<TAlphabet, TAssignment2>.State>(state => new Nfa<TAlphabet, TAssignment2>.State(func(state)));
+            foreach (var state in States) {
+                stateMapper.EnsureCreated(state);
+            }
+            foreach (var state in TransitionFunction.Keys) {
+                var sourcePartialEvaluation0 = TransitionFunction[state];
+                var targetPartialEvaluation0 = result.TransitionFunction[stateMapper[state]];
+                foreach (var inputSymbol in TransitionFunction[state].Keys) {
+                    var sourcePartialEvaluation1 = sourcePartialEvaluation0[inputSymbol];
+                    var targetPartialEvaluation1 = targetPartialEvaluation0[inputSymbol];
+                    foreach (var state1 in sourcePartialEvaluation1) {
+                        targetPartialEvaluation1.Add(stateMapper[state1]);
+                    }
+                }
+            }
+            result.StartStates.UnionWith(StartStates.Select(state => stateMapper[state]));
+            result.AcceptStates.UnionWith(AcceptStates.Select(state => stateMapper[state]));
+            return result;
+        }
+
         /// <summary>
         /// Minimize this Nfa using the Kameda-Weiner algorithm [1]
         /// </summary>
@@ -546,6 +568,9 @@ namespace IDE {
             var primeGrids = ComputePrimeGrids(ram);
             var covers = EnumerateCovers(ram, primeGrids);
             foreach (var cover in covers) {
+                if (cover.Count == States.Count) {
+                    break;
+                }
                 Bimap<int, Grid> orderedGrids;
                 var minNfa = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
                 var isLegitimate = SubsetAssignmentIsLegitimate(minNfa, minimizedSubsetConstructionDfa, ram, orderedGrids);
@@ -553,7 +578,8 @@ namespace IDE {
                     return minNfa;
                 }
             }
-            return null; //this code is unreachable and null is not a valid return value
+            var stateCount = 0;
+            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller Nfa. Return this;
         }
 
         public static Nfa<TAlphabet, TAssignment> Union(IEnumerable<Nfa<TAlphabet, TAssignment>> nfas) {
@@ -567,8 +593,85 @@ namespace IDE {
                         result.TransitionFunction[fromState][inputSymbol].UnionWith(nfa.TransitionFunction[fromState][inputSymbol]);
                     }
                 }
+                result.States.UnionWith(nfa.States);
             }
             return result;
+        }
+
+        public Nfa<TAlphabet, int> MinimizedDfa() {
+            Nfa<TAlphabet, Configuration> determinized;
+            var sm = MakeStateMap(out determinized);
+            Nfa<TAlphabet, int> minimizedSubsetConstructionDfa;
+            ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
+            return minimizedSubsetConstructionDfa;
+        }
+
+        public bool IsEquivalent<TAssignment2>(Nfa<TAlphabet, TAssignment2> that) {
+            var thisMinDfa = MinimizedDfa();
+            var thatMinDfa = that.MinimizedDfa();
+            var equivalent = true;
+            var stateMap = new ConcurrentDictionary<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>();
+            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>>();
+            processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(thisMinDfa.StartStates.First(), thatMinDfa.StartStates.First())); //only one start state since it's a min dfa
+            processor.Run(pair => {
+                if (!equivalent) {
+                    return;
+                }
+                foreach (var inputSymbolAndStates in thisMinDfa.TransitionFunction[pair.Key]) {
+                    var thisMinDfaInputSymbol = inputSymbolAndStates.Key;
+                    var thisMinDfaNextState = inputSymbolAndStates.Value.First(); //deterministic, so only one state
+                    var thatMinDfaNextStates = thatMinDfa.TransitionFunction[pair.Value][thisMinDfaInputSymbol];
+                    if (thatMinDfaNextStates.Count != 1) { //it will always be either 0 or 1
+                        equivalent = false;
+                    } else {
+                        var thatMinDfaNextState = thatMinDfaNextStates.First();
+                        var mappedThisMinDfaNextState = stateMap.GetOrAdd(thisMinDfaNextState, thisMinDfaNextStateProxy => {
+                            processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(thisMinDfaNextState, thatMinDfaNextState));
+                            return thatMinDfaNextState;
+                        });
+                        if (thatMinDfaNextState != mappedThisMinDfaNextState) {
+                            equivalent = false;
+                        }
+                    }
+                }
+            });
+            return equivalent;
+        }
+
+        public static Nfa<TAlphabet, int> Intersect(IEnumerable<Nfa<TAlphabet, TAssignment>> nfas) {
+            var minDets = nfas.Select(nfa => nfa.MinimizedDfa());
+            var singleTransitionNfa = Nfa<TAlphabet, int>.Union(minDets);
+            var singleTransitionFunction = singleTransitionNfa.TransitionFunction;
+            var singleAcceptStates = singleTransitionNfa.AcceptStates;
+            var stateCount = 0;
+            var resultStates = new AutoDictionary<ReadOnlyHashSet<Nfa<TAlphabet, int>.State>, Nfa<TAlphabet, int>.State>(x => new Nfa<TAlphabet, int>.State(Interlocked.Increment(ref stateCount)));
+            var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyHashSet<Nfa<TAlphabet, int>.State>>();
+            var startStateSet = new ReadOnlyHashSet<Nfa<TAlphabet, int>.State>(minDets.Select(x => x.StartStates.First()));
+            var result = new Nfa<TAlphabet, int>();
+            var acceptStates = new ConcurrentSet<Nfa<TAlphabet, int>.State>();
+            processor.Add(startStateSet);
+            processor.Run(stateSet => {
+                var fromState = resultStates[stateSet];
+                if (singleAcceptStates.IsSupersetOf(stateSet)) {
+                    acceptStates.TryAdd(fromState);
+                }
+                var fromSymbols = ReadOnlyHashSet<TAlphabet>.MultiIntersect(stateSet.Select(state => singleTransitionFunction[state].Keys));
+                foreach (var fromSymbol in fromSymbols) {
+                    var symbol = fromSymbol;
+                    var nextStateSet = new ReadOnlyHashSet<Nfa<TAlphabet, int>.State>(stateSet.Select(state => singleTransitionFunction[state][symbol].First()));
+                    var toState = resultStates[nextStateSet];
+                    processor.Add(nextStateSet);
+                    result.TransitionFunction[fromState][fromSymbol].Add(toState);
+                }
+            });
+            result.States.UnionWith(resultStates.Values);
+            result.StartStates.Add(resultStates[startStateSet]);
+            result.AcceptStates.UnionWith(acceptStates);
+            return result;
+        }
+
+        public bool Contains(Nfa<TAlphabet, TAssignment> that) {
+            return Intersect(new[] {this, that}).IsEquivalent(that);
         }
     }
 }

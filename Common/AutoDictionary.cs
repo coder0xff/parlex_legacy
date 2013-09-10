@@ -15,6 +15,18 @@ namespace System.Collections.Concurrent.More
             }
         }
 
+        /// <summary>
+        /// Used to make sure that an entry is created for the specified key
+        /// </summary>
+        /// <param name="key"></param>
+        public void EnsureCreated(TK key) {
+            _storage.GetOrAdd(key, x => _valueFactory(x));
+        }
+
+        public void Clear() {
+            _storage.Clear();
+        }
+
         private readonly Func<TK, TV> _valueFactory;
 
         public AutoDictionary(Func<TK, TV> valueFactory) {

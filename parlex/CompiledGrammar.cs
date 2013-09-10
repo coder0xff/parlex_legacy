@@ -7,7 +7,7 @@ namespace parlex {
     public class CompiledGrammar : IReadOnlyDictionary<string, Product> {
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
-        internal readonly Dictionary<String, Product> UserProducts;
+        public readonly Dictionary<String, Product> UserProducts;
         internal readonly StrictPartialOrder<Product> Precedences;
 
         private IEnumerable<Product> Products { get { return UserProducts.Values; } }

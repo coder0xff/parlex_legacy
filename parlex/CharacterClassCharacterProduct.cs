@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Common;
 
 namespace parlex {
     class CharacterClassCharacterProduct : Product, IBuiltInCharacterProduct {
@@ -14,8 +15,12 @@ namespace parlex {
             return CodePoints.Contains(codePoint);
         }
 
-        public Int32 GetExample() {
-            return CodePoints.First();
+        public Int32 GetExampleCodePoint() {
+            return CodePoints.OrderBy(x => Rng.Next()).First();
+        }
+
+        public override string GetExample() {
+            return char.ConvertFromUtf32(GetExampleCodePoint());
         }
     }
 }

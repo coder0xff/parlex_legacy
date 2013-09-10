@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Common;
 
 namespace parlex {
     public class Product : IEquatable<Product> {
@@ -41,6 +43,11 @@ namespace parlex {
 
         public override string ToString() {
             return _title;
+        }
+
+        public virtual string GetExample() {
+            var sequence = Sequences.OrderBy(t => Rng.Next()).First(); //get a random sequence
+            throw new NotImplementedException();
         }
     }
 }

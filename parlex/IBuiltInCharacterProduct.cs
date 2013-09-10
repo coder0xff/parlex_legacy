@@ -3,6 +3,6 @@
 namespace parlex {
     public interface IBuiltInCharacterProduct {
         bool Match(Int32 codePoint);
-        Int32 GetExample();
+        Int32 GetExampleCodePoint();
     }
 }

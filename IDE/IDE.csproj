@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Nfa.cs" />
+    <Compile Include="NfaExtensions.cs" />
     <Compile Include="NfaSequenceExtensions.cs" />
     <Compile Include="ProductExtensions.cs" />
     <Compile Include="ProductSpanEditor.xaml.cs">
