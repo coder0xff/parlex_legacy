@@ -6,7 +6,9 @@ using System.Collections.Generic.More;
 using System.Linq;
 using System.Linq.More;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Common;
 using parlex;
  
 using Nfa = IDE.Nfa<parlex.Product, int>;
@@ -57,19 +59,19 @@ namespace IDE {
             return result;
         }
 
-        //private static List<State> getLongestPath(Nfa productNfa, State headState, State tailState, HashSet<State> excludedStates) {
-        //    excludedStates.Add(headState);
-        //    var longestPath = new List<State>();
-        //    foreach (var nextState in productNfa.TransitionFunction[headState].SelectMany(x => x.Value).Where(y => !excludedStates.Contains(y)).Distinct()) {
-        //        var subsequencePath = getLongestPath(productNfa, nextState, tailState, excludedStates);
-        //        if (subsequencePath.Count > longestPath.Count) {
-        //            longestPath = subsequencePath;
-        //        }
-        //    }
-        //    longestPath.Insert(0, headState);
-        //    excludedStates.Remove(headState);
-        //    return longestPath;
-        //}
+        public static List<State> GetLongestPath(this Nfa productNfa, State headState, State tailState, HashSet<State> excludedStates) {
+            excludedStates.Add(headState);
+            var longestPath = new List<State>();
+            foreach (var nextState in productNfa.TransitionFunction[headState].SelectMany(x => x.Value).Where(y => !excludedStates.Contains(y)).Distinct()) {
+                var subsequencePath = GetLongestPath(productNfa, nextState, tailState, excludedStates);
+                if (subsequencePath.Count > longestPath.Count) {
+                    longestPath = subsequencePath;
+                }
+            }
+            longestPath.Insert(0, headState);
+            excludedStates.Remove(headState);
+            return longestPath;
+        }
 
         private static HashSet<State> SelectMacroCycle(State state, List<HashSet<State>> macroCycles) {
             return macroCycles.FirstOrDefault(x => x.Contains(state));
@@ -160,6 +162,106 @@ namespace IDE {
                 }
             }
             return resultList.ToArray();
+        }
+
+        public static void SaveToGraphMLFile(this Nfa productNfa, String path) {
+            const string header = 
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<graphml xmlns=""http://graphml.graphdrawing.org/xmlns"">
+    <graph id=""G"" edgedefault=""directed"">
+";
+
+            var stateCount = 0;
+            productNfa = productNfa.Reassign(x => Interlocked.Increment(ref stateCount)); //Make sure each has a unique index
+            var b = new StringBuilder(header);
+            foreach (var state in productNfa.States) {
+                b.Append("<node id=\"");
+                b.Append(state.Value);
+                b.AppendLine("\" />");
+            }
+            foreach (var fromStateAndInputSymbolsAndToStates in productNfa.TransitionFunction) {
+                var fromState = fromStateAndInputSymbolsAndToStates.Key;
+                var inputSymbolsAndToStates = fromStateAndInputSymbolsAndToStates.Value;
+                foreach (var inputSymbolAndToStates in inputSymbolsAndToStates) {
+                    var inputSymbol = inputSymbolAndToStates.Key;
+                    var toStates = inputSymbolAndToStates.Value;
+                    foreach (var toState in toStates) {
+                        b.Append("<edge id=\"");
+                        b.Append(inputSymbol.Title);
+                        b.Append("\" source=\"");
+                        b.Append(fromState.Value);
+                        b.Append("\" target=\"");
+                        b.Append(toState.Value);
+                        b.AppendLine("\" />");
+                    }
+                }
+            }
+
+            const string footer = 
+@"    </graph>
+</graphml>";
+
+            b.Append(footer);
+
+            System.IO.File.WriteAllText(path, b.ToString());
+        }
+
+        struct LayerAssignment {
+            public readonly State State;
+            public readonly int Layer;
+            public readonly ReadOnlyHashSet<State> Predecessors;
+
+            public LayerAssignment(State state, int layer, ReadOnlyHashSet<State> predecessors) : this() {
+                State = state;
+                Layer = layer;
+                Predecessors = predecessors;
+            }
+
+            public bool Equals(LayerAssignment other) {
+                return Equals(State, other.State) && Layer == other.Layer && Equals(Predecessors, other.Predecessors);
+            }
+
+            public override bool Equals(object obj) {
+                if (ReferenceEquals(null, obj)) {
+                    return false;
+                }
+                return obj is LayerAssignment && Equals((LayerAssignment) obj);
+            }
+
+            public override int GetHashCode() {
+                unchecked {
+                    int hashCode = (State != null ? State.GetHashCode() : 0);
+                    hashCode = (hashCode * 397) ^ Layer;
+                    hashCode = (hashCode * 397) ^ Predecessors.GetHashCode();
+                    return hashCode;
+                }
+            }
+
+            public static bool operator ==(LayerAssignment left, LayerAssignment right) {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(LayerAssignment left, LayerAssignment right) {
+                return !left.Equals(right);
+            }
+        }
+
+        public static AutoDictionary<State, int> GetLayerAssignments(this Nfa productNfa) {
+            var processor = new DistinctRecursiveAlgorithmProcessor<LayerAssignment>();
+            var results = new AutoDictionary<State, int>(state => 0);
+            foreach (var startState in productNfa.StartStates) {
+                processor.Add(new LayerAssignment(startState, 0, new ReadOnlyHashSet<State>(productNfa.StartStates)));
+            }
+            processor.Run(layerAssignment => {
+                if (layerAssignment.Layer > results[layerAssignment.State]) {
+                    results[layerAssignment.State] = layerAssignment.Layer;
+                }
+                foreach (var toState in productNfa.TransitionFunction[layerAssignment.State].SelectMany(inputSymbolAndToStates => inputSymbolAndToStates.Value).Distinct().Where(s => !layerAssignment.Predecessors.Contains(s))) {
+                    var nextPredecessors = new ReadOnlyHashSet<State>(layerAssignment.Predecessors.Concat(new[] {toState}));
+                    processor.Add(new LayerAssignment(toState, layerAssignment.Layer + 1, nextPredecessors));
+                }
+            });
+            return results;
         }
     }
 }

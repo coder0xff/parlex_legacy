@@ -71,7 +71,7 @@ namespace System.Collections.Concurrent.More {
             return TryRemove(item);
         }
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() {
+        public IEnumerator<T> GetEnumerator() {
             return _storage.Keys.GetEnumerator();
         }
 

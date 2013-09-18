@@ -12,16 +12,18 @@ namespace IDE {
         public static Nfa<Product, int> ToNfa(this CompiledGrammar.NfaSequence sequence) {
             var positionToState = new AutoDictionary<int /*position*/, Nfa<Product, int>.State>(position => new Nfa<Product, int>.State(position));
             var result = new Nfa<Product, int>();
-            var latestToState = 0;
+            var skipAheadTable = new AutoDictionary<int, HashSet<int>>(i => new HashSet<int>());
             for (int position = 0; position < sequence.RelationBranches.Length; position++) {
                 foreach (var productReference in sequence.RelationBranches[position]) {
                     var fromState = positionToState[position];
                     Nfa<Product, int>.State toState = productReference.IsRepetitious ? fromState : positionToState[productReference.ExitSequenceCounter - sequence.SpanStart];
-                    latestToState = Math.Max(latestToState, toState.Value);
+                    if (productReference.IsRepetitious) {
+                        skipAheadTable[position].Add(productReference.ExitSequenceCounter - sequence.SpanStart);
+                    }
                     var transitionProduct = productReference.Product;
                     if (transitionProduct.Title.StartsWith("anon-")) { //expand anonymous products in line
                         var subNfa = transitionProduct.ToNfa();
-                        if (subNfa.StartStates.Count > 1) { // should typically not, but this algo only works with one start state on the subNfa, so force it if necessary
+                        if (subNfa.StartStates.Count > 1) { // should typically not, but this algorithm only works with one start state on the subNfa, so force it if necessary
                             subNfa = subNfa.MinimizedDfa();
                         }
                         var newStates = subNfa.States.Except(subNfa.StartStates).Except(subNfa.AcceptStates);
@@ -45,8 +47,22 @@ namespace IDE {
                 }
             }
 
+            foreach (var skipAheadPosition in skipAheadTable.Select(keyValuePair => keyValuePair.Key).OrderByDescending(i => i)) {
+                var fromState = positionToState[skipAheadPosition];
+                var skipReferences = skipAheadTable[skipAheadPosition];
+                foreach (var skipReference in skipReferences) {
+                    if (skipReference == sequence.RelationBranches.Length) {
+                        result.AcceptStates.Add(fromState);
+                    } else {
+                        foreach (var inputSymbolAndToStates in result.TransitionFunction[positionToState[skipReference]]) {
+                            result.TransitionFunction[fromState][inputSymbolAndToStates.Key].UnionWith(inputSymbolAndToStates.Value);
+                        }
+                    }
+                }
+            }
+
             result.StartStates.Add(positionToState[0]);
-            result.AcceptStates.Add(positionToState[latestToState]);
+            result.AcceptStates.Add(positionToState[sequence.RelationBranches.Length]);
             result.States.UnionWith(positionToState.Values);
 
             return result;

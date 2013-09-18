@@ -1,6 +1,7 @@
-﻿    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Concurrent.More;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Concurrent.More;
+using System.Threading.Tasks;
 
 namespace Common {
         /// <summary>
@@ -36,14 +37,14 @@ namespace Common {
             /// <param name="recursiveAlgorithm"></param>
             public void Run(Action<T> recursiveAlgorithm) {
                 while(_items.Count > 0) {
-//                    Parallel.For(0, _items.Count, (dontCare) => {
+                    Parallel.For(0, _items.Count, dontCare => {
                         T item;
                         if (_items.TryDequeue(out item)) {
                             recursiveAlgorithm(item);
                         } else {
                             throw new ApplicationException("This implementation does not function as expected");
                         }
-//                    });
+                    });
                 }
             }
         }

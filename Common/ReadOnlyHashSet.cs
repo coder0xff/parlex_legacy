@@ -26,7 +26,7 @@ namespace System.Collections.Generic.More {
         }
 
         public static bool operator !=(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
-            return left != null && !left.Equals(right);
+            return (Object)left != null && !left.Equals(right);
         }
 
         private readonly HashSet<T> _items;

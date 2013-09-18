@@ -24,7 +24,6 @@ namespace IDE {
             var productSpan = new parlex.GrammarDocument.ProductSpanSource("addition", 4, 5);
             exemplar.Add(productSpan);
             var productSpanEditor = new ProductSpanEditor(exemplar, productSpan);
-            exemplars.Children.Add(productSpanEditor);
         }
     }
 }

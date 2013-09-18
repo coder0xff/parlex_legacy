@@ -86,5 +86,9 @@ namespace Common {
         public static double NextDouble() {
             return Random.NextDouble();
         }
+
+        public static double NextDouble(double minValue, double maxValue) {
+            return Random.NextDouble() * (maxValue - minValue) + minValue;
+        }
     }
 }

@@ -674,6 +674,61 @@ namespace IDE {
         public bool Contains(Nfa<TAlphabet, TAssignment> that) {
             return Intersect(new[] {this, that}).IsEquivalent(that);
         }
+
+        public IEnumerable<IEnumerable<State>> GetRoutes(State fromState, State toState, HashSet<State> ignoredStates) {
+            var subsequentStates = TransitionFunction[fromState].SelectMany(inputSymbolAndToStates => inputSymbolAndToStates.Value).Distinct().Where(s => !ignoredStates.Contains(s)).ToList();
+            foreach (var subsequentState in subsequentStates) {
+                if (subsequentState == toState) {
+                    yield return new[] {toState};
+                }
+                ignoredStates.Add(subsequentState);
+                foreach (var route in GetRoutes(subsequentState, toState, ignoredStates)) {
+                    yield return new[] {subsequentState}.Concat(route);
+                }
+                ignoredStates.Remove(subsequentState);
+            }
+        }
+
+        public IEnumerable<IEnumerable<State>> GetCycles() {
+            return States.SelectMany(state => GetRoutes(state, state, new HashSet<State>()));
+        }
+
+        public struct Transition {
+            public readonly State FromState;
+            public readonly State ToState;
+
+            public Transition(State fromState, State toState) : this() {
+                FromState = fromState;
+                ToState = toState;
+            }
+
+            public bool Equals(Transition other) {
+                return FromState.Equals(other.FromState) && ToState.Equals(other.ToState);
+            }
+
+            public override bool Equals(object obj) {
+                if (ReferenceEquals(null, obj)) {
+                    return false;
+                }
+                return obj is Transition && Equals((Transition) obj);
+            }
+
+            public override int GetHashCode() {
+                unchecked {
+                    int hashCode = FromState.GetHashCode();
+                    hashCode = (hashCode * 397) ^ ToState.GetHashCode();
+                    return hashCode;
+                }
+            }
+
+            public static bool operator ==(Transition left, Transition right) {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(Transition left, Transition right) {
+                return !left.Equals(right);
+            }
+        }
     }
 }
 
