@@ -695,15 +695,17 @@ namespace IDE {
 
         public struct Transition {
             public readonly State FromState;
+            public readonly TAlphabet InputSymbol;
             public readonly State ToState;
 
-            public Transition(State fromState, State toState) : this() {
+            public Transition(State fromState, TAlphabet inputSymbol, State toState) : this() {
                 FromState = fromState;
+                InputSymbol = inputSymbol;
                 ToState = toState;
             }
 
             public bool Equals(Transition other) {
-                return FromState.Equals(other.FromState) && ToState.Equals(other.ToState);
+                return FromState.Equals(other.FromState) && InputSymbol.Equals(other.InputSymbol) && ToState.Equals(other.ToState);
             }
 
             public override bool Equals(object obj) {
@@ -716,6 +718,7 @@ namespace IDE {
             public override int GetHashCode() {
                 unchecked {
                     int hashCode = FromState.GetHashCode();
+                    hashCode = (hashCode * 397) ^ InputSymbol.GetHashCode();
                     hashCode = (hashCode * 397) ^ ToState.GetHashCode();
                     return hashCode;
                 }

@@ -69,7 +69,7 @@ namespace UnitTestProject1 {
         }
 
         [TestMethod]
-        public void TestEmumerateCovers() {
+        public void TestEnumerateCovers() {
             Nfa<int, nfa.Configuration> determinized;
             var sm = TestNfa.MakeStateMap(out determinized);
             Nfa<int, int> minimizedSubsetConstructionDfa;
