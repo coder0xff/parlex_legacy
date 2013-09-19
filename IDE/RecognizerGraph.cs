@@ -302,22 +302,16 @@ namespace IDE {
             foreach (var objects in _lines) {
                 var polyLinePoints = new List<Point>();
                 var fromObject = objects[0];
-                bool noFromApproacher = false;
                 for (int toObjectIndex = 1; toObjectIndex < objects.Length; toObjectIndex++) {
                     var toObject = objects[toObjectIndex];
                     bool isFeedbackSegment = objectToLayerLookup[fromObject] > objectToLayerLookup[toObject];
                     if (toObjectIndex == 1) {
                         polyLinePoints.Add(getObjSidePosFunc(fromObject, !isFeedbackSegment));
                     }
-                    if (!noFromApproacher) {
-                        polyLinePoints.Add(getObjApproacherPosFunc(fromObject, !isFeedbackSegment));
-                    } else {
-                        noFromApproacher = false;
-                    }
-                    polyLinePoints.Add(getObjApproacherPosFunc(toObject, isFeedbackSegment));
+                    polyLinePoints.Add(getObjApproacherPosFunc(fromObject, !isFeedbackSegment));
                     if (!(toObject is LineWayPoint) || isFeedbackSegment ? objectsThatHaveALineToTheLeft.Contains(toObject) : objectsThatHaveALineToTheRight.Contains(toObject)) {
+                        polyLinePoints.Add(getObjApproacherPosFunc(toObject, isFeedbackSegment));
                         polyLinePoints.Add(getObjSidePosFunc(toObject, isFeedbackSegment));
-                        noFromApproacher = true;
                     }
                     fromObject = toObject;
                 }
