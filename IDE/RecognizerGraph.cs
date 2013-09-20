@@ -1,19 +1,13 @@
-﻿using System;
+﻿using Common;
+using System;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
-using System.Collections.Generic.More;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Media.TextFormatting;
-using System.Windows.Shapes;
-using Common;
-using parlex;
 using Nfa = IDE.Nfa<parlex.Product, int>;
 using State = IDE.Nfa<parlex.Product, int>.State;
 using Transition = IDE.Nfa<parlex.Product, int>.Transition;
@@ -27,14 +21,12 @@ namespace IDE {
         private List<Object[]> _lines = new List<Object[]>();
         private int _objectCount;
         private DiscreteProbabilityDistribution<int> _mutateColumnSelectionProbabilityDistribution; //each column should have a weight for its likelihood for being the target of a mutate
-        //private int _rowCount;
         private int _columnCount;
 
         private Typeface _font;
         private double _emSize;
 
         class LineWayPoint {
-            public LineWayPoint Right;
         }
 
         public RecognizerGraph(Nfa productNfa, Typeface font, double emSize) {
@@ -76,6 +68,7 @@ namespace IDE {
             }
 
             _mutateColumnSelectionProbabilityDistribution = new DiscreteProbabilityDistribution<int>(Enumerable.Range(0, _columnCount).Select(i => new Tuple<int, double>(i, _columns[i].Count * _columns[i].Count)));
+            _objectCount = _columns.Sum(c => c.Count);
 
             //_rowCount = _columns.Max(c => c.Count);
             //foreach (var column in _columns) {
@@ -118,11 +111,6 @@ namespace IDE {
         }
 
         private void CreateConnection(int leftColumn, Object leftObject, Object rightObject) {
-            var temp1 = leftObject as LineWayPoint;
-            var temp2 = rightObject as LineWayPoint;
-            if (temp1 != null && temp2 != null) {
-                temp1.Right = temp2;
-            }
             _columnConnectionsRight[leftColumn][leftObject].Add(rightObject);
         }
 
@@ -144,7 +132,7 @@ namespace IDE {
                         var crossCount = line1Group.Item2.Length;
                         int tableIndex = 0;
                         foreach (var line1RightRow in line1Group.Item2) {
-                            //result += Math.Abs(line1LeftRow - line1RightRow) * 0.1; //slightly favor vertical line segments instead of diagnals
+                            result += Math.Abs(line1LeftRow - line1RightRow) * 0.1; //slightly favor vertical line segments instead of diagonals
                             for (; tableIndex < line1RightRow; tableIndex++) {
                                 crossCountTable[tableIndex] = crossCount;
                             }
@@ -190,32 +178,17 @@ namespace IDE {
             }
         }
 
-        private RecognizerGraph[] MakeGeneration(int generationSize, int mutateCount) {
-            return Enumerable.Range(0, generationSize).Select(i => {
-                var child = new RecognizerGraph(this);
-                child.Mutate(mutateCount);
-                return child;
-            }).Concat(new []{this}).ToArray();
-        }
-
-        private RecognizerGraph ChooseBest(IEnumerable<RecognizerGraph> generation, double mutateStrength) {
-            var list = generation.Select(rg => new Tuple<double, RecognizerGraph>(rg.GetFitnessReciprocal(), rg)).OrderBy(t => t.Item1).Select(t => t.Item2).ToList();
-            var selectedIndex = Rng.Next(0, (int)((list.Count - 1) * mutateStrength + 1));
-            return list[selectedIndex];
-        }
-
         private void Arrange() {
             const double mutatesPerObject = 1;
             const double decayMax = 0.9999999;
-            const double decayMin = 0.9999;
-            const double decayDecay = 0.9999999;
+            var decayMin = Math.Pow(0.95, 1.0 / _objectCount);
+            var decayDecay = Math.Pow(0.95, 1.0 / (_objectCount * _objectCount));
 
             double mutateStrength = 1;
-            var objectCount = _columns.Sum(column => column.Count);
             var currentBest = this;
             var currentBestCount = GetFitnessReciprocal();
             SavePng("C:\\Users\\Brent\\Desktop\\RG\\Test_" + currentBestCount + ".png");
-            var mutateCount = (int)Math.Ceiling(objectCount * mutatesPerObject * mutateStrength);
+            var mutateCount = (int)Math.Ceiling(_objectCount * mutatesPerObject * mutateStrength);
             double decay = 0.9999;
             while (true) {
                 System.Diagnostics.Debug.WriteLine(mutateStrength);
@@ -225,18 +198,19 @@ namespace IDE {
                 if (newCount < currentBestCount) {
                     currentBestCount = newCount;
                     currentBest = next;
-                    next.SavePng("C:\\Users\\Brent\\Desktop\\RG\\Test_" + newCount + ".png");
+                    //next.SavePng("C:\\Users\\Brent\\Desktop\\RG\\Test_" + newCount + ".png");
                     decay = decayMax;
                 } else {
                     mutateStrength *= decay;
                     decay = Math.Max(decay * decayDecay, decayMin);
                 }
-                mutateCount = (int)Math.Ceiling(objectCount * mutatesPerObject * mutateStrength);
+                mutateCount = (int)Math.Ceiling(_objectCount * mutatesPerObject * mutateStrength);
                 if (mutateCount == 1) {
                     break;
                 }
             }
             _columns = currentBest._columns;
+            SavePng("C:\\Users\\Brent\\Desktop\\RG\\Test_" + currentBestCount + ".png");
         }
 
         private Geometry ToGeometry() {
@@ -259,18 +233,15 @@ namespace IDE {
                     var center = getPos(columnIndex, row);
                     if (o is State) {
                         gg.Children.Add(new EllipseGeometry(new Point(columnStride * columnIndex, rowStride * row), margin, margin));
-                        if (gg.Bounds == Rect.Empty) while(true) ;
                     } else if (o is Transition) {
                         var g = _formattedTexts[((Transition) o).InputSymbol.Title];
                         var outlineRect = new Rect(center.X - g.Bounds.Width * 0.5, center.Y - g.Bounds.Height * 0.5, g.Bounds.Width, g.Bounds.Height);
                         outlineRect.Inflate(margin, margin);
                         gg.Children.Add(new RectangleGeometry(outlineRect));
-                        if (gg.Bounds == Rect.Empty) while (true) ;
                         var translatedText = new GeometryGroup();
                         translatedText.Children.Add(g);
                         translatedText.Transform = new TranslateTransform(center.X - g.Bounds.Width * 0.5, center.Y - g.Bounds.Height * 0.5);
                         gg.Children.Add(translatedText);
-                        if (gg.Bounds == Rect.Empty) while (true) ;
                     }
                 }
             }

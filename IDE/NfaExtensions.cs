@@ -252,15 +252,30 @@ namespace IDE {
             foreach (var startState in productNfa.StartStates) {
                 processor.Add(new LayerAssignment(startState, 0, new ReadOnlyHashSet<State>(productNfa.StartStates)));
             }
-            processor.Run(layerAssignment => {
-                if (layerAssignment.Layer > results[layerAssignment.State]) {
-                    results[layerAssignment.State] = layerAssignment.Layer;
+            bool firstLoop = true;
+            var unreachedStates = productNfa.States.Except(results.Keys).ToList();
+            while(unreachedStates.Count > 0) {
+                if (!firstLoop) {
+                    var state = unreachedStates.OrderBy(s => unreachedStates.Count(s1 => productNfa.GetRoutes(s, s1, new HashSet<State>()).Any())).First();
+                    processor.Add(new LayerAssignment(state, 0, new ReadOnlyHashSet<State>(new[] {state})));
                 }
-                foreach (var toState in productNfa.TransitionFunction[layerAssignment.State].SelectMany(inputSymbolAndToStates => inputSymbolAndToStates.Value).Distinct().Where(s => !layerAssignment.Predecessors.Contains(s))) {
-                    var nextPredecessors = new ReadOnlyHashSet<State>(layerAssignment.Predecessors.Concat(new[] {toState}));
-                    processor.Add(new LayerAssignment(toState, layerAssignment.Layer + 1, nextPredecessors));
-                }
-            });
+                firstLoop = false;
+                processor.Run(layerAssignment => {
+                    if (layerAssignment.Layer > results[layerAssignment.State]) {
+                        results[layerAssignment.State] = layerAssignment.Layer;
+                    }
+                    foreach (var toState in productNfa.TransitionFunction[layerAssignment.State].SelectMany(inputSymbolAndToStates => inputSymbolAndToStates.Value).Distinct().Where(s => !layerAssignment.Predecessors.Contains(s))) {
+                        var nextPredecessors = new ReadOnlyHashSet<State>(layerAssignment.Predecessors.Concat(new[] {toState}));
+                        processor.Add(new LayerAssignment(toState, layerAssignment.Layer + 1, nextPredecessors));
+                    }
+                });
+                unreachedStates = productNfa.States.Except(results.Keys).ToList();
+            }
+
+            var remap = results.Values.Distinct().OrderBy(i => i).Select((p, i) => new {p = p, i = i}).ToDictionary(pi => pi.p, pi => pi.i);
+            foreach (var keyValuePair in results) {
+                results[keyValuePair.Key] = remap[keyValuePair.Value];
+            }
             return results;
         }
     }
