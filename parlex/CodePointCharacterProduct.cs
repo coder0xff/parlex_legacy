@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace parlex {
-    class CodePointCharacterProduct : Product, IBuiltInCharacterProduct {
+    public class CodePointCharacterProduct : Product, IBuiltInCharacterProduct {
         private readonly Int32 CodePoint;
 
         internal CodePointCharacterProduct(Int32 codePoint) : base("codePoint" + codePoint.ToString("X6")) {

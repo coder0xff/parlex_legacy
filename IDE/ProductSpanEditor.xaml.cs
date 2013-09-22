@@ -58,7 +58,7 @@ namespace IDE {
                 run.Foreground = Brushes.LightSlateGray;
                 ExemplarText.Inlines.Add(run);                
             }
-            Name.Content = _productSpan.Name;
+            NameField.Content = _productSpan.Name;
         }
 
         private readonly GrammarDocument.ExemplarSource _exemplar;

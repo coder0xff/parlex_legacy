@@ -46,6 +46,11 @@ namespace System.Collections.Concurrent.More
         }
 
         public IEnumerable<TK> Keys { get { return _storage.Keys; }}
-        public IEnumerable<TV> Values { get { return _storage.Values; }} 
+        public IEnumerable<TV> Values { get { return _storage.Values; }}
+
+        public bool TryRemove(TK key) {
+            TV dontCare;
+            return _storage.TryRemove(key, out dontCare);
+        }
     }
 }

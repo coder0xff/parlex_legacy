@@ -7,10 +7,12 @@ namespace parlex {
     public class CompiledGrammar : IReadOnlyDictionary<string, Product> {
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
-        public readonly Dictionary<String, Product> UserProducts;
+        internal readonly Dictionary<String, Product> UserProducts;
         internal readonly StrictPartialOrder<Product> Precedences;
 
-        private IEnumerable<Product> Products { get { return UserProducts.Values; } }
+        public Dictionary<String, Product> GetAllProducts() {
+            return UserProducts.Values.ToDictionary(product => product.Title);
+        }
 
         public CompiledGrammar(GrammarDocument document) {
             InitializeBuiltInProducts();
@@ -117,6 +119,10 @@ namespace parlex {
             _characterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
             _characterClassProducts.Add(new CharacterClassCharacterProduct("white_space", Unicode.WhiteSpace));
         }
+
+        static public Dictionary<String, Product> GetBuiltInProducts() {
+            return new CompiledGrammar(new GrammarDocument()).GetAllProducts();
+        } 
 
         private void CreateCodePointProduct(Int32 codePoint) {
             if (!_codePointProducts.ContainsKey(codePoint)) {

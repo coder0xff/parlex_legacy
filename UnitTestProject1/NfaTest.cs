@@ -120,7 +120,7 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var product = compiledGrammar.UserProducts["product_name"];
+            var product = compiledGrammar.GetAllProducts()["product_name"];
             var nfa = product.ToNfa();
             nfa = nfa.Minimized();
             var exemplarSources = nfa.ToExemplarSources("test_product");
@@ -134,7 +134,7 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var aProduct = compiledGrammar.UserProducts["codePoint000041"];
+            var aProduct = compiledGrammar.GetAllProducts()["codePoint000041"];
             var state0 = new Nfa<Product, int>.State(0);
             var state1 = new Nfa<Product, int>.State(1);
             var nfa = new Nfa<Product, int>();
@@ -147,7 +147,7 @@ namespace UnitTestProject1 {
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
-            var roundTripProduct = generatedCompiledGrammar.UserProducts["test_product"];
+            var roundTripProduct = generatedCompiledGrammar.GetAllProducts()["test_product"];
             var roundTripNfa = roundTripProduct.ToNfa();
             System.Diagnostics.Debug.Assert(roundTripNfa.IsEquivalent(nfa));
         }
@@ -157,9 +157,10 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var aProduct = compiledGrammar.UserProducts["codePoint000041"];
-            var bProduct = compiledGrammar.UserProducts["codePoint000042"];
-            var cProduct = compiledGrammar.UserProducts["codePoint000043"];
+            var products = compiledGrammar.GetAllProducts();
+            var aProduct = products["codePoint000041"];
+            var bProduct = products["codePoint000042"];
+            var cProduct = products["codePoint000043"];
             var state0 = new Nfa<Product, int>.State(0);
             var state1 = new Nfa<Product, int>.State(1);
             var state2 = new Nfa<Product, int>.State(2);
@@ -176,7 +177,7 @@ namespace UnitTestProject1 {
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
-            var roundTripProduct = generatedCompiledGrammar.UserProducts["test_product"];
+            var roundTripProduct = generatedCompiledGrammar.GetAllProducts()["test_product"];
             var roundTripNfa = roundTripProduct.ToNfa();
             System.Diagnostics.Debug.Assert(roundTripNfa.IsEquivalent(nfa));
         }
@@ -186,13 +187,14 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var aProduct = compiledGrammar.UserProducts["codePoint000041"];
-            var bProduct = compiledGrammar.UserProducts["codePoint000042"];
-            var cProduct = compiledGrammar.UserProducts["codePoint000043"];
-            var dProduct = compiledGrammar.UserProducts["codePoint000044"];
-            var eProduct = compiledGrammar.UserProducts["codePoint000045"];
-            var fProduct = compiledGrammar.UserProducts["codePoint000046"];
-            var gProduct = compiledGrammar.UserProducts["codePoint000047"];
+            var products = compiledGrammar.GetAllProducts();
+            var aProduct = products["codePoint000041"];
+            var bProduct = products["codePoint000042"];
+            var cProduct = products["codePoint000043"];
+            var dProduct = products["codePoint000044"];
+            var eProduct = products["codePoint000045"];
+            var fProduct = products["codePoint000046"];
+            var gProduct = products["codePoint000047"];
             var state0 = new Nfa<Product, int>.State(0);
             var state1 = new Nfa<Product, int>.State(1);
             var state2 = new Nfa<Product, int>.State(2);
@@ -218,7 +220,7 @@ namespace UnitTestProject1 {
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
-            var roundTripProduct = generatedCompiledGrammar.UserProducts["test_product"];
+            var roundTripProduct = generatedCompiledGrammar.GetAllProducts()["test_product"];
             var roundTripNfa = roundTripProduct.ToNfa().Minimized();
             nfa = nfa.Minimized();
             System.Diagnostics.Debug.Assert(roundTripNfa.IsEquivalent(nfa));
@@ -229,14 +231,15 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var aProduct = compiledGrammar.UserProducts["codePoint000041"];
-            var bProduct = compiledGrammar.UserProducts["codePoint000042"];
-            var cProduct = compiledGrammar.UserProducts["codePoint000043"];
-            var dProduct = compiledGrammar.UserProducts["codePoint000044"];
-            var eProduct = compiledGrammar.UserProducts["codePoint000045"];
-            var fProduct = compiledGrammar.UserProducts["codePoint000046"];
-            var gProduct = compiledGrammar.UserProducts["codePoint000047"];
-            var hProduct = compiledGrammar.UserProducts["codePoint000048"];
+            var products = compiledGrammar.GetAllProducts();
+            var aProduct = products["codePoint000041"];
+            var bProduct = products["codePoint000042"];
+            var cProduct = products["codePoint000043"];
+            var dProduct = products["codePoint000044"];
+            var eProduct = products["codePoint000045"];
+            var fProduct = products["codePoint000046"];
+            var gProduct = products["codePoint000047"];
+            var hProduct = products["codePoint000048"];
             var state0 = new Nfa<Product, int>.State(0);
             var state1 = new Nfa<Product, int>.State(1);
             var state2 = new Nfa<Product, int>.State(2);
@@ -262,7 +265,7 @@ namespace UnitTestProject1 {
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
-            var roundTripProduct = generatedCompiledGrammar.UserProducts["test_product"];
+            var roundTripProduct = generatedCompiledGrammar.GetAllProducts()["test_product"];
             var roundTripNfa = roundTripProduct.ToNfa();
             System.Diagnostics.Debug.Assert(roundTripNfa.IsEquivalent(nfa));
         }
@@ -272,15 +275,16 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var aProduct = compiledGrammar.UserProducts["codePoint000041"];
-            var bProduct = compiledGrammar.UserProducts["codePoint000042"];
-            var cProduct = compiledGrammar.UserProducts["codePoint000043"];
-            var dProduct = compiledGrammar.UserProducts["codePoint000044"];
-            var eProduct = compiledGrammar.UserProducts["codePoint000045"];
-            var fProduct = compiledGrammar.UserProducts["codePoint000046"];
-            var gProduct = compiledGrammar.UserProducts["codePoint000047"];
-            var hProduct = compiledGrammar.UserProducts["codePoint000048"];
-            var iProduct = compiledGrammar.UserProducts["codePoint000049"];
+            var products = compiledGrammar.GetAllProducts();
+            var aProduct = products["codePoint000041"];
+            var bProduct = products["codePoint000042"];
+            var cProduct = products["codePoint000043"];
+            var dProduct = products["codePoint000044"];
+            var eProduct = products["codePoint000045"];
+            var fProduct = products["codePoint000046"];
+            var gProduct = products["codePoint000047"];
+            var hProduct = products["codePoint000048"];
+            var iProduct = products["codePoint000049"];
             var state0 = new Nfa<Product, int>.State(0);
             var state1 = new Nfa<Product, int>.State(1);
             var state2 = new Nfa<Product, int>.State(2);
@@ -307,7 +311,7 @@ namespace UnitTestProject1 {
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
-            var roundTripProduct = generatedCompiledGrammar.UserProducts["test_product"];
+            var roundTripProduct = generatedCompiledGrammar.GetAllProducts()["test_product"];
             var roundTripNfa = roundTripProduct.ToNfa();
             System.Diagnostics.Debug.Assert(roundTripNfa.IsEquivalent(nfa));
         }
@@ -317,7 +321,8 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test2.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var identifierProduct = compiledGrammar.UserProducts["identifier"];
+            var products = compiledGrammar.GetAllProducts();
+            var identifierProduct = products["identifier"];
             identifierProduct.ToNfa().SaveToGraphMLFile("C:\\Users\\Brent\\Desktop\\test.gml");
         }
 
@@ -326,15 +331,16 @@ namespace UnitTestProject1 {
             var testFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\test.parlex");
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
-            var aProduct = compiledGrammar.UserProducts["codePoint000041"];
-            var bProduct = compiledGrammar.UserProducts["codePoint000042"];
-            var cProduct = compiledGrammar.UserProducts["codePoint000043"];
-            var dProduct = compiledGrammar.UserProducts["codePoint000044"];
-            var eProduct = compiledGrammar.UserProducts["codePoint000045"];
-            var fProduct = compiledGrammar.UserProducts["codePoint000046"];
-            var gProduct = compiledGrammar.UserProducts["codePoint000047"];
-            var hProduct = compiledGrammar.UserProducts["codePoint000048"];
-            var iProduct = compiledGrammar.UserProducts["codePoint000049"];
+            var products = compiledGrammar.GetAllProducts();
+            var aProduct = products["codePoint000041"];
+            var bProduct = products["codePoint000042"];
+            var cProduct = products["codePoint000043"];
+            var dProduct = products["codePoint000044"];
+            var eProduct = products["codePoint000045"];
+            var fProduct = products["codePoint000046"];
+            var gProduct = products["codePoint000047"];
+            var hProduct = products["codePoint000048"];
+            var iProduct = products["codePoint000049"];
             var state0 = new Nfa<Product, int>.State(0);
             var state1 = new Nfa<Product, int>.State(1);
             var state2 = new Nfa<Product, int>.State(2);
@@ -357,7 +363,7 @@ namespace UnitTestProject1 {
             nfa.TransitionFunction[state3][gProduct].Add(state4);
             nfa.TransitionFunction[state0][hProduct].Add(state2);
             nfa.TransitionFunction[state4][iProduct].Add(state1);
-            var graph = new RecognizerGraph(nfa, new Typeface("Verdana"), 12);
+            var graph = new NfaVisualizer(nfa, new Typeface("Verdana"), 12);
         }
     }
 }

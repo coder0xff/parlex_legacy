@@ -8,6 +8,6 @@
         <StackPanel Orientation="Horizontal">
             <TextBlock x:Name="ExemplarText" Padding="3,0,3,0"/>
             <Label Padding="10,1,10,1" Background="LightGray">:</Label>
-            <Label x:Name="Name" Padding="0" Background="LightGray"></Label>
+            <Label x:Name="NameField" Padding="0" Background="LightGray"></Label>
         </StackPanel>
 </UserControl>

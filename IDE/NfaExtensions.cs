@@ -251,13 +251,14 @@ namespace IDE {
             var results = new AutoDictionary<State, int>(state => 0);
             foreach (var startState in productNfa.StartStates) {
                 processor.Add(new LayerAssignment(startState, 0, new ReadOnlyHashSet<State>(productNfa.StartStates)));
+                results[startState] = 0;
             }
             bool firstLoop = true;
             var unreachedStates = productNfa.States.Except(results.Keys).ToList();
             while(unreachedStates.Count > 0) {
                 if (!firstLoop) {
                     var state = unreachedStates.OrderBy(s => unreachedStates.Count(s1 => productNfa.GetRoutes(s, s1, new HashSet<State>()).Any())).First();
-                    processor.Add(new LayerAssignment(state, 0, new ReadOnlyHashSet<State>(new[] {state})));
+                    processor.Add(new LayerAssignment(state, 0, new ReadOnlyHashSet<State>(productNfa.StartStates.Concat(new[] {state}))));
                 }
                 firstLoop = false;
                 processor.Run(layerAssignment => {
