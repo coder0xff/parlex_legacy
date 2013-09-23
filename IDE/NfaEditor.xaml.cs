@@ -330,6 +330,7 @@ namespace IDE {
 
         private void Button_Click(object sender, RoutedEventArgs e) {
             if (resetOnArrange) {
+                resetOnArrange = false;
                 _visualizer = new NfaVisualizer(_nfa, new Typeface("Verdana"), 12);
             }
             Arrange();

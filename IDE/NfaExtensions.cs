@@ -92,15 +92,23 @@ namespace IDE {
             Process(productNfa, subSpans, currentState, tailState, ignoredStates, () => {
                 cycleCount++;
                 var startSpanIndex = GetCurrentSpanIndex(existingSpans);
-                foreach (var productSpan in subSpans) {
+                if (subSpans.Count > 1) {
+                    foreach (var productSpan in subSpans) {
+                        productSpan.StartPosition += startSpanIndex;
+                        existingSpans.Add(productSpan);
+                        macroCycleSpans.Add(productSpan);
+                    }
+                    var endSpanIndex = GetCurrentSpanIndex(existingSpans);
+                    var cycleSpan = new ProductSpan("anon-" + Guid.NewGuid() + "*", startSpanIndex, endSpanIndex - startSpanIndex);
+                    existingSpans.Add(cycleSpan);
+                    macroCycleSpans.Add(cycleSpan);
+                } else {
+                    var productSpan = subSpans[0];
                     productSpan.StartPosition += startSpanIndex;
+                    if (!productSpan.Name.EndsWith("*")) productSpan.Name += "*";
                     existingSpans.Add(productSpan);
                     macroCycleSpans.Add(productSpan);
                 }
-                var endSpanIndex = GetCurrentSpanIndex(existingSpans);
-                var cycleSpan = new ProductSpan("anon-" + Guid.NewGuid() + "*", startSpanIndex, endSpanIndex - startSpanIndex);
-                existingSpans.Add(cycleSpan);
-                macroCycleSpans.Add(cycleSpan);
             }, true);
             if (cycleCount > 1) {
                 var nextSpanIndex = GetCurrentSpanIndex(existingSpans);

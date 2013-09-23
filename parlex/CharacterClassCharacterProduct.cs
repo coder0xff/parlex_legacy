@@ -16,7 +16,7 @@ namespace parlex {
         }
 
         public Int32 GetExampleCodePoint() {
-            return CodePoints.OrderBy(x => Rng.Next()).First();
+            return CodePoints.Where(c => c < 128).OrderBy(x => Rng.Next()).First();
         }
 
         public override string GetExample() {

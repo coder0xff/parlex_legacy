@@ -122,7 +122,7 @@ namespace parlex {
                     var selectedSpan = this.Where(span => span.StartPosition == position && span.StartPosition + span.Length > position).OrderBy(span => span.Length).FirstOrDefault();
                     if (selectedSpan == null) return false;
                     Product product;
-                    if (products.TryGetValue(selectedSpan.Name, out product)) {
+                    if (products.TryGetValue(selectedSpan.Name.EndsWith("*") ? selectedSpan.Name.Substring(0, selectedSpan.Name.Length - 1) : selectedSpan.Name, out product)) {
                         builder.Append(product.GetExample());
                     } else {
                         return false;

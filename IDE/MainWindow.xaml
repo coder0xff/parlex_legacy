@@ -14,7 +14,9 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <GridSplitter HorizontalAlignment="Right" Grid.Column="0" VerticalAlignment="Stretch" Width="3"/>
-            <local:ProductEditor x:Name="Editor" Grid.Column ="1"/>
+            <ScrollViewer Grid.Column ="1">
+                <local:ProductEditor x:Name="Editor" />
+            </ScrollViewer>
         </Grid>
         <local:NfaEditor x:Name="GraphEditor" HorizontalAlignment="Left" Margin="0,0,-0,0" VerticalAlignment="Top" Grid.Row="1" NfaChanged="NfaEditor_NfaChanged"/>
     </Grid>
