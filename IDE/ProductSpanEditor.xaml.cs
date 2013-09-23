@@ -34,8 +34,9 @@ namespace IDE {
 
         void SetText() {
             ExemplarText.Inlines.Clear();
+            var paddedText = _exemplar.Text + new string(' ', Math.Max(0, (_productSpan.StartPosition + _productSpan.Length) - _exemplar.Text.Length));
             if (_productSpan.StartPosition > 0) {
-                var run = new Run(_exemplar.Text.Substring(0, _productSpan.StartPosition));
+                var run = new Run(paddedText.Substring(0, _productSpan.StartPosition));
                 run.Foreground = Brushes.LightGray;
                 ExemplarText.Inlines.Add(run);
             }
@@ -43,10 +44,10 @@ namespace IDE {
                 var border = new Border();
                 border.BorderThickness = new System.Windows.Thickness(1);
                 border.BorderBrush = Brushes.Black;
-                var run = new Run(_exemplar.Text.Substring(_productSpan.StartPosition, _productSpan.Length));
-                var inlineUIContainer = new InlineUIContainer(border);
+                var run = new Run(paddedText.Substring(_productSpan.StartPosition, _productSpan.Length));
+                var inlineUiContainer = new InlineUIContainer(border);
                 border.Child = new TextBlock(run);
-                ExemplarText.Inlines.Add(inlineUIContainer);
+                ExemplarText.Inlines.Add(inlineUiContainer);
             }
             if (_productSpan.StartPosition + _productSpan.Length < _exemplar.Text.Length) {
                 var run = new Run(_exemplar.Text.Substring(_productSpan.StartPosition + _productSpan.Length));
