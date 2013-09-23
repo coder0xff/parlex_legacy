@@ -83,6 +83,10 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="ProductEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="ProductSpanEditor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -95,6 +99,9 @@
     </Compile>
     <Compile Include="NfaExtensions.cs" />
     <Compile Include="NfaSequenceExtensions.cs" />
+    <Compile Include="ProductEditor.xaml.cs">
+      <DependentUpon>ProductEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Include="ProductExtensions.cs" />
     <Compile Include="ProductSpanEditor.xaml.cs">
       <DependentUpon>ProductSpanEditor.xaml</DependentUpon>

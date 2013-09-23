@@ -28,5 +28,10 @@ namespace IDE {
             exemplar.Add(productSpan);
             var productSpanEditor = new ProductSpanEditor(exemplar, productSpan);
         }
+
+        private void NfaEditor_NfaChanged() {
+            var nfa = GraphEditor.Nfa;
+            Editor.Sources = nfa.ToExemplarSources("test", CompiledGrammar.GetBuiltInProducts());
+        }
     }
 }

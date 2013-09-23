@@ -182,6 +182,7 @@ namespace IDE {
                         _nfa.StartStates.Add(state);
                     }
                     Update();
+                    NfaChanged();
                 }
                 borders[columnIndex, rowIndex].Background = Brushes.Aqua;
             }
@@ -218,6 +219,7 @@ namespace IDE {
                 var product = _products[productName];
                 _visualizer.ChangeTransitionProduct(transition, product);
                 Update();
+                NfaChanged();
             };
             textBox.KeyDown += (sender, args) => {
                 if (args.Key == Key.Enter) {
@@ -243,6 +245,7 @@ namespace IDE {
                 Update();
                 resetOnArrange = true;
                 e.Handled = true;
+                NfaChanged();
             } else if (o is State) {
                 DrawLine.X1 = DrawLine.X2 = (columnIndex + 0.5) * columnStride;
                 DrawLine.Y1 = DrawLine.Y2 = (rowIndex + 0.5) * rowStride;
@@ -278,6 +281,7 @@ namespace IDE {
                         Update();
                         resetOnArrange = true;
                         e.Handled = true;
+                        NfaChanged();
                     }
                 }
             }
@@ -319,6 +323,7 @@ namespace IDE {
                         }
                     }
                     Update();
+                    NfaChanged();
                 }
             }
         }

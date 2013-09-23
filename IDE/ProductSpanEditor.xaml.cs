@@ -18,7 +18,7 @@ namespace IDE {
     /// <summary>
     /// Interaction logic for ProductSpanEditor.xaml
     /// </summary>
-    public partial class ProductSpanEditor : UserControl, IDisposable {
+    public partial class ProductSpanEditor : IDisposable {
         public ProductSpanEditor(GrammarDocument.ExemplarSource exemplar, GrammarDocument.ProductSpanSource productSpan) {
             _exemplar = exemplar;
             _productSpan = productSpan;

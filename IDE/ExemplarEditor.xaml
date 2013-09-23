@@ -6,9 +6,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
     <StackPanel Orientation="Vertical">
-        <Label FontFamily="Consolas">
-            
-        </Label>
+        <Label Name="TextLabel" FontFamily="Consolas" />
         <StackPanel x:Name="ProductSpanEditors" Orientation="Vertical">
             
         </StackPanel>

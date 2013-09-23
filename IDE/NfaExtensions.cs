@@ -145,7 +145,7 @@ namespace IDE {
             }
         }
 
-        public static GrammarDocument.ExemplarSource[] ToExemplarSources(this Nfa productNfa, String name) {
+        public static GrammarDocument.ExemplarSource[] ToExemplarSources(this Nfa productNfa, String name, Dictionary<String, Product> products) {
             var resultList = new List<GrammarDocument.ExemplarSource>();
             foreach (var startState in productNfa.StartStates) {
                 foreach (var acceptState in productNfa.AcceptStates) {
@@ -160,6 +160,9 @@ namespace IDE {
                         resultList.Add(item);
                     });
                 }
+            }
+            foreach (var result in resultList) {
+                result.TryExemplify(products);
             }
             return resultList.ToArray();
         }

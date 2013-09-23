@@ -14,8 +14,8 @@
                 <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <GridSplitter HorizontalAlignment="Right" Grid.Column="0" VerticalAlignment="Stretch" Width="3"/>
-            <StackPanel Grid.Column="1" x:Name="exemplars"/>
+            <local:ProductEditor x:Name="Editor" Grid.Column ="1"/>
         </Grid>
-        <local:NfaEditor HorizontalAlignment="Left" Margin="0,0,-0,0" VerticalAlignment="Top" Grid.Row="1"/>
+        <local:NfaEditor x:Name="GraphEditor" HorizontalAlignment="Left" Margin="0,0,-0,0" VerticalAlignment="Top" Grid.Row="1" NfaChanged="NfaEditor_NfaChanged"/>
     </Grid>
 </Window>

@@ -107,6 +107,39 @@ namespace parlex {
                 resultBuilder.AppendLine("");
                 return resultBuilder.ToString();
             }
+
+            public bool TryExemplify(Dictionary<String, Product> products) {
+                if (!String.IsNullOrEmpty(_text)) {
+                    return true;
+                }
+                StringBuilder builder = new StringBuilder("");
+                var sequenceLength = this.Max(span => span.StartPosition + span.Length);
+                var remap = new List<int>();
+                for (int position = 0; position < sequenceLength; ) {
+                    while(remap.Count <= position) {
+                        remap.Add(builder.Length);
+                    }
+                    var selectedSpan = this.Where(span => span.StartPosition == position && span.StartPosition + span.Length > position).OrderBy(span => span.Length).FirstOrDefault();
+                    if (selectedSpan == null) return false;
+                    Product product;
+                    if (products.TryGetValue(selectedSpan.Name, out product)) {
+                        builder.Append(product.GetExample());
+                    } else {
+                        return false;
+                    }
+                    position += selectedSpan.Length;
+                }
+                while (remap.Count <= sequenceLength) {
+                    remap.Add(builder.Length);
+                }
+                foreach (var span in this) {
+                    var spanEnd = remap[span.StartPosition + span.Length];
+                    span.StartPosition = remap[span.StartPosition];
+                    span.Length = spanEnd - span.StartPosition;
+                }
+                Text = builder.ToString();
+                return true;
+            }
         }
 
         public readonly List<ExemplarSource> ExemplarSources = new List<ExemplarSource>();

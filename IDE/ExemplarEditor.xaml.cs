@@ -1,25 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows.Controls;
+using parlex;
 
 namespace IDE {
     /// <summary>
     /// Interaction logic for ExemplarEditor.xaml
     /// </summary>
     public partial class ExemplarEditor : UserControl {
-        public ExemplarEditor() {
+        private GrammarDocument.ExemplarSource _exemplar;
+
+        public ExemplarEditor(GrammarDocument.ExemplarSource exemplar) {
             InitializeComponent();
+            Exemplar = exemplar;
+        }
+        
+        public GrammarDocument.ExemplarSource Exemplar {
+            get { return _exemplar; }
+            set {
+                _exemplar = value; 
+                Populate();
+            }
+        }
+
+        private void Populate() {
+            TextLabel.Content = _exemplar.Text;
+            foreach (GrammarDocument.ProductSpanSource productSpanSource in _exemplar) {
+                ProductSpanEditors.Children.Add(new ProductSpanEditor(_exemplar, productSpanSource));
+            }
         }
     }
 }
