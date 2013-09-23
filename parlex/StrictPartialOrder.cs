@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Generic.More;
 using System.Linq;
+using System.Linq.More;
 using System.Text;
 
 namespace parlex {
-    class StrictPartialOrder<T> : IComparer<T> {
+    class StrictPartialOrder<T> : IComparer<T>, IEnumerable<StrictPartialOrder<T>.Edge> {
         private class Node {
             internal readonly HashSet<Node> AdjacentNodes = new HashSet<Node>();
 
@@ -32,7 +35,7 @@ namespace parlex {
 
         private void CheckForCyclicity() {
             var ancestors = new Stack<Node>();
-            foreach (var node in _valueToNode) {
+            foreach (var node in _valueToNode.Left) {
                 CheckForCyclicityRecursively(node.Value, ancestors);
             }
         }
@@ -56,12 +59,12 @@ namespace parlex {
         }
 
         private void ApplyTransitivity() {
-            foreach (var node in _valueToNode.Values) {
+            foreach (var node in _valueToNode.Left.Values) {
                 node.ApplyTransitivity();
             }
         }
 
-        private readonly Dictionary<T, Node> _valueToNode;
+        private readonly Bimap<T, Node> _valueToNode;
 
         internal StrictPartialOrder(IEnumerable<Edge> edges) {
             var values = new HashSet<T>();
@@ -70,11 +73,11 @@ namespace parlex {
                 values.Add(edge.To);
             }
 
-            _valueToNode = values.ToDictionary(x => x, x => new Node());
+            _valueToNode = values.ToBimap(x => x, x => new Node());
 
             foreach (var edge in edges) {
-                Node fromNode = _valueToNode[edge.From];
-                Node toNode = _valueToNode[edge.To];
+                Node fromNode = _valueToNode.Left[edge.From];
+                Node toNode = _valueToNode.Left[edge.To];
                 fromNode.AdjacentNodes.Add(toNode);
             }
 
@@ -85,15 +88,27 @@ namespace parlex {
 
         public int Compare(T x, T y) {
             Node xNode, yNode;
-            if (!_valueToNode.TryGetValue(x, out xNode)) {
+            if (!_valueToNode.Left.TryGetValue(x, out xNode)) {
                 return 0;
             }
-            if (!_valueToNode.TryGetValue(y, out yNode)) {
+            if (!_valueToNode.Left.TryGetValue(y, out yNode)) {
                 return 0;
             }
             if (xNode.AdjacentNodes.Contains(yNode)) return -1;
             if (yNode.AdjacentNodes.Contains(xNode)) return 1;
             return 0;
+        }
+
+        public IEnumerator<Edge> GetEnumerator() {
+            foreach (var node in _valueToNode.Left) {
+                foreach (var adjacentNode in node.Value.AdjacentNodes) {
+                    yield return new Edge(node.Key, _valueToNode.Right[adjacentNode]);
+                }
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() {
+            return GetEnumerator();
         }
     }
 }

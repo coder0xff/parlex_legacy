@@ -67,21 +67,5 @@ namespace IDE {
 
             return result;
         }
-
-        public static string GetExample(this CompiledGrammar.NfaSequence sequence) {
-            var result = new StringBuilder();
-            for (var sequenceCounter = 0; sequenceCounter < sequence.RelationBranches.Length;) {
-                var productReference = sequence.RelationBranches[sequenceCounter].OrderBy(x => Rng.Next()).First(); //get a random branch
-                var repetitionCount = 1;
-                if (productReference.IsRepetitious) {
-                    repetitionCount = Rng.Next(1, 4);
-                }
-                for (var repitition = 0; repitition < repetitionCount; repitition++) {
-                    result.Append(productReference.Product.GetExample());
-                }
-                sequenceCounter = productReference.ExitSequenceCounter - sequence.SpanStart;
-            }
-            return result.ToString();
-        }
     }
 }

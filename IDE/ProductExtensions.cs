@@ -11,8 +11,8 @@ namespace IDE {
             return Nfa<Product, int>.Union(product.Sequences.Select(sequence => sequence.ToNfa())).Minimized();
         }
 
-        public static GrammarDocument.ExemplarSource[] GenerateExemplarSources(this Product product) {
-            throw new NotImplementedException();
+        public static GrammarDocument.ExemplarSource[] GenerateExemplarSources(this Product product, Dictionary<String, Product> allProducts) {
+            return product.ToNfa().ToExemplarSources(product.Title, allProducts);
         }
     }
 }

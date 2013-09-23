@@ -2,29 +2,37 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
+using Common;
 
 namespace parlex {
     public class CompiledGrammar : IReadOnlyDictionary<string, Product> {
         private readonly Dictionary<Int32, Product> _codePointProducts = new Dictionary<Int32, Product>();
         private readonly List<CharacterClassCharacterProduct> _characterClassProducts = new List<CharacterClassCharacterProduct>();
-        internal readonly Dictionary<String, Product> UserProducts;
-        internal readonly StrictPartialOrder<Product> Precedences;
+        internal readonly Dictionary<String, Product> AllProducts;
+        internal readonly StrictPartialOrder<Product> _precedences;
 
         public Dictionary<String, Product> GetAllProducts() {
-            return UserProducts.Values.ToDictionary(product => product.Title);
+            return AllProducts.Values.ToDictionary(product => product.Title);
+        }
+
+        public IEnumerable<Product> NonCharacterProducts {
+            get {
+                return AllProducts.Values.Where(product => !(product is ICharacterProduct));
+            }
         }
 
         public CompiledGrammar(GrammarDocument document) {
             InitializeBuiltInProducts();
             CreateCustomCharacterSets(document);
-            UserProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
+            AllProducts = _codePointProducts.ToDictionary(x => x.Value.Title, x=>x.Value);
             foreach (var product in _characterClassProducts) {
-                UserProducts.Add(product.Title, product);
+                AllProducts.Add(product.Title, product);
             }
-            var exemplars = GetExemplars(document.ExemplarSources, UserProducts);
+            var exemplars = GetExemplars(document.ExemplarSources, AllProducts);
             Analyze(exemplars);
             CreateIsARelations(document);
-            Precedences = CreatePrecedesEdges(document);
+            _precedences = CreatePrecedesEdges(document);
         }
 
         private void CreateCustomCharacterSets(GrammarDocument document) {
@@ -43,11 +51,11 @@ namespace parlex {
                                 items.AddRange(source.GetUtf32CodePoints());
                             }
                         }
-                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], items));
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], items, characterSetSource));
                         break;
                     case GrammarDocument.CharacterSetEntry.Types.Inversion: {
                         var source = _characterClassProducts.Find(x => x.Title == characterSetSource.Params[1]);
-                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], Unicode.All.Except(source.CodePoints)));
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], Unicode.All.Except(source.CodePoints), characterSetSource));
                     }
                         break;
                     case GrammarDocument.CharacterSetEntry.Types.Union: {
@@ -56,7 +64,7 @@ namespace parlex {
                             var source = _characterClassProducts.Find(x => x.Title == param);
                             current = current.Union(source.CodePoints);
                         }
-                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current));
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current, characterSetSource));
                     }
                         break;
                     case GrammarDocument.CharacterSetEntry.Types.Intersection: {
@@ -65,7 +73,7 @@ namespace parlex {
                             var source = _characterClassProducts.Find(x => x.Title == param);
                             current = current.Intersect(source.CodePoints);
                         }
-                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current));
+                        _characterClassProducts.Add(new CharacterClassCharacterProduct(characterSetSource.Params[0], current, characterSetSource));
                     }
                         break;
                 }
@@ -95,16 +103,16 @@ namespace parlex {
         }
         private void CreateIsARelations(GrammarDocument document) {
             foreach (var isASource in document.IsASources) {
-                var leftProduct = UserProducts[isASource.LeftProduct];
-                var rightProduct = UserProducts[isASource.RightProduct];
+                var leftProduct = AllProducts[isASource.LeftProduct];
+                var rightProduct = AllProducts[isASource.RightProduct];
                 var sequence = new NfaSequence(0, 1, false, rightProduct, true);
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
-                UserProducts[isASource.RightProduct].Sequences.Add(sequence);
+                AllProducts[isASource.RightProduct].Sequences.Add(sequence);
             }
         }
 
         private StrictPartialOrder<Product> CreatePrecedesEdges(GrammarDocument document) {
-            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(UserProducts[x.LeftProduct], UserProducts[x.RightProduct]));
+            var edges = document.PrecedesSources.Select(x => new StrictPartialOrder<Product>.Edge(AllProducts[x.LeftProduct], AllProducts[x.RightProduct]));
             return new StrictPartialOrder<Product>(edges);
         }
 
@@ -112,12 +120,12 @@ namespace parlex {
             foreach (var codePoint in Unicode.All) {
                 CreateCodePointProduct(codePoint);
             }
-            _characterClassProducts.Add(new CharacterClassCharacterProduct("lower_letter", Unicode.LowercaseLetters));
-            _characterClassProducts.Add(new CharacterClassCharacterProduct("upper_letter", Unicode.UppercaseLetters));
-            _characterClassProducts.Add(new CharacterClassCharacterProduct("letter", Unicode.Letters));
-            _characterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers));
-            _characterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics));
-            _characterClassProducts.Add(new CharacterClassCharacterProduct("white_space", Unicode.WhiteSpace));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("lower_letter", Unicode.LowercaseLetters, default(GrammarDocument.CharacterSetEntry)));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("upper_letter", Unicode.UppercaseLetters, default(GrammarDocument.CharacterSetEntry)));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("letter", Unicode.Letters, default(GrammarDocument.CharacterSetEntry)));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("digit", Unicode.DecimalDigitNumbers, default(GrammarDocument.CharacterSetEntry)));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("letter_or_digit", Unicode.AlphaNumerics, default(GrammarDocument.CharacterSetEntry)));
+            _characterClassProducts.Add(new CharacterClassCharacterProduct("white_space", Unicode.WhiteSpace, default(GrammarDocument.CharacterSetEntry)));
         }
 
         static public Dictionary<String, Product> GetBuiltInProducts() {
@@ -153,7 +161,7 @@ namespace parlex {
             var currentlyEnteredSequences = new HashSet<NfaSequence>();
             for (int startIndex = 0; startIndex < length; startIndex++) {
                 foreach (NfaSequence node in sequencesByStartIndex[startIndex]) {
-                    if (!(node.OwnerProduct is IBuiltInCharacterProduct)) {
+                    if (!(node.OwnerProduct is ICharacterProduct)) {
                         currentlyEnteredSequences.Add(node);
                     }
                 }
@@ -174,7 +182,7 @@ namespace parlex {
                                                        lastCharacterIndexOfSequence <= lastCharacterIndexOfNode) ||
                                                       (lastCharacterIndexOfSequence < lastCharacterIndexOfNode
                                                       /*&& already know that startIndex >= node.SpanStart*/) ||
-                                                      (sequence.OwnerProduct is IBuiltInCharacterProduct); //if not strictly nested, in this case we can assume an "is a" relationship
+                                                      (sequence.OwnerProduct is ICharacterProduct); //if not strictly nested, in this case we can assume an "is a" relationship
                         bool isTrailingRelation = (startIndex - node.SpanStart) > lastCharacterIndexOfNode;
                         if (sequenceIsNestedInNode || isTrailingRelation) {
                             node.RelationBranches[startIndex - node.SpanStart].Add(new NfaSequence.ProductReference(sequence.OwnerProduct, sequence.IsRepitious, sequence.SpanStart + sequence.SpanLength));
@@ -188,7 +196,7 @@ namespace parlex {
             foreach (Exemplar entry in entries) {
                 CreateRelations(entry);
             }
-            foreach (Product product in UserProducts.Values) {
+            foreach (Product product in AllProducts.Values) {
 
                 foreach (var nfaSequence in product.Sequences) {
                     RemoveUnneededCodePointBranches(nfaSequence);
@@ -303,7 +311,7 @@ namespace parlex {
             AddCodePointProducts(entries);
             List<Product> products = entries.SelectMany(x => x.ProductSpans).Select(x => x.Product).ToList();
             foreach (Product product in products) {
-                if (!(product is IBuiltInCharacterProduct))
+                if (!(product is ICharacterProduct))
                     product.Sequences.Clear();
             }
             CreateRelations(entries);
@@ -348,38 +356,70 @@ namespace parlex {
             public override string ToString() {
                 return OwnerProduct.Title + (IsRepitious ? "*" : "");
             }
+
+            public string GetExample() {
+                var result = new StringBuilder();
+                for (var sequenceCounter = 0; sequenceCounter < RelationBranches.Length; ) {
+                    var untriedProductReferences = new HashSet<ProductReference>(RelationBranches[sequenceCounter]);
+                    bool success = false;
+                    while(untriedProductReferences.Count > 0) {
+                        var productReference = untriedProductReferences.OrderBy(x => Rng.Next()).First(); //get a random branch
+                        untriedProductReferences.Remove(productReference);
+                        var repetitionCount = 1;
+                        if (productReference.IsRepetitious) {
+                            repetitionCount = Rng.Next(1, 4);
+                        }
+                        for (var repitition = 0; repitition < repetitionCount; repitition++) {
+                            var productString = productReference.Product.GetExample();
+                            if (productString == null) {
+                                result.Append(productString);
+                                success = true;
+                                sequenceCounter = productReference.ExitSequenceCounter - SpanStart;
+                                break;
+                            }
+                        }
+                        if (success) break;
+                    }
+                    if (!success) return null;
+                }
+                return result.ToString();
+            }
         }
 
         bool IReadOnlyDictionary<string, Product>.ContainsKey(string key) {
-            return UserProducts.ContainsKey(key);
+            return AllProducts.ContainsKey(key);
         }
 
         IEnumerable<string> IReadOnlyDictionary<string, Product>.Keys {
-            get { return UserProducts.Keys; }
+            get { return AllProducts.Keys; }
         }
 
         bool IReadOnlyDictionary<string, Product>.TryGetValue(string key, out Product value) {
-            return UserProducts.TryGetValue(key, out value);
+            return AllProducts.TryGetValue(key, out value);
         }
 
         IEnumerable<Product> IReadOnlyDictionary<string, Product>.Values {
-            get { return UserProducts.Values; }
+            get { return AllProducts.Values; }
         }
 
         Product IReadOnlyDictionary<string, Product>.this[string key] {
-            get { return UserProducts[key]; }
+            get { return AllProducts[key]; }
         }
 
         int IReadOnlyCollection<KeyValuePair<string, Product>>.Count {
-            get { return UserProducts.Count; }
+            get { return AllProducts.Count; }
+        }
+
+        public IEnumerable<Tuple<Product, Product>> Precedences {
+            get { return _precedences.Select(edge => new Tuple<Product, Product>(edge.From, edge.To)); }
         }
 
         IEnumerator<KeyValuePair<string, Product>> IEnumerable<KeyValuePair<string, Product>>.GetEnumerator() {
-            return UserProducts.GetEnumerator();
+            return AllProducts.GetEnumerator();
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-            return UserProducts.GetEnumerator();
+            return AllProducts.GetEnumerator();
         }
 
         public static bool IsBuiltInProductName(string productName) {

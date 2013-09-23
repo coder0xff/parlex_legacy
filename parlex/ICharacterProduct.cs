@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace parlex {
-    public interface IBuiltInCharacterProduct {
+    public interface ICharacterProduct {
         bool Match(Int32 codePoint);
         Int32 GetExampleCodePoint();
     }

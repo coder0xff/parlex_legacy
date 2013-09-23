@@ -123,7 +123,7 @@ namespace UnitTestProject1 {
             var product = compiledGrammar.GetAllProducts()["product_name"];
             var nfa = product.ToNfa();
             nfa = nfa.Minimized();
-            var exemplarSources = nfa.ToExemplarSources("test_product");
+            var exemplarSources = nfa.ToExemplarSources("test_product", compiledGrammar.GetAllProducts());
             foreach (var exemplarSource in exemplarSources) {
                 System.Diagnostics.Debug.WriteLine(exemplarSource.ToString());
             }
@@ -143,7 +143,7 @@ namespace UnitTestProject1 {
             nfa.StartStates.Add(state0);
             nfa.AcceptStates.Add(state1);
             nfa.TransitionFunction[state0][aProduct].Add(state1);
-            var exemplarSources = nfa.ToExemplarSources("test_product");
+            var exemplarSources = nfa.ToExemplarSources("test_product", compiledGrammar.GetAllProducts());
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
@@ -173,7 +173,7 @@ namespace UnitTestProject1 {
             nfa.TransitionFunction[state0][aProduct].Add(state1);
             nfa.TransitionFunction[state1][bProduct].Add(state2);
             nfa.TransitionFunction[state2][cProduct].Add(state1);
-            var exemplarSources = nfa.ToExemplarSources("test_product");
+            var exemplarSources = nfa.ToExemplarSources("test_product", compiledGrammar.GetAllProducts());
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
@@ -216,7 +216,7 @@ namespace UnitTestProject1 {
             nfa.TransitionFunction[state2][fProduct].Add(state4);
             nfa.TransitionFunction[state3][gProduct].Add(state4);
             System.Diagnostics.Debug.Assert(nfa.States.Count > 0);
-            var exemplarSources = nfa.ToExemplarSources("test_product");
+            var exemplarSources = nfa.ToExemplarSources("test_product", compiledGrammar.GetAllProducts());
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
@@ -261,7 +261,7 @@ namespace UnitTestProject1 {
             nfa.TransitionFunction[state2][fProduct].Add(state4);
             nfa.TransitionFunction[state3][gProduct].Add(state4);
             nfa.TransitionFunction[state0][hProduct].Add(state2);
-            var exemplarSources = nfa.ToExemplarSources("test_product");
+            var exemplarSources = nfa.ToExemplarSources("test_product", compiledGrammar.GetAllProducts());
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);
@@ -307,7 +307,7 @@ namespace UnitTestProject1 {
             nfa.TransitionFunction[state3][gProduct].Add(state4);
             nfa.TransitionFunction[state0][hProduct].Add(state2);
             nfa.TransitionFunction[state4][iProduct].Add(state1);
-            var exemplarSources = nfa.ToExemplarSources("test_product");
+            var exemplarSources = nfa.ToExemplarSources("test_product", compiledGrammar.GetAllProducts());
             String generatedGrammar = exemplarSources.Aggregate("", (current, exemplarSource) => current + (Environment.NewLine + exemplarSource));
             var generatedGrammarDocument = GrammarDocument.FromString(generatedGrammar);
             var generatedCompiledGrammar = new CompiledGrammar(generatedGrammarDocument);

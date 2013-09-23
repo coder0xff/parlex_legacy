@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Common;
 
 namespace parlex {
@@ -46,8 +47,12 @@ namespace parlex {
         }
 
         public virtual string GetExample() {
-            var sequence = Sequences.OrderBy(t => Rng.Next()).First(); //get a random sequence
-            throw new NotImplementedException();
+            return Sequences.Select(sequence => sequence.GetExample()).Where(example => example != null).OrderBy(example => Rng.Next()).FirstOrDefault();
+        }
+
+        public void ReplaceSequences(Product other) {
+            Sequences.Clear();
+            Sequences.AddRange(other.Sequences);
         }
     }
 }

@@ -1,0 +1,31 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using parlex;
+
+namespace IDE {
+    public static class CompiledGrammarExtensions {
+        public static GrammarDocument ToGrammarDocument(this CompiledGrammar compiledGrammar) {
+            var result = new GrammarDocument();
+            var allProducts = compiledGrammar.GetAllProducts();
+            foreach (var product in allProducts) {
+                if (CompiledGrammar.IsBuiltInProductName(product.Key)) {
+                    //don't do built in products
+                } else {
+                    var characterProduct = product.Value as CharacterClassCharacterProduct;
+                    if (characterProduct != null) {
+                        result.CharacterSetSources.Add(characterProduct.Source);
+                    } else {
+                        result.ExemplarSources.AddRange(product.Value.GenerateExemplarSources(allProducts));
+                    }
+                }
+            }
+            foreach (var result1 in compiledGrammar.Precedences.Select(t => new GrammarDocument.Precedes(t.Item1.Title, t.Item2.Title))) {
+                result.PrecedesSources.Add(result1);
+            }
+            return result;
+        }
+    }
+}

@@ -121,8 +121,8 @@ namespace parlex {
         }
 
         static public ParseResult Parse(String text, String productName, CompiledGrammar grammar) {
-            var toMatch = grammar.UserProducts[productName];
-            return new Parser(text, toMatch, grammar.Precedences)._result;
+            var toMatch = grammar.AllProducts[productName];
+            return new Parser(text, toMatch, grammar._precedences)._result;
         }
 
         private class DependencyMediator {
@@ -247,7 +247,7 @@ namespace parlex {
                 return new HashSet<int>();
             }
 
-            var builtInCharacterProduct = product as IBuiltInCharacterProduct;
+            var builtInCharacterProduct = product as ICharacterProduct;
             if (builtInCharacterProduct != null) {
                 if (builtInCharacterProduct.Match(_textCodePoints[textToParseIndex])) {
                     return new HashSet<int> { 1 };
@@ -358,8 +358,8 @@ namespace parlex {
                 int precedence = GetOrder(aSubProduct, bSubProduct);
                 if (precedence < 0) return b;
                 if (precedence > 0) return a;
-                bool aSubProductIsBuiltIn = aSubProduct is IBuiltInCharacterProduct;
-                bool bSubProductIsBuiltIn = bSubProduct is IBuiltInCharacterProduct;
+                bool aSubProductIsBuiltIn = aSubProduct is ICharacterProduct;
+                bool bSubProductIsBuiltIn = bSubProduct is ICharacterProduct;
                 if (aSubProductIsBuiltIn && !bSubProductIsBuiltIn) return b;
                 if (!aSubProductIsBuiltIn && bSubProductIsBuiltIn) return a;
                 if (aSubProductIsBuiltIn) continue;

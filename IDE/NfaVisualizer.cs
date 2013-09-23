@@ -266,7 +266,7 @@ namespace IDE {
                         }
                     } else if (o is Transition) {
                         var transition = (Transition) o;
-                        var rectangleRadius = transition.InputSymbol is IBuiltInCharacterProduct ? margin : 0;
+                        var rectangleRadius = transition.InputSymbol is ICharacterProduct ? margin : 0;
                         var g = _formattedTexts[((Transition) o).InputSymbol.ToString()];
                         var outlineRect = new Rect(center.X - g.Bounds.Width * 0.5, center.Y - g.Bounds.Height * 0.5, g.Bounds.Width, g.Bounds.Height);
                         outlineRect.Inflate(margin, margin);

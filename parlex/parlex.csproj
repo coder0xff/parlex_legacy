@@ -46,7 +46,7 @@
     <Compile Include="GrammarDocument.cs" />
     <Compile Include="Exemplar.cs" />
     <Compile Include="CompiledGrammar.cs" />
-    <Compile Include="IBuiltInCharacterProduct.cs" />
+    <Compile Include="ICharacterProduct.cs" />
     <Compile Include="IPropertyChangedNotifier.cs" />
     <Compile Include="ObservableList.cs" />
     <Compile Include="Parser.cs" />
