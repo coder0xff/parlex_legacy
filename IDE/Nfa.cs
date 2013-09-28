@@ -490,7 +490,7 @@ namespace IDE {
         }
 
         public static bool GridSetSpansRow(Bimap<int, Grid> orderedGrids, IEnumerable<int> gridIndices, bool[,] reducedAutomataMatrix, int rowIndex) {
-            var neededColumns = new HashSet<int>(Enumerable.Range(0, reducedAutomataMatrix.GetUpperBound(0) + 1).Where(columnIndex => reducedAutomataMatrix[rowIndex, columnIndex]));
+            var neededColumns = new HashSet<int>(Enumerable.Range(0, reducedAutomataMatrix.GetUpperBound(1) + 1).Where(columnIndex => reducedAutomataMatrix[rowIndex, columnIndex]));
             foreach (var gridIndex in gridIndices) {
                 var grid = orderedGrids.Left[gridIndex];
                 if (grid.Rows.Contains(rowIndex)) {

@@ -371,7 +371,7 @@ namespace parlex {
                         }
                         for (var repitition = 0; repitition < repetitionCount; repitition++) {
                             var productString = productReference.Product.GetExample();
-                            if (productString == null) {
+                            if (productString != null) {
                                 result.Append(productString);
                                 success = true;
                                 sequenceCounter = productReference.ExitSequenceCounter - SpanStart;
