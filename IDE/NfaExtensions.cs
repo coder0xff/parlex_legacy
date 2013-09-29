@@ -153,26 +153,30 @@ namespace IDE {
             }
         }
 
-        public static GrammarDocument.ExemplarSource[] ToExemplarSources(this Nfa productNfa, String name, Dictionary<String, Product> products) {
-            var resultList = new List<GrammarDocument.ExemplarSource>();
+        public static GrammarDocument ToGrammarDocument(this Nfa productNfa, String name, Dictionary<String, Product> products) {
+            var result = new GrammarDocument();
             foreach (var startState in productNfa.StartStates) {
                 foreach (var acceptState in productNfa.AcceptStates) {
                     var productSpans = new List<ProductSpan>();
                     Process(productNfa, productSpans, startState, acceptState, new HashSet<State>(), () => {
-                        var item = new GrammarDocument.ExemplarSource("");
-                        foreach (var productSpanSource in productSpans) {
-                            item.Add(productSpanSource);
+                        if (productSpans.Count == 1) {
+                            result.IsASources.Add(new GrammarDocument.IsA(productSpans[0].Name, name));
+                        } else {
+                            var item = new GrammarDocument.ExemplarSource("");
+                            foreach (var productSpanSource in productSpans) {
+                                item.Add(productSpanSource);
+                            }
+                            var length = GetCurrentSpanIndex(productSpans);
+                            item.Add(new ProductSpan(name, 0, length));
+                            result.ExemplarSources.Add(item);
                         }
-                        var length = GetCurrentSpanIndex(productSpans);
-                        item.Add(new ProductSpan(name, 0, length));
-                        resultList.Add(item);
                     });
                 }
             }
-            foreach (var result in resultList) {
-                result.TryExemplify(products);
+            foreach (var exemplar in result.ExemplarSources) {
+                exemplar.TryExemplify(products);
             }
-            return resultList.ToArray();
+            return result;
         }
 
         public static void SaveToGraphMLFile(this Nfa productNfa, String path) {

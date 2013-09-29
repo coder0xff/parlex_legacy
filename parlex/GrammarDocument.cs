@@ -143,6 +143,24 @@ namespace parlex {
                     span.Length = spanEnd - span.StartPosition;
                 }
                 Text = builder.ToString();
+                //remove code point spans that are redundant
+                var textCodePoints = Text.GetUtf32CodePoints();
+                var codePointSpansToRemove = new List<ProductSpanSource>();
+                foreach (var span in this) {
+                    if (span.Length == 1) {
+                        var noAsteriskName = span.Name.EndsWith("*") ? span.Name.Substring(0, span.Name.Length - 1) : span.Name;
+                        var product = products[noAsteriskName];
+                        var codePointProduct = product as CodePointCharacterProduct;
+                        if (codePointProduct != null) {
+                            if (codePointProduct.GetExampleCodePoint() == textCodePoints[span.StartPosition]) {
+                                codePointSpansToRemove.Add(span);
+                            }
+                        }
+                    }
+                }
+                foreach (var productSpanSource in codePointSpansToRemove) {
+                    this.Remove(productSpanSource);
+                }
                 return true;
             }
         }

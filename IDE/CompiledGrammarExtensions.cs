@@ -18,7 +18,11 @@ namespace IDE {
                     if (characterProduct != null) {
                         result.CharacterSetSources.Add(characterProduct.Source);
                     } else {
-                        result.ExemplarSources.AddRange(product.Value.GenerateExemplarSources(allProducts));
+                        var subGrammarDocument = product.Value.ToGrammarDocument(allProducts);
+                        result.ExemplarSources.AddRange(subGrammarDocument.ExemplarSources);
+                        foreach (var isASource in subGrammarDocument.IsASources) {
+                            result.IsASources.Add(isASource);
+                        }
                     }
                 }
             }

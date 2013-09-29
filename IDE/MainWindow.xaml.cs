@@ -38,10 +38,8 @@ namespace IDE {
         private void NfaEditor_NfaChanged() {
             var product = (Product)ProductList.SelectedItem;
             var nfa = GraphEditor.Nfa;
-            var exemplarSources = nfa.ToExemplarSources(product.Title, _compiledGrammar.GetAllProducts());
-            Editor.Sources = exemplarSources;
-            GrammarDocument tempGrammarDocument = new GrammarDocument();
-            tempGrammarDocument.ExemplarSources.AddRange(exemplarSources);
+            var tempGrammarDocument = nfa.ToGrammarDocument(product.Title, _compiledGrammar.GetAllProducts());
+            Editor.Sources = tempGrammarDocument.ExemplarSources.ToArray();
             var tempGrammar = new CompiledGrammar(tempGrammarDocument);
             product.ReplaceSequences(tempGrammar.GetAllProducts()[product.Title]);
         }

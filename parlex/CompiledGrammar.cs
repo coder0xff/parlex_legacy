@@ -103,7 +103,13 @@ namespace parlex {
         }
         private void CreateIsARelations(GrammarDocument document) {
             foreach (var isASource in document.IsASources) {
+                if (!AllProducts.ContainsKey(isASource.LeftProduct)) {
+                    AllProducts[isASource.LeftProduct] = new Product(isASource.LeftProduct);
+                }
                 var leftProduct = AllProducts[isASource.LeftProduct];
+                if (!AllProducts.ContainsKey(isASource.RightProduct)) {
+                    AllProducts[isASource.RightProduct] = new Product(isASource.RightProduct);
+                }
                 var rightProduct = AllProducts[isASource.RightProduct];
                 var sequence = new NfaSequence(0, 1, false, rightProduct, true);
                 sequence.RelationBranches[0].Add(new NfaSequence.ProductReference(leftProduct, false, 1));
@@ -202,8 +208,7 @@ namespace parlex {
                     RemoveUnneededCodePointBranches(nfaSequence);
                 }
 
-                bool hasAnyNonCodePointsInSequences;
-                hasAnyNonCodePointsInSequences = RemoveBranchRedundenciesAndCullEmptySequences(product, out hasAnyNonCodePointsInSequences);
+                bool hasAnyNonCodePointsInSequences = RemoveBranchRedundenciesAndCullEmptySequences(product);
 
                 if (hasAnyNonCodePointsInSequences) {
                     RemoveUnneededCodePointSequences(product);
@@ -211,8 +216,8 @@ namespace parlex {
             }
         }
 
-        private static bool RemoveBranchRedundenciesAndCullEmptySequences(Product product, out bool hasAnyNonCodePointsInSequences) {
-            hasAnyNonCodePointsInSequences = false;
+        private static bool RemoveBranchRedundenciesAndCullEmptySequences(Product product) {
+            bool hasAnyNonCodePointsInSequences = false;
             int sequenceIndex = 0;
             var sequenceIndicesToRemove = new List<int>();
             foreach (NfaSequence sequence in product.Sequences) {
