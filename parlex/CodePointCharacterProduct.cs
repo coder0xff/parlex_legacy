@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 
 namespace parlex {
     public class CodePointCharacterProduct : Product, ICharacterProduct {
@@ -17,6 +18,9 @@ namespace parlex {
         }
 
         public override string GetExample() {
+            if (Unicode.LineTerminators.Contains(CodePoint)) {
+                return null;
+            }
             return char.ConvertFromUtf32(GetExampleCodePoint());
         }
 

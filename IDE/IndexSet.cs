@@ -6,7 +6,8 @@ using System.Linq;
 
 namespace IDE {
     /// <summary>
-    /// Like a Set&lt;int&gt; but stores a single bit for every integer between 0 and Count (exclusive). This way, Set intersections, unions, etc, can often be done very quickly.
+    /// Like a Set&lt;int&gt; but stores a single bit for every integer between 0 and Count (exclusive). This way, Set intersections, unions, copy, etc, can be done extremely quickly on small sets
+    /// The algorithms (even Count) are, however, linear and may not do as well as logarithmic algorithms once it gets larger (probably in the thousands)
     /// </summary>
     class IndexSet : ISet<int> {
         private readonly BitList _storage;
@@ -19,19 +20,19 @@ namespace IDE {
             _storage = (BitList)other._storage.Clone();
         }
 
-        public IndexSet(IEnumerable<int> source) {
+        public IndexSet(IEnumerable<int> source, int? count = null) {
 // ReSharper disable once PossibleMultipleEnumeration
-            _storage = new BitList(source.Max());
+            _storage = new BitList(count.HasValue ? count.Value : source.Max());
 // ReSharper disable once PossibleMultipleEnumeration
             foreach (var i in source) {
                 _storage[i] = true;
             }
         }
+
         public IEnumerator<int> GetEnumerator() {
-            for (int i = 0; i < _storage.Count; i++) {
-                if (_storage[i]) {
-                    yield return i;
-                }
+            for (long i = 0; i < _storage.LongCount; i++) {
+                i += _storage.CountLeadingZeros(i);
+                if (i < _storage.LongCount) yield return (int)i; //unfortunately, this comparison must be made twice per iteration, because CountLeadingZeros also should not get _storage.LongCount;
             }
         }
 
@@ -50,28 +51,31 @@ namespace IDE {
 
         public void UnionWith(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
                 _storage.OrWith(asIndexSet._storage);
+            } else {
+                throw new NotImplementedException();
             }
-            throw new NotImplementedException();
         }
 
         public void IntersectWith(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
                 _storage.AndWith(asIndexSet._storage);
+            } else {
+                throw new NotImplementedException();
             }
-            throw new NotImplementedException();
         }
 
         public void ExceptWith(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
                 _storage.Not();
                 _storage.OrWith(asIndexSet._storage);
                 _storage.Not();
+            } else {
+                throw new NotImplementedException();
             }
-            throw new NotImplementedException();
         }
 
         private void AbsoluteCompliment() {
@@ -82,13 +86,14 @@ namespace IDE {
             var asIndexSet = other as IndexSet;
             if (asIndexSet != null && asIndexSet.Count == Count) {
                 _storage.XorWith(asIndexSet._storage);
+            } else {
+                throw new NotImplementedException();
             }
-            throw new NotImplementedException();
         }
 
         public bool IsSubsetOf(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
                 var temp = new IndexSet(this);
                 temp.ExceptWith(asIndexSet);
                 return temp._storage.CountLeadingZeros() == temp._storage.LongCount;
@@ -98,7 +103,7 @@ namespace IDE {
 
         public bool IsSupersetOf(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
                 var temp = new IndexSet(asIndexSet);
                 temp.ExceptWith(this);
                 return temp._storage.CountLeadingZeros() == temp._storage.LongCount;
@@ -108,16 +113,16 @@ namespace IDE {
 
         public bool IsProperSupersetOf(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
-                return IsSupersetOf(other) && _storage.PopulationCount() > asIndexSet._storage.PopulationCount();
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
+                return IsSupersetOf(other) && Count > asIndexSet.Count;
             }
             throw new NotImplementedException();
         }
 
         public bool IsProperSubsetOf(IEnumerable<int> other) {
             var asIndexSet = other as IndexSet;
-            if (asIndexSet != null && asIndexSet.Count == Count) {
-                return IsSubsetOf(asIndexSet) && _storage.PopulationCount() < asIndexSet._storage.PopulationCount();
+            if (asIndexSet != null && asIndexSet._storage.LongCount == _storage.LongCount) {
+                return IsSubsetOf(asIndexSet) && Count < asIndexSet.Count;
             }
             throw new NotImplementedException();
         }
@@ -150,7 +155,8 @@ namespace IDE {
             throw new NotImplementedException();
         }
 
-        public int Count { get { return _storage.Count; } }
+        public int Count { get { return (int)_storage.PopulationCount(); } }
+
         public bool IsReadOnly { get { return false; } }
     }
 }

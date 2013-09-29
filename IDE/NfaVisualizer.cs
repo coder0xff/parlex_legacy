@@ -203,7 +203,6 @@ namespace IDE {
             double decay = 0.9999;
             DateTime startTime = DateTime.Now;
             while (DateTime.Now - startTime < maxProcessDuration) {
-                System.Diagnostics.Debug.WriteLine(mutateStrength);
                 var next = new NfaVisualizer(currentBest);
                 next.Mutate(mutateCount);
                 var newCount = next.GetFitnessReciprocal();

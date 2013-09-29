@@ -22,7 +22,8 @@ namespace parlex {
         }
 
         public override string GetExample() {
-            return char.ConvertFromUtf32(GetExampleCodePoint());
+            var temp = CodePoints.Where(c => c < 128 && !Unicode.LineTerminators.Contains(c)).OrderBy(x => Rng.Next()).ToArray();
+            return temp.Length == 0 ? null : char.ConvertFromUtf32(temp.First());
         }
 
         public GrammarDocument.CharacterSetEntry Source {get { return _source; }}

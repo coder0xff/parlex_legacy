@@ -123,7 +123,12 @@ namespace parlex {
                     if (selectedSpan == null) return false;
                     Product product;
                     if (products.TryGetValue(selectedSpan.Name.EndsWith("*") ? selectedSpan.Name.Substring(0, selectedSpan.Name.Length - 1) : selectedSpan.Name, out product)) {
-                        builder.Append(product.GetExample());
+                        string subExample = product.GetExample();
+                        if (subExample != null) {
+                            builder.Append(subExample);
+                        } else {
+                            return false;
+                        }
                     } else {
                         return false;
                     }

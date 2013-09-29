@@ -76,7 +76,7 @@ namespace UnitTestProject1 {
             var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
-            var covers = nfa.EnumerateCovers(ram, primeGrids);
+            var covers = nfa.EnumerateCovers(ram, primeGrids, TestNfa.States.Count - 1);
             foreach (var enumerateCover in covers) {
             }
         }
@@ -89,7 +89,7 @@ namespace UnitTestProject1 {
             var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
-            var covers = nfa.EnumerateCovers(ram, primeGrids);
+            var covers = nfa.EnumerateCovers(ram, primeGrids, TestNfa.States.Count - 1);
             var cover = covers.First();            
             Bimap<int, Nfa<int, int>.Grid> orderedGrids;
             var result = nfa.FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
@@ -103,7 +103,7 @@ namespace UnitTestProject1 {
             var rsm = nfa.ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = nfa.MakeReducedAutomataMatrix(rsm);
             var primeGrids = nfa.ComputePrimeGrids(ram);
-            var covers = nfa.EnumerateCovers(ram, primeGrids);
+            var covers = nfa.EnumerateCovers(ram, primeGrids, TestNfa.States.Count - 1);
             var cover = covers.First();
             Bimap<int, nfa.Grid> orderedGrids;
             var minNfa = nfa.FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
@@ -113,6 +113,7 @@ namespace UnitTestProject1 {
         [TestMethod]
         public void TestMinimize() {
             var result = TestNfa.Minimized();
+            Assert.IsTrue(result.IsEquivalent(TestNfa));
         }
 
         [TestMethod]

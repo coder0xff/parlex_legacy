@@ -5,11 +5,12 @@ namespace System.Collections.Generic.More {
     /// Like BitArray but lots more functionality
     /// </summary>
     public class BitList : IList<bool>, ICloneable {
-        private ulong[] _storage;
+        private ulong[] _storage = new ulong[1];
         private long _count;
 
-        public BitList(int initialCapacity = 64, bool initialValue = false) {
-            Reserve(initialCapacity);
+        public BitList(long initialSize = 64, bool initialValue = false) {
+            Reserve(initialSize);
+            _count = initialSize;
             if (initialValue) {
                 Fill(true);
             }
@@ -103,13 +104,13 @@ namespace System.Collections.Generic.More {
             }
         }
 
-        private static int UlongLeadingZeros(ulong x) {
-            x |= (x >> 1);
-            x |= (x >> 2);
-            x |= (x >> 4);
-            x |= (x >> 8);
-            x |= (x >> 16);
-            x |= (x >> 32);
+        private static int UlongCountLeastSignificantZeros(ulong x) {
+            x |= (x << 1);
+            x |= (x << 2);
+            x |= (x << 4);
+            x |= (x << 8);
+            x |= (x << 16);
+            x |= (x << 32);
             return (64 - UlongPopulationCount(x));
         }
 
@@ -128,8 +129,8 @@ namespace System.Collections.Generic.More {
         public long PopulationCount() {
             long i;
             long result = 0;
-            for (i = 0; i < _count >> 6; i++) {
-                result += UlongLeadingZeros(_storage[i]);
+            for (i = 0; i < (_count >> 6); i++) {
+                result += UlongPopulationCount(_storage[i]);
             }
             i <<= 6;
             for (; i < _count; i++)
@@ -141,15 +142,26 @@ namespace System.Collections.Generic.More {
             return result;
         }
 
-        public long CountLeadingZeros() {
-            long i;
-            for (i = 0; i < _count >> 6; i++) {
-                if (_storage[i] != 0) break;
+        public long CountLeadingZeros(long startIndex = 0) {
+            long result = 0;
+            if (startIndex << 26 != 0) { //equivalent to startIndex % 64 != 0
+                for (; startIndex < _count && (startIndex << 26) != 0; startIndex++) {
+                    if (this[startIndex]) {
+                        return result;
+                    }
+                    result++;
+                }
             }
-            long result = i << 6;
-            if (i != _storage.LongLength) {
-                result += UlongLeadingZeros(_storage[i]);
-                result = Math.Min(result, _count);
+            if (startIndex < _count) {
+                long i;
+                for (i = startIndex >> 6; i < (_count >> 6); i++) {
+                    if (_storage[i] != 0) break;
+                    result += 64;
+                }
+                if (i != _storage.LongLength) {
+                    result += UlongCountLeastSignificantZeros(_storage[i]);
+                    result = Math.Min(result, _count);
+                }
             }
             return result;
         }
@@ -179,11 +191,11 @@ namespace System.Collections.Generic.More {
 
         public bool Contains(bool item) {
             if (item) {
-                for (long i = 0; i < _count >> 6; i++) {
+                for (long i = 0; i < (_count >> 6); i++) {
                     if (_storage[i] != 0) return true;
                 }
             } else {
-                for (long i = 0; i < _count >> 6; i++) {
+                for (long i = 0; i < (_count >> 6); i++) {
                     if (_storage[i] != 0xFFFFFFFFFFFFFFFF) return true;
                 }
             }

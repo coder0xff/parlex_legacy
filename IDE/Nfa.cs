@@ -390,57 +390,71 @@ namespace IDE {
             }
         }
 
-        static IEnumerable<Cover> EnumerateCovers(Grid[] primeGrids, int firstGridIndex, Dictionary<Grid, HashSet<int>> gridToFlattenedIndicesSet, HashSet<int> flattenedIndicesWithTrue, int gridCount) {
-            if (gridCount > primeGrids.Length - firstGridIndex) { //can't reach gridCount == 0 before the recursion runs out of grids
-                yield break;
-            }
-            for (int gridIndex = firstGridIndex; gridIndex < primeGrids.Length; gridIndex++) {
-                var primeGrid = primeGrids[gridIndex];
-                var primeGridAsEnumerable = new[] {primeGrid};
-                var remainingFlattenedIndicesWithTrueToSatisfy = new HashSet<int>(flattenedIndicesWithTrue);
-                remainingFlattenedIndicesWithTrueToSatisfy.ExceptWith(gridToFlattenedIndicesSet[primeGrid]);
-                if (gridCount == 1) {
-                    if (remainingFlattenedIndicesWithTrueToSatisfy.Count == 0) {
-                        yield return new Cover(primeGridAsEnumerable);
-                    }
-                } else {
-                    foreach (var enumerateCover in EnumerateCovers(primeGrids, gridIndex + 1, gridToFlattenedIndicesSet, remainingFlattenedIndicesWithTrueToSatisfy, gridCount - 1)) {
-                        yield return new Cover(enumerateCover.Concat(primeGridAsEnumerable));
-                    }
+        struct AttemptState {
+            public IndexSet uncoveredFlatIndices;
+            public IndexSet usedGrids;
+        }
+
+        static IEnumerable<IndexSet> EnumerateCovers(IndexSet uncoveredFlatIndices, IndexSet usedGrids, List<IndexSet> flattenedGrids, List<int>[] candidateGridLookop, List<AttemptState> allAttempts) {
+            var uncoveredIndex = uncoveredFlatIndices.First();
+            var candidateGrids = candidateGridLookop[uncoveredIndex];
+            foreach (var candidateGridIndex in candidateGrids) {
+                var temp = new IndexSet(uncoveredFlatIndices);
+                temp.ExceptWith(flattenedGrids[candidateGridIndex]);
+                var nextUsedGrids = new IndexSet(usedGrids);
+                nextUsedGrids.Add(candidateGridIndex);
+                allAttempts.Add(new AttemptState{uncoveredFlatIndices = temp, usedGrids = nextUsedGrids});
+                if (temp.Count == 0) {
+                    yield return nextUsedGrids;
                 }
             }
         }
 
-        public static IEnumerable<Cover> EnumerateCovers(bool[,] reducedAutomataMatrix, Grid[] primeGrids) {
+        public static IEnumerable<Cover> EnumerateCovers(bool[,] reducedAutomataMatrix, Grid[] primeGrids, int gridLimit) {
             var rowCount = reducedAutomataMatrix.GetUpperBound(0) + 1;
             var columnCount = reducedAutomataMatrix.GetUpperBound(1) + 1;
-
-            var flattenedIndicesWithTrue = new HashSet<int>();
-            for (var row = 0; row < rowCount; row++) {
-                for (var column = 0; column < columnCount; column++) {
-                    if (reducedAutomataMatrix[row, column]) {
-                        flattenedIndicesWithTrue.Add(column * rowCount + row);
+            int indexCount = rowCount * columnCount;
+            //Ram = Reduced automata matrix
+            var flattenedRam = new IndexSet(indexCount);
+            for (var i = 0; i < rowCount; i++) {
+                for (var j = 0; j < columnCount; j++) {
+                    if (reducedAutomataMatrix[i, j]) {
+                        flattenedRam.Add(i * columnCount + j);
                     }
                 }
             }
-
-            if (flattenedIndicesWithTrue.Count == 0) {
-                yield break;
-            }
-
-            var gridToFlattenedIndicesSet = primeGrids.ToDictionary(grid => grid, grid => {
-                var flattenedIndices = new HashSet<int>();
-                foreach (var row in grid.Rows) {
-                    foreach (var column in grid.Columns) {
-                        flattenedIndices.Add(column * rowCount + row);
+            var flattenedGrids = new List<IndexSet>();
+            foreach (Grid primeGrid in primeGrids) {
+                var indexSet = new IndexSet(indexCount);
+                foreach (var column in primeGrid.Columns) {
+                    foreach (var row in primeGrid.Rows) {
+                        indexSet.Add(column + row * columnCount);
                     }
                 }
-                return flattenedIndices;
-            });
+                flattenedGrids.Add(indexSet);
+            }
 
-            for (var gridCount = 1; gridCount <= primeGrids.Length; gridCount++) {
-                foreach (var enumerateCover in EnumerateCovers(primeGrids, 0, gridToFlattenedIndicesSet, flattenedIndicesWithTrue, gridCount)) {
-                    yield return enumerateCover;
+            var candidateGridLookup = new List<int>[indexCount];
+            for (var initGridLookup = 0; initGridLookup < indexCount; initGridLookup++) {
+                candidateGridLookup[initGridLookup] = new List<int>(flattenedGrids.Count);
+            }
+            for (int gridIndex = 0; gridIndex < flattenedGrids.Count; gridIndex++) {
+                var flattenedGrid = flattenedGrids[gridIndex];
+                foreach (var flatIndex in flattenedGrid) {
+                    candidateGridLookup[flatIndex].Add(gridIndex);
+                }
+            }
+
+            var allAttempts = new List<AttemptState>();
+            allAttempts.Add(new AttemptState{uncoveredFlatIndices = flattenedRam, usedGrids = new IndexSet(flattenedGrids.Count)});
+
+            for (int gridCount = 1; gridCount <= gridLimit; gridCount++) {
+                var allAttemptsCopy = allAttempts.ToArray();
+                allAttempts.Clear();
+                foreach (var priorAttempt in allAttemptsCopy) {
+                    foreach (var cover in EnumerateCovers(priorAttempt.uncoveredFlatIndices, priorAttempt.usedGrids, flattenedGrids, candidateGridLookup, allAttempts)) {
+                        yield return new Cover(cover.Select(gridIndex => primeGrids[gridIndex]));
+                    }
                 }
             }
         }
@@ -567,7 +581,7 @@ namespace IDE {
             var rsm = ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = MakeReducedAutomataMatrix(rsm);
             var primeGrids = ComputePrimeGrids(ram);
-            var covers = EnumerateCovers(ram, primeGrids);
+            var covers = EnumerateCovers(ram, primeGrids, States.Count - 1);
             foreach (var cover in covers) {
                 if (cover.Count == States.Count) {
                     break;
