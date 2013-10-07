@@ -8,7 +8,7 @@ namespace System.Collections.Generic.More {
         private ulong[] _storage = new ulong[1];
         private long _count;
 
-        public BitList(long initialSize = 64, bool initialValue = false) {
+        public BitList(long initialSize = 0, bool initialValue = false) {
             Reserve(initialSize);
             _count = initialSize;
             if (initialValue) {
@@ -55,7 +55,7 @@ namespace System.Collections.Generic.More {
             if (i > int.MaxValue) {
                 throw new IndexOutOfRangeException("The result cannot fit in the type int");
             }
-            return (int) i;
+            return (int)i;
         }
 
         private long IndexOf(bool item) {
@@ -96,10 +96,10 @@ namespace System.Collections.Generic.More {
 
         public bool this[long index] {
             get {
-                return (_storage[index >> 6] & ((ulong) 1 << (int) (index & 0x3F))) != 0;
+                return (_storage[index >> 6] & ((ulong)1 << (int)(index & 0x3F))) != 0;
             }
             set {
-                ulong mask = (ulong) 1 << (int) (index & 0x3F);
+                ulong mask = (ulong)1 << (int)(index & 0x3F);
                 _storage[index >> 6] = value ? _storage[index >> 6] | mask : _storage[index >> 6] & ~mask;
             }
         }
@@ -123,7 +123,7 @@ namespace System.Collections.Generic.More {
             x -= (x >> 1) & m1; //put count of each 2 bits into those 2 bits
             x = (x & m2) + ((x >> 2) & m2); //put count of each 4 bits into those 4 bits 
             x = (x + (x >> 4)) & m4; //put count of each 8 bits into those 8 bits 
-            return (int) ((x * h01) >> 56); //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ... 
+            return (int)((x * h01) >> 56); //returns left 8 bits of x + (x<<8) + (x<<16) + (x<<24) + ... 
         }
 
         public long PopulationCount() {
@@ -133,8 +133,7 @@ namespace System.Collections.Generic.More {
                 result += UlongPopulationCount(_storage[i]);
             }
             i <<= 6;
-            for (; i < _count; i++)
-            {
+            for (; i < _count; i++) {
                 if (this[i]) {
                     result++;
                 }
@@ -152,22 +151,20 @@ namespace System.Collections.Generic.More {
                     result++;
                 }
             }
-            if (startIndex < _count) {
-                long i;
-                for (i = startIndex >> 6; i < (_count >> 6); i++) {
-                    if (_storage[i] != 0) break;
-                    result += 64;
-                }
-                if (i != _storage.LongLength) {
-                    result += UlongCountLeastSignificantZeros(_storage[i]);
-                    result = Math.Min(result, _count);
-                }
+            if (startIndex >= _count) return result;
+            long i;
+            for (i = startIndex >> 6; i < (_count >> 6); i++) {
+                if (_storage[i] != 0) break;
+                result += 64;
             }
+            if (i == _storage.LongLength) return result;
+            result += UlongCountLeastSignificantZeros(_storage[i]);
+            result = Math.Min(result, _count);
             return result;
         }
 
         public IEnumerator<bool> GetEnumerator() {
-            var copy = (BitList) Clone();
+            var copy = (BitList)Clone();
             for (long i = 0; i < copy._count; i++) {
                 yield return copy[i];
             }
@@ -224,7 +221,7 @@ namespace System.Collections.Generic.More {
 
         public int Count {
             get {
-                return (int) _count;
+                return (int)_count;
             }
         }
 
@@ -241,7 +238,7 @@ namespace System.Collections.Generic.More {
         }
 
         public object Clone() {
-            return new BitList {_storage = (ulong[]) _storage.Clone(), _count = _count};
+            return new BitList { _storage = (ulong[])_storage.Clone(), _count = _count };
         }
 
         public void AndWith(BitList other) {
@@ -274,7 +271,31 @@ namespace System.Collections.Generic.More {
         public void Not() {
             for (long i = 0; i < _storage.LongLength; i++) {
                 _storage[i] = ~_storage[i];
-            }            
+            }
+        }
+
+        public bool SequenceEquals(BitList other) {
+            if (_count != other._count) return false;
+            for (var blockCompare = 0; blockCompare < (_count >> 6); blockCompare++) {
+                if (_storage[blockCompare] != other._storage[blockCompare]) return false;
+            }
+            var tailCompareSize = (int)(_count & 0x3F);
+            if (tailCompareSize == 0) return true;
+            var tailCompareIndex = _count >> 6;
+            var tailCompareMask = ((ulong)1 << tailCompareSize) - 1;
+            return ((_storage[tailCompareIndex] ^ other._storage[tailCompareIndex]) & tailCompareMask) == 0;
+        }
+
+        public int GetChecksum() {
+            var accumulator = Count;
+            for (var blockAccumulate = 0; blockAccumulate < (_count >> 6); blockAccumulate++) {
+                accumulator = accumulator*397 ^ _storage[blockAccumulate].GetHashCode();
+            }
+            var tailSize = (int) (_count & 0x3F);
+            if (tailSize == 0) return accumulator;
+            var tailMask = ((ulong)1 << tailSize) - 1;
+            accumulator = accumulator*397 ^ (_storage[_count >> 6] & tailMask).GetHashCode();
+            return accumulator;
         }
     }
 }

@@ -158,5 +158,16 @@ namespace IDE {
         public int Count { get { return (int)_storage.PopulationCount(); } }
 
         public bool IsReadOnly { get { return false; } }
+
+        public bool SequenceEquals(IndexSet other) {
+            if (other._storage.LongCount != _storage.LongCount) {
+                throw new NotImplementedException();
+            }
+            return _storage.SequenceEquals(other._storage);
+        }
+
+        public int GetChecksum() {
+            return _storage.GetChecksum();
+        }
     }
 }

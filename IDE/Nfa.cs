@@ -64,38 +64,123 @@ namespace IDE {
         /// </summary>
         /// <returns>The new DFA</returns>
         public Nfa<TAlphabet, Configuration> Determinize() {
-            var configurationToDState = new ConcurrentDictionary<Configuration, Nfa<TAlphabet, Configuration>.State>();
-            var result = new Nfa<TAlphabet, Configuration>();
-            var resultAcceptStates = new ConcurrentBag<Nfa<TAlphabet, Configuration>.State>();
-
-            Func<Configuration, Nfa<TAlphabet, Configuration>.State> adder = null;
-            adder = configuration => configurationToDState.GetOrAdd(configuration, configurationProxy => {
-                var newState = new Nfa<TAlphabet, Configuration>.State(configurationProxy);
-                Task.Factory.StartNew(() => {
-                    bool isAcceptState = configurationProxy.Any(x => AcceptStates.Contains(x));
-                    if (isAcceptState) {
-                        resultAcceptStates.Add(newState);
+            var orderedStates = States.ToArray();
+            var stateReverseLookup = Enumerable.Range(0, orderedStates.Length).ToDictionary(i => orderedStates[i]);
+            var orderedInputSymbols = TransitionFunction.SelectMany(_ => _.Value.Keys).Distinct().ToArray();
+            var inputSymbolReverseLookup =
+                Enumerable.Range(0, orderedInputSymbols.Length).ToDictionary(i => orderedInputSymbols[i]);
+            IndexSet[,] fastTransitionFunction = new IndexSet[orderedStates.Length,orderedInputSymbols.Length];
+            for (int initI = 0; initI < orderedStates.Length; initI++) {
+                for (int initJ = 0; initJ < orderedStates.Length; initJ++) {
+                    fastTransitionFunction[initI, initJ] = new IndexSet(orderedStates.Length);
+                }
+            }
+            foreach (var stateAndInputSymbols in TransitionFunction) {
+                var fromStateIndex = stateReverseLookup[stateAndInputSymbols.Key];
+                foreach (var inputSymbolAndToStates in stateAndInputSymbols.Value) {
+                    var inputSymbolIndex = inputSymbolReverseLookup[inputSymbolAndToStates.Key];
+                    foreach (var toState in inputSymbolAndToStates.Value) {
+                        var toStateIndex = stateReverseLookup[toState];
+                        fastTransitionFunction[fromStateIndex, inputSymbolIndex].Add(toStateIndex);
                     }
-                    IEnumerable<TAlphabet> awayInputs = configurationProxy.Select(x => TransitionFunction[x]).SelectMany(y => y.Keys).Distinct();
-                    Parallel.ForEach(awayInputs, input => {
-                        HashSet<State> nextConfiguration = TransitionFunctionEx(configurationProxy, input);
-                        if (nextConfiguration.Count > 0) {
-                            Nfa<TAlphabet, Configuration>.State nextState = adder(new Configuration(nextConfiguration));
-                            result.TransitionFunction[newState][input].Add(nextState);
-                        }
-                    });
-                }, TaskCreationOptions.AttachedToParent);
-                return newState;
+                }
+            }
+
+            IndexSet startConfigurationBuilder = new IndexSet(orderedStates.Length);
+            foreach (var startState in StartStates) {
+                startConfigurationBuilder.Add(stateReverseLookup[startState]);
+            }
+
+            var startConfiguration = new ReadOnlyIndexSet(startConfigurationBuilder);
+            var resultConfigurations = new HashSet<ReadOnlyIndexSet>();
+            resultConfigurations.Add(startConfiguration);
+            var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyIndexSet>();
+            processor.Add(startConfiguration);
+
+            var acceptConfigurations = new HashSet<ReadOnlyIndexSet>();
+            var acceptIndices = new IndexSet(orderedStates.Length);
+            foreach (var acceptState in AcceptStates) {
+                acceptIndices.Add(stateReverseLookup[acceptState]);
+            }
+
+            var determinizedTransitionFunction =
+                new JaggedAutoDictionary<ReadOnlyIndexSet, int, HashSet<ReadOnlyIndexSet>>(
+                    (dontCare1, dontCare2) => new HashSet<ReadOnlyIndexSet>());
+
+            processor.Run(configuration => {
+                for (int inputSymbolIndex = 0; inputSymbolIndex < orderedInputSymbols.Length; inputSymbolIndex++) {
+                    var configurationBuilder = new IndexSet(orderedStates.Length);
+                    foreach (var stateIndex in configuration) {
+                        configurationBuilder.UnionWith(fastTransitionFunction[stateIndex, inputSymbolIndex]);
+                    }
+                    var nextConfiguration = new ReadOnlyIndexSet(configurationBuilder);
+                    resultConfigurations.Add(nextConfiguration);
+                    configurationBuilder.IntersectWith(acceptIndices);
+                    if (configurationBuilder.Count > 0) {
+                        acceptConfigurations.Add(nextConfiguration);
+                    }
+                    determinizedTransitionFunction[configuration][inputSymbolIndex].Add(nextConfiguration);
+                    processor.Add(nextConfiguration);
+                }
             });
 
-            var startConfiguration = new Configuration(StartStates);
-            Task.Factory.StartNew(() => {
-                result.StartStates.Add(adder(startConfiguration));
-            }).Wait();
-            result.States.UnionWith(configurationToDState.Values);
-            result.AcceptStates = new HashSet<Nfa<TAlphabet, Configuration>.State>(resultAcceptStates);
+            var newStateMap = new AutoDictionary<ReadOnlyIndexSet, Nfa<TAlphabet, Configuration>.State>(rois => new Nfa<TAlphabet, Configuration>.State(new Configuration(rois.Select(i => orderedStates[i]))));
+            var result = new Nfa<TAlphabet, Configuration>();
+            foreach (var resultConfiguration in resultConfigurations) {
+                newStateMap.EnsureCreated(resultConfiguration);
+            }
+            foreach (var fromStateConfigurationAndInputSymbolIndices in determinizedTransitionFunction) {
+                var fromState = newStateMap[fromStateConfigurationAndInputSymbolIndices.Key];
+                var partialTransitionFunction0 = result.TransitionFunction[fromState];
+                foreach (var inputSymbolIndexAndToStateConfigurations in fromStateConfigurationAndInputSymbolIndices.Value) {
+                    var inputSymbol = orderedInputSymbols[inputSymbolIndexAndToStateConfigurations.Key];
+                    var partialTransitionFunction1 = partialTransitionFunction0[inputSymbol];
+                    foreach (var toStateConfiguration in inputSymbolIndexAndToStateConfigurations.Value) {
+                        var toState = newStateMap[toStateConfiguration];
+                        partialTransitionFunction1.Add(toState);
+                    }
+                }
+            }
+            result.StartStates.Add(newStateMap[startConfiguration]);
+            foreach (var acceptConfiguration in acceptConfigurations) {
+                result.AcceptStates.Add(newStateMap[acceptConfiguration]);
+            }
             return result;
         }
+        //public Nfa<TAlphabet, Configuration> Determinize() {
+        //    var configurationToDState = new ConcurrentDictionary<Configuration, Nfa<TAlphabet, Configuration>.State>();
+        //    var result = new Nfa<TAlphabet, Configuration>();
+        //    var resultAcceptStates = new ConcurrentBag<Nfa<TAlphabet, Configuration>.State>();
+
+        //    Func<Configuration, Nfa<TAlphabet, Configuration>.State> adder = null;
+        //    adder = configuration => configurationToDState.GetOrAdd(configuration, configurationProxy => {
+        //        var newState = new Nfa<TAlphabet, Configuration>.State(configurationProxy);
+        //        Task.Factory.StartNew(() => {
+        //            bool isAcceptState = configurationProxy.Any(x => AcceptStates.Contains(x));
+        //            if (isAcceptState) {
+        //                resultAcceptStates.Add(newState);
+        //            }
+        //            IEnumerable<TAlphabet> awayInputs = configurationProxy.Select(x => TransitionFunction[x]).SelectMany(y => y.Keys).Distinct();
+        //            Parallel.ForEach(awayInputs, input => {
+        //                HashSet<State> nextConfiguration = TransitionFunctionEx(configurationProxy, input);
+        //                if (nextConfiguration.Count > 0) {
+        //                    Nfa<TAlphabet, Configuration>.State nextState = adder(new Configuration(nextConfiguration));
+        //                    result.TransitionFunction[newState][input].Add(nextState);
+        //                }
+        //            });
+        //        }, TaskCreationOptions.AttachedToParent);
+        //        return newState;
+        //    });
+
+        //    var startConfiguration = new Configuration(StartStates);
+        //    Task.Factory.StartNew(() => {
+        //        result.StartStates.Add(adder(startConfiguration));
+        //    }).Wait();
+        //    result.States.UnionWith(configurationToDState.Values);
+        //    result.AcceptStates = new HashSet<Nfa<TAlphabet, Configuration>.State>(resultAcceptStates);
+        //    return result;
+        //}
+
 
         /// <summary>
         /// Creates a new Nfa that recognizes the reversed language
