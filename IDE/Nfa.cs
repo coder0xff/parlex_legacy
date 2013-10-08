@@ -92,12 +92,12 @@ namespace IDE {
             }
 
             var startConfiguration = new ReadOnlyIndexSet(startConfigurationBuilder);
-            var resultConfigurations = new HashSet<ReadOnlyIndexSet>();
-            resultConfigurations.Add(startConfiguration);
+            var resultConfigurations = new ConcurrentSet<ReadOnlyIndexSet>();
+            resultConfigurations.TryAdd(startConfiguration);
             var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyIndexSet>();
             processor.Add(startConfiguration);
 
-            var acceptConfigurations = new HashSet<ReadOnlyIndexSet>();
+            var acceptConfigurations = new ConcurrentSet<ReadOnlyIndexSet>();
             var acceptIndices = new IndexSet(orderedStates.Length);
             foreach (var acceptState in AcceptStates) {
                 acceptIndices.Add(stateReverseLookup[acceptState]);
@@ -114,10 +114,10 @@ namespace IDE {
                         configurationBuilder.UnionWith(fastTransitionFunction[stateIndex, inputSymbolIndex]);
                     }
                     var nextConfiguration = new ReadOnlyIndexSet(configurationBuilder);
-                    resultConfigurations.Add(nextConfiguration);
+                    resultConfigurations.TryAdd(nextConfiguration);
                     configurationBuilder.IntersectWith(acceptIndices);
                     if (configurationBuilder.Count > 0) {
-                        acceptConfigurations.Add(nextConfiguration);
+                        acceptConfigurations.TryAdd(nextConfiguration);
                     }
                     determinizedTransitionFunction[configuration][inputSymbolIndex].Add(nextConfiguration);
                     processor.Add(nextConfiguration);
@@ -150,40 +150,6 @@ namespace IDE {
             }
             return result;
         }
-        //public Nfa<TAlphabet, Configuration> Determinize() {
-        //    var configurationToDState = new ConcurrentDictionary<Configuration, Nfa<TAlphabet, Configuration>.State>();
-        //    var result = new Nfa<TAlphabet, Configuration>();
-        //    var resultAcceptStates = new ConcurrentBag<Nfa<TAlphabet, Configuration>.State>();
-
-        //    Func<Configuration, Nfa<TAlphabet, Configuration>.State> adder = null;
-        //    adder = configuration => configurationToDState.GetOrAdd(configuration, configurationProxy => {
-        //        var newState = new Nfa<TAlphabet, Configuration>.State(configurationProxy);
-        //        Task.Factory.StartNew(() => {
-        //            bool isAcceptState = configurationProxy.Any(x => AcceptStates.Contains(x));
-        //            if (isAcceptState) {
-        //                resultAcceptStates.Add(newState);
-        //            }
-        //            IEnumerable<TAlphabet> awayInputs = configurationProxy.Select(x => TransitionFunction[x]).SelectMany(y => y.Keys).Distinct();
-        //            Parallel.ForEach(awayInputs, input => {
-        //                HashSet<State> nextConfiguration = TransitionFunctionEx(configurationProxy, input);
-        //                if (nextConfiguration.Count > 0) {
-        //                    Nfa<TAlphabet, Configuration>.State nextState = adder(new Configuration(nextConfiguration));
-        //                    result.TransitionFunction[newState][input].Add(nextState);
-        //                }
-        //            });
-        //        }, TaskCreationOptions.AttachedToParent);
-        //        return newState;
-        //    });
-
-        //    var startConfiguration = new Configuration(StartStates);
-        //    Task.Factory.StartNew(() => {
-        //        result.StartStates.Add(adder(startConfiguration));
-        //    }).Wait();
-        //    result.States.UnionWith(configurationToDState.Values);
-        //    result.AcceptStates = new HashSet<Nfa<TAlphabet, Configuration>.State>(resultAcceptStates);
-        //    return result;
-        //}
-
 
         /// <summary>
         /// Creates a new Nfa that recognizes the reversed language
@@ -662,7 +628,7 @@ namespace IDE {
         /// Minimize this Nfa using the Kameda-Weiner algorithm [1]
         /// </summary>
         /// <returns>A minimal-state Nfa accepting the same language</returns>
-        public Nfa<TAlphabet, int> Minimized() {
+        public Nfa<TAlphabet, int> StateMinimized() {
             Nfa<TAlphabet, Configuration> determinized;
             var sm = MakeStateMap(out determinized);
             Nfa<TAlphabet, int> minimizedSubsetConstructionDfa;
@@ -684,6 +650,35 @@ namespace IDE {
             var stateCount = 0;
             return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller Nfa. Return this;
         }
+
+        public Nfa<TAlphabet, TAssignment> RedundantTransitionsRemoved() {
+            var flattenedTransitions = TransitionFunction.SelectMany(
+                fromStateAndInputSymbols =>
+                    fromStateAndInputSymbols.Value.SelectMany(
+                        inputSymbolAndToStates =>
+                            inputSymbolAndToStates.Value.Select(
+                                toState =>
+                                    new Tuple<State, TAlphabet, State>(fromStateAndInputSymbols.Key,
+                                        inputSymbolAndToStates.Key, toState))));
+
+            var result = new Nfa<TAlphabet, TAssignment>(this);
+            var reference = this;
+            foreach (var flattenedTransition in flattenedTransitions) {
+                var partialTransitionFunction = result.TransitionFunction[flattenedTransition.Item1][flattenedTransition.Item2];
+                partialTransitionFunction.Remove(flattenedTransition.Item3);
+                if (!result.IsEquivalent(reference)) {
+                    partialTransitionFunction.Add(flattenedTransition.Item3);
+                } else {
+                    reference = new Nfa<TAlphabet, TAssignment>(result);
+                }
+            }
+
+            return result;
+        }
+
+        public Nfa<TAlphabet, int> Minimized() {
+            return StateMinimized().RedundantTransitionsRemoved();
+        } 
 
         public static Nfa<TAlphabet, TAssignment> Union(IEnumerable<Nfa<TAlphabet, TAssignment>> nfas) {
             var result = new Nfa<TAlphabet, TAssignment>();
@@ -712,8 +707,12 @@ namespace IDE {
         public bool IsEquivalent<TAssignment2>(Nfa<TAlphabet, TAssignment2> that) {
             var thisMinDfa = MinimizedDfa();
             var thatMinDfa = that.MinimizedDfa();
+            if (thisMinDfa.States.Count != thatMinDfa.States.Count ||
+                thisMinDfa.AcceptStates.Count != thatMinDfa.AcceptStates.Count) {
+                return false;
+            }
             var equivalent = true;
-            var stateMap = new ConcurrentDictionary<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>();
+            var stateMap = new ConcurrentDictionary<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(); //since they are both minimized DFAs (which is unique), there must be a one-to-one correlation for each state
             var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>>();
             processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(thisMinDfa.StartStates.First(), thatMinDfa.StartStates.First())); //only one start state since it's a min dfa
             processor.Run(pair => {
@@ -834,6 +833,20 @@ namespace IDE {
                 return !left.Equals(right);
             }
         }
+
+        public Nfa() {}
+
+        private Nfa(Nfa<TAlphabet, TAssignment> other) {
+            States = new HashSet<State>(other.States);
+            StartStates = new HashSet<State>(other.StartStates);
+            AcceptStates = new HashSet<State>(other.AcceptStates);
+            foreach (var fromStateAndInputSymbols in other.TransitionFunction) {
+                var partialTransitionFunction0 = TransitionFunction[fromStateAndInputSymbols.Key];
+                foreach (var inputSymbolAndToStates in fromStateAndInputSymbols.Value) {
+                    partialTransitionFunction0[inputSymbolAndToStates.Key] = new HashSet<State>(inputSymbolAndToStates.Value);
+                }
+            }
+        } 
     }
 }
 

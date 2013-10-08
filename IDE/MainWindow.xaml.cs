@@ -41,7 +41,12 @@ namespace IDE {
             var tempGrammarDocument = nfa.ToGrammarDocument(product.Title, _compiledGrammar.GetAllProducts());
             Editor.Sources = tempGrammarDocument.ExemplarSources.ToArray();
             var tempGrammar = new CompiledGrammar(tempGrammarDocument);
-            product.ReplaceSequences(tempGrammar.GetAllProducts()[product.Title]);
+            try {
+                product.ReplaceSequences(tempGrammar.GetAllProducts()[product.Title]);
+            } catch (KeyNotFoundException) {
+                //the NFA isn't valid at the moment, and that's ok
+            }
+
         }
 
         private void MenuItem_Exit_Click(object sender, RoutedEventArgs e) {

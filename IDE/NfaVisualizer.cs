@@ -235,7 +235,8 @@ namespace IDE {
             double rowStrideCopy = rowStride;
             Func<int, int, Point> getPos = (columnIndex, row) => new Point(columnStrideCopy * columnIndex, rowStrideCopy * row);
 
-            var result = new PathGeometry();
+            var result = new GeometryGroup();
+            result.FillRule = FillRule.Nonzero;
             var objectToColumnLookup = Enumerable.Range(0, Columns.Count).SelectMany(columnIndex => Columns[columnIndex].Where(o => o != null).Select(o => new Tuple<Object, int>(o, columnIndex))).ToDictionary(t => t.Item1, t => t.Item2);
             var objectToRowLookup = Columns.Select(list => Enumerable.Range(0, list.Count).Where(index => list[index] != null).ToDictionary(index => list[index], index => index)).ToArray();
 
@@ -249,7 +250,7 @@ namespace IDE {
                         var state = o as State;
                         var pos = getPos(columnIndex, row);
                         var geometry = new EllipseGeometry(pos, margin, margin).GetWidenedPathGeometry(pen);
-                        result = Geometry.Combine(result, geometry , GeometryCombineMode.Union, Transform.Identity);
+                        result.Children.Add(geometry);
                         if (_productNfa.StartStates.Contains(state)) {
                                 var shiftLeft = -columnStride * (columnIndex == 1 ? 1.5 : 0.5);
                             var arrowGeometry = new PathGeometry(new PathFigure[] {
@@ -257,11 +258,11 @@ namespace IDE {
                                 new PathFigure(pos + new Vector(shiftLeft, -margin), new PathSegment[] {new LineSegment(pos + new Vector(shiftLeft + margin, 0), true),}, false),
                                 new PathFigure(pos + new Vector(shiftLeft, margin), new PathSegment[] {new LineSegment(pos + new Vector(shiftLeft + margin, 0), true),}, false),
                             }).GetWidenedPathGeometry(pen);
-                            result = Geometry.Combine(result, arrowGeometry, GeometryCombineMode.Union, Transform.Identity);
+                            result.Children.Add(arrowGeometry);
                         }
                         if (_productNfa.AcceptStates.Contains(state)) {
                             var circleGeometry = new EllipseGeometry(pos, margin + 5, margin + 5).GetWidenedPathGeometry(pen);
-                            result = Geometry.Combine(result, circleGeometry, GeometryCombineMode.Union, Transform.Identity);
+                            result.Children.Add(circleGeometry);
                         }
                     } else if (o is Transition) {
                         var transition = (Transition) o;
@@ -270,11 +271,11 @@ namespace IDE {
                         var outlineRect = new Rect(center.X - g.Bounds.Width * 0.5, center.Y - g.Bounds.Height * 0.5, g.Bounds.Width, g.Bounds.Height);
                         outlineRect.Inflate(margin, margin);
                         var geometry = new RectangleGeometry(outlineRect, rectangleRadius, rectangleRadius).GetWidenedPathGeometry(pen);
-                        result = Geometry.Combine(result, geometry, GeometryCombineMode.Union, Transform.Identity);
+                        result.Children.Add(geometry);
                         var translatedText = new GeometryGroup();
                         translatedText.Children.Add(g);
                         translatedText.Transform = new TranslateTransform(center.X - g.Bounds.Width * 0.5, center.Y - g.Bounds.Height * 0.5);
-                        result = Geometry.Combine(result, translatedText, GeometryCombineMode.Union, Transform.Identity);
+                        result.Children.Add(translatedText);
                     }
                 }
             }
@@ -331,12 +332,12 @@ namespace IDE {
                 polyBezierPoints.Add(polyLinePoints[polyLinePoints.Count - 2]);
                 polyBezierPoints.Add(polyLinePoints[polyLinePoints.Count - 1]);
                 var geometry = new PathGeometry(new[] {new PathFigure(polyBezierPoints[0], new[] {new PolyBezierSegment(polyBezierPoints.Skip(1), true)}, false)}).GetWidenedPathGeometry(pen);
-                result = Geometry.Combine(result, geometry, GeometryCombineMode.Union, Transform.Identity);
+                result.Children.Add(geometry);
                 //gg.Children.Add(new PathGeometry(new[] { new PathFigure(polyLinePoints[0], new[] { new PolyLineSegment(polyLinePoints.Skip(1), true) }, false) }));
             }
 
-            result = Geometry.Combine(result, Geometry.Empty, GeometryCombineMode.Union, new TranslateTransform(columnStride * 0.5, rowStride * 0.5));
-            return result;
+            result.Transform =  new TranslateTransform(columnStride * 0.5, rowStride * 0.5);
+            return result.GetFlattenedPathGeometry();
         }
 
         public void SavePng(String filename) {
