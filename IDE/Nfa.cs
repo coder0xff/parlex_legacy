@@ -71,7 +71,7 @@ namespace IDE {
                 Enumerable.Range(0, orderedInputSymbols.Length).ToDictionary(i => orderedInputSymbols[i]);
             IndexSet[,] fastTransitionFunction = new IndexSet[orderedStates.Length,orderedInputSymbols.Length];
             for (int initI = 0; initI < orderedStates.Length; initI++) {
-                for (int initJ = 0; initJ < orderedStates.Length; initJ++) {
+                for (int initJ = 0; initJ < orderedInputSymbols.Length; initJ++) {
                     fastTransitionFunction[initI, initJ] = new IndexSet(orderedStates.Length);
                 }
             }
@@ -144,6 +144,9 @@ namespace IDE {
             result.StartStates.Add(newStateMap[startConfiguration]);
             foreach (var acceptConfiguration in acceptConfigurations) {
                 result.AcceptStates.Add(newStateMap[acceptConfiguration]);
+            }
+            foreach (var state in newStateMap.Values) {
+                result.States.Add(state);
             }
             return result;
         }
