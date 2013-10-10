@@ -714,6 +714,7 @@ namespace IDE {
             var equivalent = true;
             var stateMap = new ConcurrentDictionary<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(); //since they are both minimized DFAs (which is unique), there must be a one-to-one correlation for each state
             var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>>();
+            stateMap[thisMinDfa.StartStates.First()] = thatMinDfa.StartStates.First();
             processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(thisMinDfa.StartStates.First(), thatMinDfa.StartStates.First())); //only one start state since it's a min dfa
             processor.Run(pair => {
                 if (!equivalent) {
