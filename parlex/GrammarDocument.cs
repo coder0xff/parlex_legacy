@@ -147,9 +147,8 @@ namespace parlex {
                 var textCodePoints = Text.GetUtf32CodePoints();
                 var codePointSpansToRemove = new List<ProductSpanSource>();
                 foreach (var span in this) {
-                    if (span.Length == 1) {
-                        var noAsteriskName = span.Name.EndsWith("*") ? span.Name.Substring(0, span.Name.Length - 1) : span.Name;
-                        var product = products[noAsteriskName];
+                    if (span.Length == 1 && !span.Name.EndsWith("*")) { //don't remove repititious ones - a proper product span is necessary to preserve the asterisk
+                        var product = products[span.Name];
                         var codePointProduct = product as CodePointCharacterProduct;
                         if (codePointProduct != null) {
                             if (codePointProduct.GetExampleCodePoint() == textCodePoints[span.StartPosition]) {
