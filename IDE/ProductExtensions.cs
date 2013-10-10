@@ -8,7 +8,7 @@ using parlex;
 namespace IDE {
     public static class ProductExtensions {
         public static Nfa<Product, int> ToNfa(this Product product) {
-            return Nfa<Product, int>.Union(product.Sequences.Select(sequence => sequence.ToNfa()));
+            return Nfa<Product, int>.Union(product.Sequences.Select(sequence => sequence.ToNfa())).Minimized();
         }
 
         public static GrammarDocument ToGrammarDocument(this Product product, Dictionary<String, Product> allProducts) {
