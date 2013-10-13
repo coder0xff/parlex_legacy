@@ -1,26 +1,16 @@
-﻿using System;
+﻿using parlex;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using Common;
-using parlex;
 
 namespace IDE {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window {
+    public partial class MainWindow {
+        private String _loadedFileName;
         private GrammarDocument _document;
         private CompiledGrammar _compiledGrammar;
 
@@ -55,23 +45,22 @@ namespace IDE {
 
         private void MenuItem_New_Click(object sender, RoutedEventArgs e) {
             _document = new GrammarDocument();
+            _loadedFileName = null;
             Populate();
         }
 
         private void MenuItem_Open_Click(object sender, RoutedEventArgs e) {
-            var openDialog = new Microsoft.Win32.OpenFileDialog();
-            openDialog.DefaultExt = ".parlex";
-            openDialog.Filter = "Parlex grammars (*.parlex)|*.parlex|All files (*.*)|*.*";
+            var openDialog = new Microsoft.Win32.OpenFileDialog {DefaultExt = ".parlex", Filter = "Parlex grammars (*.parlex)|*.parlex|All files (*.*)|*.*"};
             var result = openDialog.ShowDialog(this);
             if (result == true) {
                 _document = GrammarDocument.FromString(File.ReadAllText(openDialog.FileName));
+                _loadedFileName = openDialog.FileName;
                 Populate();
             }
         }
 
         private void Button_AddProduct_Click(object sender, RoutedEventArgs e) {
-            var exemplar = new GrammarDocument.ExemplarSource(" ");
-            exemplar.Add(new GrammarDocument.ProductSpanSource("Untitled", 0, 1));
+            var exemplar = new GrammarDocument.ExemplarSource(" ") {new GrammarDocument.ProductSpanSource("Untitled", 0, 1)};
             _document.ExemplarSources.Add(exemplar);
             Populate();
         }
@@ -87,14 +76,25 @@ namespace IDE {
         }
 
         private void MenuItem_Save_Click(object sender, RoutedEventArgs e) {
-            var text = _compiledGrammar.ToGrammarDocument().ToString();
-            var saveDialog = new Microsoft.Win32.SaveFileDialog();
-            saveDialog.DefaultExt = ".parlex";
-            saveDialog.Filter = "Parlex grammars (*.parlex)|*.parlex|All files (*.*)|*.*";
+            if (String.IsNullOrEmpty(_loadedFileName)) {
+                MenuItem_SaveAs_OnClick(sender, e);
+            } else {
+                SaveToFile(_loadedFileName);
+            }
+        }
+
+        private void MenuItem_SaveAs_OnClick(object sender, RoutedEventArgs e) {
+            var saveDialog = new Microsoft.Win32.SaveFileDialog {DefaultExt = ".parlex", Filter = "Parlex grammars (*.parlex)|*.parlex|All files (*.*)|*.*"};
             var result = saveDialog.ShowDialog(this);
             if (result == true) {
-                File.WriteAllText(saveDialog.FileName, text);
+                SaveToFile(saveDialog.FileName);
+                _loadedFileName = saveDialog.FileName;
             }
+        }
+
+        private void SaveToFile(string fileName) {
+            var text = _compiledGrammar.ToGrammarDocument().ToString();
+                File.WriteAllText(fileName, text);
         }
     }
 }
