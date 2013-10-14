@@ -164,7 +164,7 @@ namespace IDE {
                         } else {
                             var item = new GrammarDocument.ExemplarSource("");
                             foreach (var productSpanSource in productSpans) {
-                                item.Add(productSpanSource);
+                                item.Add(new ProductSpan(productSpanSource)); //copy it so exemplification doesn't have cross-interference between exemplars.
                             }
                             var length = GetCurrentSpanIndex(productSpans);
                             item.Add(new ProductSpan(name, 0, length));

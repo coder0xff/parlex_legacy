@@ -90,12 +90,10 @@ _9* is a 6z*
 |          | : is_a_relation_without_newline
 
 exemplar:
-I5 is  31*
+I5 is an 31*
 || : product_name
-    | : codePoint000061
-     | : codePoint00006E
-       | | : product_name
-|        | : is_a_relation_without_newline
+         | | : product_name
+|          | : is_a_relation_without_newline
 
 relation:
 | : is_a_relation_without_newline

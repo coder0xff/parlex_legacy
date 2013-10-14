@@ -21,6 +21,12 @@ namespace parlex {
 
             public ProductSpanSource() {}
 
+            public ProductSpanSource(ProductSpanSource other) {
+                _name = other._name;
+                _startPosition = other._startPosition;
+                _length = other._length;
+            }
+
             public string Name {
                 get { return _name; }
                 set {
