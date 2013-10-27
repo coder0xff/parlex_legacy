@@ -1,4 +1,8 @@
-﻿using parlex;
+﻿using System.Diagnostics;
+using System.Windows.Data;
+using System.Windows.Input;
+using Common;
+using parlex;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,22 +15,41 @@ namespace IDE {
     /// </summary>
     public partial class MainWindow {
         private String _loadedFileName;
-        private GrammarDocument _document;
         private CompiledGrammar _compiledGrammar;
+        private int _nfaSequenceCounter;
+        private int _documentSequenceCounter = 0;
+        private int _compiledSequenceCounter = 0;
+        private Nfa<OldProduction, int> Nfa {
+            get {
+                if (_compiledSequenceCounter > _nfaSequenceCounter || _documentSequenceCounter > _nfaSequenceCounter) {
+                    GraphEditor.Nfa = (ProductList.SelectedItem as OldProduction).ToNfa();
+                    _nfaSequenceCounter = _compiledSequenceCounter;
+                }
+                return GraphEditor.Nfa;
+            }
+            set {
+                if (_compiledSequenceCounter > _nfaSequenceCounter || _documentSequenceCounter > _nfaSequenceCounter) {
+                    GraphEditor.Nfa = (ProductList.SelectedItem as OldProduction).ToNfa();
+                    _nfaSequenceCounter = _compiledSequenceCounter;
+                }
+
+                if (value.IsEquivalent(GraphEditor.Nfa)) return;
+                _nfaSequenceCounter = _nfaSequenceCounter++;
+                GraphEditor.Nfa = value;
+            }
+        }
 
         public MainWindow() {
             InitializeComponent();
-            _document = new GrammarDocument();
             Populate();
         }
 
         private void Populate() {
-            _compiledGrammar = new CompiledGrammar(_document);
             ProductList.DataContext = _compiledGrammar;
         }
 
         private void NfaEditor_NfaChanged() {
-            var product = (Product)ProductList.SelectedItem;
+            var product = (OldProduction) ProductList.SelectedItem;
             var nfa = GraphEditor.Nfa;
             var tempGrammarDocument = nfa.ToGrammarDocument(product.Title, _compiledGrammar.GetAllProducts());
             Editor.Sources = tempGrammarDocument.ExemplarSources.ToArray();
@@ -44,7 +67,7 @@ namespace IDE {
         }
 
         private void MenuItem_New_Click(object sender, RoutedEventArgs e) {
-            _document = new GrammarDocument();
+            _compiledGrammar = new CompiledGrammar(new GrammarDocument());
             _loadedFileName = null;
             Populate();
         }
@@ -53,20 +76,19 @@ namespace IDE {
             var openDialog = new Microsoft.Win32.OpenFileDialog {DefaultExt = ".parlex", Filter = "Parlex grammars (*.parlex)|*.parlex|All files (*.*)|*.*"};
             var result = openDialog.ShowDialog(this);
             if (result == true) {
-                _document = GrammarDocument.FromString(File.ReadAllText(openDialog.FileName));
+                _compiledGrammar = new CompiledGrammar(GrammarDocument.FromString(File.ReadAllText(openDialog.FileName)));
                 _loadedFileName = openDialog.FileName;
                 Populate();
             }
         }
 
         private void Button_AddProduct_Click(object sender, RoutedEventArgs e) {
-            var exemplar = new GrammarDocument.ExemplarSource(" ") {new GrammarDocument.ProductSpanSource("Untitled", 0, 1)};
-            _document.ExemplarSources.Add(exemplar);
-            Populate();
+            //_compiledGrammar.
+            //Populate();
         }
 
         private void ProductList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-            var product = (Product)ProductList.SelectedItem;
+            var product = (OldProduction) ProductList.SelectedItem;
             if (product == null) {
                 GraphEditor.Visibility = Visibility.Collapsed;
                 return;
@@ -94,7 +116,39 @@ namespace IDE {
 
         private void SaveToFile(string fileName) {
             var text = _compiledGrammar.ToGrammarDocument().ToString();
-                File.WriteAllText(fileName, text);
+            File.WriteAllText(fileName, text);
+        }
+
+        private void UIElement_ProductName_OnLostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) {
+            throw new NotImplementedException();
+            //var textBox = sender as TextBox;
+            //Debug.Assert(textBox != null, "textBox != null");
+            //var bindingExpression = BindingOperations.GetBindingExpression(textBox, TextBox.TextProperty);
+            //Debug.Assert(bindingExpression != null, "bindingExpression != null");
+            //var product = bindingExpression.ResolvedSource as OldProduction;
+            //Debug.Assert(product != null, "product != null");
+            //if (textBox.Text == product.Title) {
+            //    return;
+            //}
+            //foreach (var productSpan in _document.ExemplarSources.SelectMany(exemplarSource => exemplarSource.Where(productSpan => productSpan.Name == product.Title))) {
+            //    productSpan.Name = textBox.Text;
+            //}
+            //_compiledGrammar = new CompiledGrammar(_document);
+            //Populate();
+        }
+
+        private void UIElement_ProductName_OnKeyUp(object sender, KeyEventArgs e) {
+            if (e.Key == Key.Enter) {
+                ProductList.Focus();
+            } else if (e.Key == Key.Escape) {
+                var textBox = sender as TextBox;
+                Debug.Assert(textBox != null, "textBox != null");
+                var bindingExpression = BindingOperations.GetBindingExpression(textBox, TextBox.TextProperty);
+                Debug.Assert(bindingExpression != null, "bindingExpression != null");
+                var product = bindingExpression.ResolvedSource as OldProduction;
+                Debug.Assert(product != null, "product != null");
+                textBox.Text = product.Title;
+            }
         }
     }
 }

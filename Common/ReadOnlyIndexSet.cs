@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace IDE {
+﻿namespace System.Collections.Generic.More {
     class ReadOnlyIndexSet : IEnumerable<int> {
         public ReadOnlyIndexSet(IndexSet source) {
             _value = new IndexSet(source);

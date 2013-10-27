@@ -11,7 +11,7 @@ namespace UnitTestProject1 {
             var grammarDocument = GrammarDocument.FromString(testFile);
             var compiledGrammar = new CompiledGrammar(grammarDocument);
             string toParseFile = File.ReadAllText(@"C:\Users\Brent\Dropbox\parlex\parse_test.txt");
-            var parseResult = Parser.Parse(toParseFile, "document", compiledGrammar);
+            var parseResult = OldParser.Parse(toParseFile, "document", compiledGrammar);
             System.Diagnostics.Debug.WriteLine(parseResult.Product.Title);
         }
     }

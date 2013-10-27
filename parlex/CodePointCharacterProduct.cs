@@ -2,7 +2,7 @@
 using System.Linq;
 
 namespace parlex {
-    public class CodePointCharacterProduct : Product, ICharacterProduct {
+    public class CodePointCharacterProduct : OldProduction, ICharacterProduct {
         private readonly Int32 CodePoint;
 
         internal CodePointCharacterProduct(Int32 codePoint) : base("codePoint" + codePoint.ToString("X6")) {

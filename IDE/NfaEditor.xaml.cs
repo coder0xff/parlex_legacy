@@ -1,31 +1,22 @@
 ﻿using System;
-using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Common;
 using parlex;
-using WPFExtensions.Controls;
-using Nfa = IDE.Nfa<parlex.Product, int>;
-using State = IDE.Nfa<parlex.Product, int>.State;
-using Transition = IDE.Nfa<parlex.Product, int>.Transition;
+using Nfa = Common.Nfa<parlex.OldProduction, int>;
+using State = Common.Nfa<parlex.OldProduction, int>.State;
+using Transition = Common.Nfa<parlex.OldProduction, int>.Transition;
 
 namespace IDE {
     /// <summary>
     /// Interaction logic for NfaEditor.xaml
     /// </summary>
     public partial class NfaEditor : UserControl {
-        private Dictionary<String, Product> _products = CompiledGrammar.GetBuiltInProducts();
+        private Dictionary<String, OldProduction> _products = CompiledGrammar.GetBuiltInProducts();
         private Nfa _nfa;
         private NfaVisualizer _visualizer;
         private Path _drawPath = new Path{ Fill = System.Windows.Media.Brushes.Black };
@@ -74,7 +65,7 @@ namespace IDE {
             }
         }
 
-        public Dictionary<string, Product> Products {
+        public Dictionary<string, OldProduction> Products {
             get { return _products; }
             set { _products = value; }
         }
@@ -214,7 +205,7 @@ namespace IDE {
                     }
                 }
                 if (!_products.ContainsKey(productName)) {
-                    _products.Add(productName, new Product(productName));
+                    _products.Add(productName, new OldProduction(productName));
                 }
                 var product = _products[productName];
                 _visualizer.ChangeTransitionProduct(transition, product);
@@ -277,7 +268,7 @@ namespace IDE {
                             nameCounter++;
                             newName = "Empty" + nameCounter;
                         }
-                        _visualizer.AddTransition((State)oStart, (State)o, new Product(newName));
+                        _visualizer.AddTransition((State)oStart, (State)o, new OldProduction(newName));
                         Update();
                         resetOnArrange = true;
                         e.Handled = true;

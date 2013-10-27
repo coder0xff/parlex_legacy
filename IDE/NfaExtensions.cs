@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Collections.Generic.More;
 using System.Linq;
-using System.Linq.More;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Common;
 using parlex;
- 
-using Nfa = IDE.Nfa<parlex.Product, int>;
-using State = IDE.Nfa<parlex.Product, int>.State;
+
+using Nfa = Common.Nfa<parlex.OldProduction, int>;
+using State = Common.Nfa<parlex.OldProduction, int>.State;
 using ProductSpan = parlex.GrammarDocument.ProductSpanSource;
 
 namespace IDE {
@@ -130,7 +127,7 @@ namespace IDE {
             var currentSpanIndex = GetCurrentSpanIndex(existingSpans);
             var currentMacroCycle = SelectMacroCycle(currentState, macroCycles);
             var isMacroCycleEntrance = currentMacroCycle != null;
-            var branches = productNfa.TransitionFunction[currentState].SelectMany(x => x.Value.Where(s => !ignoredToStates.Contains(s) || s == tailState).Select(y => new KeyValuePair<Product, State>(x.Key, y))).ToList(); //list of key-value pairs of transition product and to state
+            var branches = productNfa.TransitionFunction[currentState].SelectMany(x => x.Value.Where(s => !ignoredToStates.Contains(s) || s == tailState).Select(y => new KeyValuePair<OldProduction, State>(x.Key, y))).ToList(); //list of key-value pairs of transition product and to state
             if (isMacroCycleEntrance) {
                 if (isTailState && !forceIteration) {
                     UnfoldMacroCycle(productNfa, existingSpans, currentState, currentState, currentMacroCycle, followUpAction);
@@ -153,7 +150,7 @@ namespace IDE {
             }
         }
 
-        public static GrammarDocument ToGrammarDocument(this Nfa productNfa, String name, Dictionary<String, Product> products) {
+        public static GrammarDocument ToGrammarDocument(this Nfa productNfa, String name, Dictionary<String, OldProduction> products) {
             var result = new GrammarDocument();
             foreach (var startState in productNfa.StartStates) {
                 foreach (var acceptState in productNfa.AcceptStates) {

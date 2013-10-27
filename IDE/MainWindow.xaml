@@ -32,7 +32,13 @@
                         <Button Click="Button_AddProduct_Click">Add Product</Button>
                         <Button>RemoveProduct</Button>
                     </StatusBar>
-                    <ListBox ItemsSource="{Binding Path=(parlex:CompiledGrammar.NonCharacterProducts)}" Name="ProductList" SelectionChanged="ProductList_SelectionChanged"></ListBox>
+                    <ListBox ItemsSource="{Binding Path=(parlex:CompiledGrammar.NonCharacterProducts)}" Name="ProductList" SelectionChanged="ProductList_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBox Text="{Binding Title, Mode=OneWay}" Tag="{Binding}" LostKeyboardFocus="UIElement_ProductName_OnLostKeyboardFocus" KeyUp="UIElement_ProductName_OnKeyUp"></TextBox>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </DockPanel>
                 <GridSplitter HorizontalAlignment="Right" Grid.Column="0" VerticalAlignment="Stretch" Width="6"/>
                 <ScrollViewer Grid.Column ="1">

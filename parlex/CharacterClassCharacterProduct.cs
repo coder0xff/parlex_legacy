@@ -4,7 +4,7 @@ using System.Linq;
 using Common;
 
 namespace parlex {
-    public class CharacterClassCharacterProduct : Product, ICharacterProduct {
+    public class CharacterClassCharacterProduct : OldProduction, ICharacterProduct {
         internal readonly HashSet<int> CodePoints;
         private readonly GrammarDocument.CharacterSetEntry _source;
 

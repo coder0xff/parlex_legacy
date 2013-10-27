@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Generic.More;
-using System.Linq;
+﻿using System.Linq;
 
-namespace IDE {
+namespace System.Collections.Generic.More {
     /// <summary>
     /// Like a Set&lt;int&gt; but stores a single bit for every integer between 0 and Count (exclusive). This way, Set intersections, unions, copy, etc, can be done extremely quickly on small sets
     /// The algorithms (even Count) are, however, linear and may not do as well as logarithmic algorithms once it gets larger (probably in the thousands)

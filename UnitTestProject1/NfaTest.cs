@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic.More;
+﻿using System.Collections.Generic.More;
 using System.IO;
 using System.Linq;
+using Common;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using IDE;
 using parlex;
-using nfa = IDE.Nfa<int, int>;
+using nfa = Common.Nfa<int, int>;
 
 namespace UnitTestProject1 {
     [TestClass]

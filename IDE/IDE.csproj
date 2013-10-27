@@ -66,11 +66,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="BitList.cs" />
     <Compile Include="CompiledGrammarExtensions.cs" />
-    <Compile Include="IndexSet.cs" />
     <Compile Include="NfaVisualizer.cs" />
-    <Compile Include="ReadOnlyIndexSet.cs" />
     <Page Include="ExemplarEditor.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

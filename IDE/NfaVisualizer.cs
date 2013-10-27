@@ -9,9 +9,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Common;
 using parlex;
-using Nfa = IDE.Nfa<parlex.Product, int>;
-using State = IDE.Nfa<parlex.Product, int>.State;
-using Transition = IDE.Nfa<parlex.Product, int>.Transition;
+using Nfa = Common.Nfa<parlex.OldProduction, int>;
+using State = Common.Nfa<parlex.OldProduction, int>.State;
+using Transition = Common.Nfa<parlex.OldProduction, int>.Transition;
 
 namespace IDE {
     public class NfaVisualizer {
@@ -47,7 +47,7 @@ namespace IDE {
         }
 
         private Dictionary<String, Geometry> ComputeFormattedTexts() {
-            IEnumerable<Product> allSymbols = _productNfa.TransitionFunction.SelectMany(fromStateAndInputSymbolsAndToStates => fromStateAndInputSymbolsAndToStates.Value).Select(inputSymbolAndToStates => inputSymbolAndToStates.Key).Distinct();
+            IEnumerable<OldProduction> allSymbols = _productNfa.TransitionFunction.SelectMany(fromStateAndInputSymbolsAndToStates => fromStateAndInputSymbolsAndToStates.Value).Select(inputSymbolAndToStates => inputSymbolAndToStates.Key).Distinct();
             return allSymbols.Distinct().ToDictionary(product => product.ToString(), product => new FormattedText(product.ToString(), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, _font, _emSize, Brushes.Black).BuildGeometry(new Point()));
         }
 
@@ -63,7 +63,7 @@ namespace IDE {
             foreach (var fromStateAndInputSymbols in _productNfa.TransitionFunction) {
                 State fromState = fromStateAndInputSymbols.Key;
                 foreach (var inputSymbolAndToStates in fromStateAndInputSymbols.Value) {
-                    Product inputSymbol = inputSymbolAndToStates.Key;
+                    OldProduction inputSymbol = inputSymbolAndToStates.Key;
                     foreach (State toState in inputSymbolAndToStates.Value) {
                         int fromStateColumn = stateColumnAssignments[fromState];
                         int toStateColumn = stateColumnAssignments[toState];
@@ -402,7 +402,7 @@ namespace IDE {
             RemoveObjectAndConnectedLinesFromGrid(transition);
         }
 
-        public void ChangeTransitionProduct(Transition transition, Product newProduct) {
+        public void ChangeTransitionProduct(Transition transition, OldProduction newProduct) {
             if (transition.InputSymbol == newProduct) {
                 return;
             }
@@ -436,7 +436,7 @@ namespace IDE {
             _formattedTexts = ComputeFormattedTexts();
         }
 
-        public void AddTransition(State fromState, State toState, Product product) {
+        public void AddTransition(State fromState, State toState, OldProduction product) {
             if (_productNfa.TransitionFunction[fromState][product].Contains(toState)) {
                 throw new InvalidOperationException("This transition already exists");
             }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Generic.More;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Common;
 
 namespace parlex {
     public class GrammarDocument {
@@ -114,7 +116,7 @@ namespace parlex {
                 return resultBuilder.ToString();
             }
 
-            public bool TryExemplify(Dictionary<String, Product> products) {
+            public bool TryExemplify(Dictionary<String, OldProduction> products) {
                 if (!String.IsNullOrEmpty(_text)) {
                     return true;
                 }
@@ -127,7 +129,7 @@ namespace parlex {
                     }
                     var selectedSpan = this.Where(span => span.StartPosition == position && span.StartPosition + span.Length > position).OrderBy(span => span.Length).FirstOrDefault();
                     if (selectedSpan == null) return false;
-                    Product product;
+                    OldProduction product;
                     if (products.TryGetValue(selectedSpan.Name.EndsWith("*") ? selectedSpan.Name.Substring(0, selectedSpan.Name.Length - 1) : selectedSpan.Name, out product)) {
                         string subExample = product.GetExample();
                         if (subExample != null) {
