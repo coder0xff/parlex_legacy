@@ -1,440 +1,414 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Collections.Concurrent.More;
 using System.Linq;
 
-namespace parlex {
-    public class Parser {
-        private class SubMatchChain : IEquatable<SubMatchChain> {
-            public bool Equals(SubMatchChain other) {
-                if (ReferenceEquals(null, other)) {
-                    return false;
-                }
-                if (ReferenceEquals(this, other)) {
-                    return true;
-                }
-                if (_hashCache != other._hashCache) return false;
-                return SubMatches.SequenceEqual(other.SubMatches);
-            }
+namespace parlex
+{
+	public class Parser
+	{
+		public Parser (Grammar grammar)
+		{
+			g = grammar;
+		}
 
-            public override bool Equals(object obj) {
-                if (ReferenceEquals(null, obj)) {
-                    return false;
-                }
-                if (ReferenceEquals(this, obj)) {
-                    return true;
-                }
-                if (obj.GetType() != GetType()) {
-                    return false;
-                }
-                return Equals((SubMatchChain) obj);
-            }
+		Grammar g;
 
-            public override int GetHashCode() {
-                return _hashCache;
-            }
+		/// <summary>
+		/// Represents a successful matching by a Recognizer. The permutation in Match.children is unique at the Match's location and length (though these values are not stored here).
+		/// </summary>
+		class Match {
+			public Grammar.Symbol symbol;
+			public int position;
+			public int length;
+			public List<MatchGroup> children;
 
-            public static bool operator ==(SubMatchChain left, SubMatchChain right) {
-                return Equals(left, right);
-            }
+			public Match(Grammar.Symbol symbol, int position, int length, List<MatchGroup> children) {
+				this.symbol = symbol;
+				this.position = position;
+				this.length = length;
+				this.children = children;
+			}
+		}
 
-            public static bool operator !=(SubMatchChain left, SubMatchChain right) {
-                return !Equals(left, right);
-            }
+		/// <summary>
+		/// A grouping of Matches that are all the same Grammar.Symbol, document position, and length
+		/// </summary>
+		class MatchGroup {
+			int documentPosition;
 
-            internal class Entry : IEquatable<Entry> {
-                public bool Equals(Entry other) {
-                    if (ReferenceEquals(null, other)) {
-                        return false;
-                    }
-                    if (ReferenceEquals(this, other)) {
-                        return true;
-                    }
-                    return Product.Equals(other.Product) && LengthInParsedText == other.LengthInParsedText;
-                }
+			public int DocumentPosition {
+				get {
+					return documentPosition;
+				}
+			}
 
-                public override bool Equals(object obj) {
-                    if (ReferenceEquals(null, obj)) {
-                        return false;
-                    }
-                    if (ReferenceEquals(this, obj)) {
-                        return true;
-                    }
-                    if (obj.GetType() != GetType()) {
-                        return false;
-                    }
-                    return Equals((Entry) obj);
-                }
+			int parseLength;
 
-                public override int GetHashCode() {
-                    unchecked {
-                        return (Product.GetHashCode() * 397) ^ LengthInParsedText;
-                    }
-                }
+			public int ParseLength {
+				get {
+					return parseLength;
+				}
+			}
 
-                public static bool operator ==(Entry left, Entry right) {
-                    return Equals(left, right);
-                }
+			Grammar.Symbol symbol;
 
-                public static bool operator !=(Entry left, Entry right) {
-                    return !Equals(left, right);
-                }
+			public Grammar.Symbol Symbol {
+				get {
+					return symbol;
+				}
+			}
 
-                internal readonly Product Product;
-                internal readonly int LengthInParsedText;
+			List<Match> matches;
 
-                internal Entry(Product product, int lengthInParsedText) {
-                    Product = product;
-                    LengthInParsedText = lengthInParsedText;
-                }
-            }
+			public MatchGroup (int parsePosition, int parseLength, Grammar.Symbol symbol)
+			{
+				this.documentPosition = parsePosition;
+				this.parseLength = parseLength;
+				this.symbol = symbol;
+				matches = new List<Match>();
+			}
 
-            internal readonly List<Entry> SubMatches;
-            internal readonly int LengthInParsedText;
-            private readonly int _hashCache;
+			public void AddMatch(Match match) {
+				matches.Add (match);
+			}
+		}
 
-            internal SubMatchChain(List<Entry> subMatches, int lengthInParsedText) {
-                System.Diagnostics.Debug.Assert(lengthInParsedText > 0);
-                SubMatches = subMatches;
-                LengthInParsedText = lengthInParsedText;
-                _hashCache = ComputeHash();
-            }
+		/// <summary>
+		/// IDependent and IProvider are similar to the producer consumer design pattern, but an IDependent is Terminate()'d when it no longer has any IProviders.
+		/// </summary>
+		interface IDependent<T> {
+			void Receive(T data);
+			void Terminate();
+			void Subcribe(IProvider<T> Provider);
+		}
 
-            int ComputeHash() {
-                return SubMatches.Aggregate(0, (current, subMatch) => current*397 ^ subMatch.GetHashCode());
-            }
-        }
+		/// <summary>
+		/// See IDependent
+		/// </summary>
+		interface IProvider<T> {
+			void SubscriptionCreatedHandler(IDependent<T> dependent);
+		}
 
-        private readonly Dictionary<Product, Dictionary<int /*length*/, SubMatchChain>>[] _completedProductMatches;
-        private readonly Int32[] _textCodePoints;
-        private readonly StrictPartialOrder<Product> _precedence;
-        private readonly ParseResult _result;
+		/// <summary>
+		/// Acts as a combined IProvider and IDependent in such a way that all IDependents that subscribe to this (on the IProvider side) will be Received every piece of data that come in (on the IDependent side).
+		/// This essentially removes temporal ordering - it doesn't matter when an IDependent subcribes or when an IProvider generates data. All data will go everywhere.
+		/// When the adapter is created it will be subscribed to IProviders. When all such Providers call Terminate (on the IDependent side) the adapter will call Terminate (on the IProvider side).
+		/// </summary>
+		class TemporallyUnorderedMultiProviderDependentAdapter<T> : IProvider<T>, IDependent<T> {
+			List<IDependent<T>> dependents = new List<IDependent<T>>();
+			List<T> alreadyProvidedValues = new List<T>();
+			bool isTerminated = false;
+			int providerCount = 0;
 
-        private Parser(String text, Product toMatch, StrictPartialOrder<Product> precedence) {
-            _textCodePoints = text.GetUtf32CodePoints();
-            _completedProductMatches = new Dictionary<Product, Dictionary<int, SubMatchChain>>[_textCodePoints.Length];
-            for (int initCollections = 0; initCollections < _textCodePoints.Length; initCollections++) {
-                _completedProductMatches[initCollections] = new Dictionary<Product, Dictionary<int, SubMatchChain>>();
-            }
-            _precedence = precedence;
-            MatchProduct(toMatch, 0, new Dictionary<Product, DependencyMediator>());
-            _result = PrepareResult(toMatch, text.Length);
-        }
+			#region IDependent implementation
 
-        static public ParseResult Parse(String text, String productName, CompiledGrammar grammar) {
-            var toMatch = grammar.AllProducts[productName];
-            return new Parser(text, toMatch, grammar._precedences)._result;
-        }
+			public void Receive(T data)
+			{
+				lock (dependents) {
+					if (isTerminated)
+						throw new Exception();
+					for (int index = 0; index < dependents.Count; index++) {
+						dependents[index].Receive(data);
+					}
+					alreadyProvidedValues.Add (data);
+				}
+			}
 
-        private class DependencyMediator {
-            internal readonly Dictionary<int, HashSet<SubMatchChain>> CompletedSoFar = new Dictionary<int, HashSet<SubMatchChain>>();
-            private readonly List<SequenceMatchState> _dependents = new List<SequenceMatchState>();
+			public void Terminate()
+			{
+				lock (dependents) {
+					if (isTerminated)
+						throw new Exception();
+					if (System.Threading.Interlocked.Decrement(ref providerCount) == 0) {
+						isTerminated = true;
+						for (int index = 0; index < dependents.Count; index++) {
+							dependents[index].Terminate();
+						}
+					}
+				}
+			}
 
-            internal void AddMatchChain(SubMatchChain subMatchChain) {
-                int length = subMatchChain.LengthInParsedText;
-                bool newLength = !CompletedSoFar.ContainsKey(length);
-                if (newLength) {
-                    CompletedSoFar.Add(length, new HashSet<SubMatchChain>());
-                }
-                if (CompletedSoFar[length].Add(subMatchChain)) {
-                    if (newLength) {
-                        foreach (var sequenceMatchState in _dependents) {
-                            sequenceMatchState.DependencyFulfilled(length);
-                        }
-                    }
-                }
-            }
+			public void Subcribe (IProvider<T> Provider) {
+				System.Threading.Interlocked.Increment(ref providerCount);
+				Provider.SubscriptionCreatedHandler(this);
+			}
 
-            internal void AddDependent(SequenceMatchState sequenceMatchState) {
-                _dependents.Add(sequenceMatchState);
-                if (CompletedSoFar.Count > 0) {
-                    foreach (var length in new List<int>(CompletedSoFar.Keys)) {
-                        sequenceMatchState.DependencyFulfilled(length);
-                    }
-                }
-            }
+			#endregion
 
-            internal void MatchingFinished() {
-                if (CompletedSoFar.Count == 0) {
-                    foreach (var unfulfilledDependent in _dependents) {
-                        unfulfilledDependent.DependencyUnfulfilled();
-                    }
-                }
-            }
-        }
+			#region IProvider implementation
+			public void SubscriptionCreatedHandler(IDependent<T> dependent)
+			{
+				lock (dependents) {
+					lock (alreadyProvidedValues) {
+						foreach (T alreadyProvidedValue in alreadyProvidedValues) {
+							dependent.Receive(alreadyProvidedValue);
+						}
+					}
+					dependents.Add(dependent);
+					if (isTerminated) {
+						dependent.Terminate();
+					}
+				}
+			}
+			#endregion
 
-        private class SequenceMatchState {
-            private readonly Parser _parser;
-            private readonly CompiledGrammar.NfaSequence _sequence;
-            private readonly int _counter;
-            private readonly int _textToParseIndex;
-            private readonly int _sequenceStartingTextToParseIndex;
-            private readonly CompiledGrammar.NfaSequence.ProductReference _neededProduct;
-            private readonly List<SubMatchChain.Entry> _matchesThusFar;
-            private readonly DependencyMediator _dependencyMediator;
+		}
 
-            internal SequenceMatchState(Parser parser, CompiledGrammar.NfaSequence sequence, int counter, int textToParseIndex, int sequenceStartingTextToParseIndex, CompiledGrammar.NfaSequence.ProductReference neededProduct, List<SubMatchChain.Entry> matchesThusFar, DependencyMediator dependencyMediator) {
-                _parser = parser;
-                _sequence = sequence;
-                _counter = counter;
-                _textToParseIndex = textToParseIndex;
-                _sequenceStartingTextToParseIndex = sequenceStartingTextToParseIndex;
-                _neededProduct = neededProduct;
-                _matchesThusFar = matchesThusFar;
-                _dependencyMediator = dependencyMediator;
-            }
+		/// <summary>
+		/// Searches for MatchGroups using the specified Grammar.Recognizer, at the specified location
+		/// Results are returned through the IProvider interface.
+		/// It also places all Matches is receives into the Abstract Syntax Graph
+		/// </summary>
+		class ParseSubJob : IProvider<MatchGroup>, IDependent<Match> {
+			ParseJob owner;
 
-            internal void DependencyFulfilled(int length) {
-                int nextTextToParseIndex = _textToParseIndex + length;
-                var nextMatchesThusFar = new List<SubMatchChain.Entry>(_matchesThusFar) {new SubMatchChain.Entry(_neededProduct.Product, length)};
-                if (_neededProduct.IsRepetitious) {
-                    CreateNextStates(_counter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, DependencyMediator>());
-                } else {
-                    if (_neededProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength) {
-                        _dependencyMediator.AddMatchChain(new SubMatchChain(nextMatchesThusFar, nextTextToParseIndex - _sequenceStartingTextToParseIndex));
-                    } else {
-                        CreateNextStates(_neededProduct.ExitSequenceCounter, nextTextToParseIndex, nextMatchesThusFar, new Dictionary<Product, DependencyMediator>());
-                    }
-                }
-            }
+			public ParseJob Owner {
+				get {
+					return owner;
+				}
+			}
 
-            internal void DependencyUnfulfilled() {
-                if (_neededProduct.IsRepetitious) {
-                    if (_neededProduct.ExitSequenceCounter == _sequence.SpanStart + _sequence.SpanLength) {
-                        _dependencyMediator.AddMatchChain(new SubMatchChain(_matchesThusFar, _textToParseIndex - _sequenceStartingTextToParseIndex));
-                    } else {
-                        CreateNextStates(_neededProduct.ExitSequenceCounter, _textToParseIndex, _matchesThusFar, new Dictionary<Product, DependencyMediator>());
-                    }
-                } else {
-                    if (_matchesThusFar.Count > 0) {
-                        System.Diagnostics.Debug.WriteLine("Expected a " + _neededProduct.Product + " at index:" + _textToParseIndex + " to continue a " + _sequence.OwnerProduct.Title + " sequence that started at index:" + _sequenceStartingTextToParseIndex + ".");
-                    }
-                }
-            }
+			Grammar.Recognizer recognizer;
 
-            internal void CreateNextStates(int nextCounter, int nextTextToParseIndex, List<SubMatchChain.Entry> nextMatchesThusFar, Dictionary<Product, DependencyMediator> dependencyMediators) {
-                var nextProducts = _sequence.RelationBranches[nextCounter - _sequence.SpanStart];
-                foreach (var nextProductReference in nextProducts) {
-                    var nextProduct = nextProductReference.Product;
-                    var nextSequenceMatchState = new SequenceMatchState(_parser, _sequence, nextCounter, nextTextToParseIndex, _sequenceStartingTextToParseIndex, nextProductReference, nextMatchesThusFar, _dependencyMediator);
-                    HashSet<int> matchResults = null;
-                    if (!dependencyMediators.ContainsKey(nextProduct)) {
-                        matchResults = _parser.MatchProduct(nextProduct, nextTextToParseIndex, dependencyMediators);
-                    }
-                    if (matchResults != null) {
-                        if (matchResults.Count > 0) {
-                            foreach (var matchResult in matchResults) {
-                                nextSequenceMatchState.DependencyFulfilled(matchResult);
-                            }
-                        } else {
-                            nextSequenceMatchState.DependencyUnfulfilled();
-                        }
-                    } else {
-                        if (dependencyMediators.ContainsKey(nextProduct)) {
-                            dependencyMediators[nextProduct].AddDependent(nextSequenceMatchState);
-                        } else {
-                            nextSequenceMatchState.DependencyUnfulfilled();
-                        }
-                    }
-                }
-            }
-        }
+			public Grammar.Recognizer Recognizer {
+				get {
+					return recognizer;
+				}
+			}
 
-        private HashSet<int> MatchProduct(Product product, int textToParseIndex, Dictionary<Product, DependencyMediator> dependencyMediators) {
-            System.Diagnostics.Debug.Assert(!dependencyMediators.ContainsKey(product));
-            bool isTopRecursionLevel = dependencyMediators.Count == 0;
+			int parsePosition;
 
-            if (textToParseIndex >= _textCodePoints.Length) {
-                return new HashSet<int>();
-            }
+			public int ParsePosition {
+				get {
+					return parsePosition;
+				}
+			}
 
-            var builtInCharacterProduct = product as ICharacterProduct;
-            if (builtInCharacterProduct != null) {
-                if (builtInCharacterProduct.Match(_textCodePoints[textToParseIndex])) {
-                    return new HashSet<int> { 1 };
-                }
-                return new HashSet<int>();
-            }
+			public ParseSubJob (ParseJob owner, Grammar.Recognizer recognizer, int parsePosition)
+			{
+				this.owner = owner;
+				this.recognizer = recognizer;
+				this.parsePosition = parsePosition;
+			}
 
-            if (_completedProductMatches[textToParseIndex].ContainsKey(product)) {
-                return new HashSet<int>(_completedProductMatches[textToParseIndex][product].Keys);
-            }
+			TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup> providerDependentAdapter = new TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup>();
 
-            var dependencyMediator = new DependencyMediator();
-            dependencyMediators.Add(product, dependencyMediator);
+			#region IProvider implementation
+			public void SubscriptionCreatedHandler(IDependent<MatchGroup> dependent)
+			{
+				providerDependentAdapter.SubscriptionCreatedHandler(dependent);
+			}
+			#endregion
 
-            foreach (var sequence in product.Sequences) {
-                var precursorSequenceMatchState = new SequenceMatchState(this, sequence, sequence.SpanStart, textToParseIndex, textToParseIndex, null, null, dependencyMediator);
-                precursorSequenceMatchState.CreateNextStates(sequence.SpanStart, textToParseIndex, new List<SubMatchChain.Entry>(), dependencyMediators);
-            }
+			#region IDependent implementation
 
-            //bool hadNoResults = dependencyMediators[product].CompletedSoFar.Count == 0;
+			ConcurrentSet<int> alreadyReturnedMatchGroupLengths = new ConcurrentSet<int>();
 
-            if (isTopRecursionLevel) {
-                foreach (var mediator in dependencyMediators) {
-                    mediator.Value.MatchingFinished();
-                }
+			public void Receive (Match data)
+			{
+				MatchGroup matchGroup = owner.matchGroups [data.symbol as Grammar.Recognizer] [data.position] [data.length];
+				matchGroup.AddMatch (data);
+				if (alreadyReturnedMatchGroupLengths.TryAdd(data.length)) {
+					providerDependentAdapter.Receive (matchGroup);
+				}
+			}
 
-                foreach (var mediator in dependencyMediators) {
-                    foreach (var length in mediator.Value.CompletedSoFar.Keys) {
-                        GetSubMatchChainFromCompletedProductsOrDependencyMediators(new SubMatchChain.Entry(mediator.Key, length), textToParseIndex, dependencyMediators, new Stack<SubMatchChain.Entry>());
-                    }
-                }
+			public void Terminate ()
+			{
+				providerDependentAdapter.Terminate ();
+			}
 
-                ////If results where only finally made by calling DependencyUnfulfilled, then we assume we had some repetitious recursion. In this case, only the longest match is valid.
-                //if (hadNoResults && dependencyMediators[product].CompletedSoFar.Count > 0) {
-                //    int selectedLength = _completedProductMatches[textToParseIndex][product].Keys.Max();
-                //    SubMatchChain singularResult = _completedProductMatches[textToParseIndex][product][selectedLength];
-                //    _completedProductMatches[textToParseIndex][product].Clear();
-                //    _completedProductMatches[textToParseIndex][product].Add(selectedLength, singularResult);
-                //}
+			public void Subcribe (IProvider<Match> provider)
+			{
+				provider.SubscriptionCreatedHandler (this);
+			}
 
-                dependencyMediators.Clear();
+			#endregion
 
-                if (_completedProductMatches[textToParseIndex].ContainsKey(product)) {
-                    return new HashSet<int>(_completedProductMatches[textToParseIndex][product].Keys);
-                }
-            }
+			public void CreateAndQueueFirstRecognizerState() {
+				RecognizerState state = new RecognizerState(this);
+			}
+		}
 
-            return null;
-        }
+		/// <summary>
+		/// Stores a reference to a SubParseJobInfo, and stores the current states of the recognizer (which is a NFA)
+		/// It also stores information regarding previous transition symbols, so that when an accept state is terminated upon, a record of all the transitions can be compiled into the Abstract Syntax Graph
+		/// It depends on the MatchGroups returned by ParseSubJobs, and (on completing recognition) returns new Matches through it's IProvider interface
+		/// </summary>
+		class RecognizerState : IProvider<Match>, IDependent<MatchGroup> {
 
-        /// <summary>
-        /// Based on several possible matches of the same length, which one is best. This is decided by repeatedly calling ChooseBestSubMatchChain, which may recursively call this function
-        /// </summary>
-        /// <param name="entry"></param>
-        /// <param name="indexInTextToParse"></param>
-        /// <param name="dependencyMediators"></param>
-        /// <param name="stack"></param>
-        /// <returns></returns>
-        private SubMatchChain GetSubMatchChainFromCompletedProductsOrDependencyMediators(SubMatchChain.Entry entry, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
-            if (_completedProductMatches[indexInTextToParse].ContainsKey(entry.Product)) {
-                if (_completedProductMatches[indexInTextToParse][entry.Product].ContainsKey(entry.LengthInParsedText)) {
-                    return _completedProductMatches[indexInTextToParse][entry.Product][entry.LengthInParsedText];
-                }
-            }
-            var candidates = dependencyMediators[entry.Product].CompletedSoFar[entry.LengthInParsedText];
-            var candidatesList = new List<SubMatchChain>(candidates);
-            for (int indexA = 0; indexA < candidatesList.Count - 1; indexA++) {
-                for (int indexB = indexA + 1; indexB < candidatesList.Count;) {
-                    var better = ChooseBestSubMatchChain(candidatesList[indexA], candidatesList[indexA + 1], indexInTextToParse, dependencyMediators, stack);
-                    if (better == candidatesList[indexA]) {
-                        candidatesList.RemoveAt(indexB);
-                    } else if (better == candidatesList[indexB]) {
-                        candidatesList[indexA] = candidatesList[indexB];
-                        candidatesList.RemoveAt(indexB);
-                        indexB = indexA + 1;
-                    } else {
-                        indexB++;
-                    }
-                }
-            }
-            candidates.Clear();
-            foreach (var subMatchChain in candidatesList) {
-                candidates.Add(subMatchChain);
-            }
-            if (candidates.Count == 1) {
-                if (!_completedProductMatches[indexInTextToParse].ContainsKey(entry.Product)) {
-                    _completedProductMatches[indexInTextToParse].Add(entry.Product, new Dictionary<int, SubMatchChain>());
-                }
-                _completedProductMatches[indexInTextToParse][entry.Product].Add(entry.LengthInParsedText, candidates.First());
-                return candidates.First();
-            }
-            return null;
-        }
+			/// <summary>
+			/// The ParseJob that owns this instance
+			/// </summary>
+			ParseSubJob parseSubJob;
 
-        private int GetOrder(Product a, Product b) {
-            return _precedence.Compare(a, b);
-        }
+			/// <summary>
+			/// The state of the recognizer for subParseJobInfo.symbol that this ParseState represents
+			/// </summary>
+			Grammar.Recognizer.State[] recognizerNfaState;
 
-        private SubMatchChain ChooseBestSubMatchChain(SubMatchChain a, SubMatchChain b, int indexInTextToParse, Dictionary<Product, DependencyMediator> dependencyMediators, Stack<SubMatchChain.Entry> stack) {
-            bool aIsBuiltIn = a.SubMatches.Count == 0;
-            bool bIsBuiltIn = b.SubMatches.Count == 0;
-            if (aIsBuiltIn && bIsBuiltIn) throw new ApplicationException();
-            if (aIsBuiltIn) return b;
-            if (bIsBuiltIn) return a;
-            for (int subMatchIndex = 0; subMatchIndex < a.SubMatches.Count; subMatchIndex++) {
-                Product aSubProduct = a.SubMatches[subMatchIndex].Product;
-                Product bSubProduct = b.SubMatches[subMatchIndex].Product;
-                int precedence = GetOrder(aSubProduct, bSubProduct);
-                if (precedence < 0) return b;
-                if (precedence > 0) return a;
-                bool aSubProductIsBuiltIn = aSubProduct is ICharacterProduct;
-                bool bSubProductIsBuiltIn = bSubProduct is ICharacterProduct;
-                if (aSubProductIsBuiltIn && !bSubProductIsBuiltIn) return b;
-                if (!aSubProductIsBuiltIn && bSubProductIsBuiltIn) return a;
-                if (aSubProductIsBuiltIn) continue;
-                int aSubLength = a.SubMatches[subMatchIndex].LengthInParsedText;
-                int bSubLength = b.SubMatches[subMatchIndex].LengthInParsedText;
-                if (aSubLength > bSubLength) {
-                    return a;
-                }
-                if (bSubLength > aSubLength) {
-                    return b;
-                }
-            }
+			/// <summary>
+			/// A history of the transition symbols that led to the current NFA state, which are used when each satisfaction of the PositionedMatchJobInfo occurs, as a means of creating the hierarchy of the resulting Abstract Syntax Graph
+			/// </summary>
+			List<MatchGroup> transitionHistory;
 
-            var firstEntryA = a.SubMatches[0];
-            if (stack.Contains(firstEntryA)) throw new ApplicationException();
-            stack.Push(firstEntryA);
-            SubMatchChain firstEntryChainA = GetSubMatchChainFromCompletedProductsOrDependencyMediators(firstEntryA, indexInTextToParse, dependencyMediators, stack);
-            stack.Pop();
+			/// <summary>
+			/// The document position that the next transition symbol will be read from
+			/// </summary>
+			int currentDocumentPosition;
 
-            var firstEntryB = b.SubMatches[0];
-            if (stack.Contains(firstEntryB)) throw new ApplicationException();
-            stack.Push(firstEntryB);
-            SubMatchChain firstEntryChainB = GetSubMatchChainFromCompletedProductsOrDependencyMediators(firstEntryB, indexInTextToParse, dependencyMediators, stack);
-            stack.Pop();
+			public RecognizerState(ParseSubJob parseSubJob) {
+				this.parseSubJob = parseSubJob;
+				this.recognizerNfaState = this.parseSubJob.Recognizer.StartStates.ToArray();
+				this.transitionHistory = new List<MatchGroup>();
+				this.currentDocumentPosition = this.parseSubJob.ParsePosition;
+				parseSubJob.Subcribe(this);
+			}
 
-            var subBest = ChooseBestSubMatchChain(firstEntryChainA, firstEntryChainB, indexInTextToParse, dependencyMediators, stack);
-            if (subBest == firstEntryChainA) return a;
-            if (subBest == firstEntryChainB) return b;
+			RecognizerState (ParseSubJob parseSubJob, Grammar.Recognizer.State[] recognizerNfaState, List<MatchGroup> transitionHistory, int currentDocumentPosition) {
+				this.parseSubJob = parseSubJob;
+				this.recognizerNfaState = recognizerNfaState.ToArray();
+				this.transitionHistory = transitionHistory;
+				this.currentDocumentPosition = currentDocumentPosition;
+				parseSubJob.Subcribe(this);
+			}
 
-            return null;
-        }
+			RecognizerState Transition(MatchGroup matchGroup) {
+				Grammar.Symbol transitionSymbol = matchGroup.Symbol;
+				int length = matchGroup.ParseLength;
+				HashSet<Grammar.Recognizer.State> nfaStatesAfterTransition = new HashSet<Nfa<Grammar.Symbol, int>.State>();
+				foreach (Grammar.Recognizer.State fromState in recognizerNfaState) {
+					foreach (Grammar.Recognizer.State toState in parseSubJob.Recognizer.TransitionFunction[fromState][transitionSymbol]) {
+						nfaStatesAfterTransition.Add(toState);
+					}
+				}
+				var updatedTransitionHistory = new List<MatchGroup> (transitionHistory);
+				updatedTransitionHistory.Add (matchGroup);
+				return new RecognizerState(parseSubJob, nfaStatesAfterTransition.ToArray(), updatedTransitionHistory, currentDocumentPosition + length);
+			}
+				
+			#region IDependent implementation
 
-        private ParseResult Resultify(int indexInParsedText, Product product, int length, Dictionary<Product, Dictionary<int, ParseResult>>[] converted) {
-            var indexConversions = converted[indexInParsedText];
-            if (indexConversions == null) {
-                indexConversions = new Dictionary<Product, Dictionary<int, ParseResult>>();
-                converted[indexInParsedText] = indexConversions;
-            }
+			public void Receive (MatchGroup data)
+			{
+				RecognizerState next = Transition (data);
+				next.SubscribeToSubJobs ();
+			}
 
-            Dictionary<int, ParseResult> productConversions;
-            if (indexConversions.ContainsKey(product)) {
-                productConversions = indexConversions[product];
-            } else {
-                productConversions = new Dictionary<int, ParseResult>();
-                indexConversions.Add(product, productConversions);
-            }
+			public void Terminate ()
+			{
+				if (IsAcceptState) {
+					Match match = new Match (parseSubJob.Recognizer, parseSubJob.ParsePosition, currentDocumentPosition - parseSubJob.ParsePosition, transitionHistory);
+					for (int index = 0; index < dependents.Count; index++) {
+						dependents [index].Receive (match);
+						dependents [index].Terminate ();
+					}
+				}
+			}
 
-            ParseResult result;
-            if (productConversions.ContainsKey(length)) {
-                result = productConversions[length];
-            } else {
-                int currentIndexInParsedText = indexInParsedText;
-                var subMatches = new List<ParseResult>();
-                if (_completedProductMatches[indexInParsedText].ContainsKey(product)) {
-                    var subMatchChain = _completedProductMatches[indexInParsedText][product][length];
-                    foreach (var subMatch in subMatchChain.SubMatches) {
-                        subMatches.Add(Resultify(currentIndexInParsedText, subMatch.Product, subMatch.LengthInParsedText, converted));
-                        currentIndexInParsedText += subMatch.LengthInParsedText;
-                    }
-                }
-                result = new ParseResult(product, indexInParsedText, length, subMatches);
-                productConversions.Add(length, result);
-            }
+			public void Subcribe (IProvider<MatchGroup> Provider)
+			{
+				Provider.SubscriptionCreatedHandler (this);
+			}
 
-            return result;
-        }
+			#endregion
 
-        private ParseResult PrepareResult(Product toMatch, int length) {
-            var converted = new Dictionary<Product, Dictionary<int, ParseResult>>[_textCodePoints.Length];
-            if (_completedProductMatches[0].ContainsKey(toMatch)) {
-                if (_completedProductMatches[0][toMatch].ContainsKey(length)) {
-                    return Resultify(0, toMatch, length, converted);
-                }
-            }
-            return null;
-        }
-    }
+			#region IProvider implementation
+
+			List<IDependent<Match>> dependents = new List<IDependent<Match>> ();
+			public void SubscriptionCreatedHandler (IDependent<Match> dependent)
+			{
+				lock (dependents) {
+					dependents.Add (dependent);
+				}
+			}
+
+			#endregion
+				
+			public bool IsAcceptState { get { return recognizerNfaState.Any(x => parseSubJob.Recognizer.AcceptStates.Contains(x)); } }
+
+			void SubscribeToSubJobs() {
+				HashSet<Grammar.Symbol> soughtTransitionSymbols = new HashSet<Grammar.Symbol>();
+				foreach (Grammar.Recognizer.State fromState in recognizerNfaState) {
+					foreach (Grammar.Symbol transitionSymbol in parseSubJob.Recognizer.TransitionFunction[fromState].Keys) {
+						soughtTransitionSymbols.Add(transitionSymbol);
+					}
+				}
+				foreach (Grammar.Symbol soughtTransitionSymbol in soughtTransitionSymbols) {
+					Subcribe(parseSubJob.Owner.GetSubParseResultsProvider(soughtTransitionSymbol, currentDocumentPosition));
+				}
+			}
+		}
+
+		class TerminalParseSubJob : IProvider<MatchGroup> {
+			TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup> providerDependentAdapter;
+
+			public TerminalParseSubJob(ParseJob owner, Grammar.Terminal terminal, int documentPosition) {
+				providerDependentAdapter = new TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup>();
+				bool result = true;
+				foreach (UInt32 codePoint in terminal.UnicodeCodePoints) {
+					if (codePoint != owner.TextAsUTF32[documentPosition++]) {
+						result = false;
+						break;
+					}
+				}
+				if (result) {
+					providerDependentAdapter.Receive(new MatchGroup(documentPosition, terminal.UnicodeCodePoints.Length, null));
+				}
+				providerDependentAdapter.Terminate();
+			}
+
+			#region IProvider implementation
+			public void SubscriptionCreatedHandler (IDependent<MatchGroup> dependent)
+			{
+				providerDependentAdapter.SubscriptionCreatedHandler (dependent);
+			}
+			#endregion
+		}
+
+		class ParseJob {
+
+			String text;
+
+			public String Text {
+				get {
+					return text;
+				}
+			}
+
+			Int32[] textAsUTF32;
+
+			public Int32[] TextAsUTF32 {
+				get {
+					return textAsUTF32;
+				}
+			}
+
+			ParseJob(String text) {
+				this.text = text;
+				this.textAsUTF32 = text.GetUtf32CodePoints();
+				matchGroups = new JaggedAutoDictionary<Grammar.Recognizer, int, int, MatchGroup>((Grammar.Recognizer recognizer, int parsePosition, int parseLength) => new MatchGroup(parsePosition, parseLength, recognizer));
+				subParseJobs = new JaggedAutoDictionary<Grammar.Recognizer, int, ParseSubJob>((Grammar.Recognizer recognizer, int parsePosition) => new ParseSubJob(this, recognizer, parsePosition));
+			}
+
+			internal JaggedAutoDictionary<Grammar.Recognizer, int /* parsePosition */, int /* parseLength */, MatchGroup> matchGroups;
+			JaggedAutoDictionary<Grammar.Recognizer, int /*parsePosition */, ParseSubJob> subParseJobs;
+			ConcurrentSet<ParseSubJob> pendingAndCompletedStates = new ConcurrentSet<ParseSubJob>();
+
+			/// <summary>
+			/// Queue a sub-parse job for the parser to process, but only if an identical sub-parse job has not already been queued or completed
+			/// </summary>
+			/// <param name="parsePosition">Parse position.</param>
+			/// <param name="symbol">Symbol.</param>
+			public IProvider<MatchGroup> GetSubParseResultsProvider(Grammar.Symbol symbol, int documentPosition) {
+				if (symbol is Grammar.Terminal) {
+					return new TerminalParseSubJob (this, symbol as Grammar.Terminal, documentPosition);
+				}
+				return subParseJobs [symbol as Grammar.Recognizer] [documentPosition];
+			}
+		}
+	}
 }
+

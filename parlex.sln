@@ -3,11 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "parlex", "parlex\parlex.csproj", "{5E9DDC58-4C19-4E62-B37C-9682B08D2960}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IDE", "IDE\IDE.csproj", "{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{225EE06C-3EC1-4D0C-919A-338DB9D77548}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTestProject1", "UnitTestProject1\UnitTestProject1.csproj", "{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D3EDB85-8150-40ED-9E88-057823E71E65}"
 	ProjectSection(SolutionItems) = preProject
@@ -21,30 +17,23 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
-		{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
-		{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E5AE1544-3D3D-4A9C-8E13-6CC67D3CB7A4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.Release|Any CPU.Build.0 = Release|Any CPU
-		{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
-		{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
-		{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{08D7AA20-DD3B-4509-B22F-E7AE14998CF5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
+		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = parlex\parlex.csproj
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
