@@ -1,15 +1,18 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Collections.Generic.More;
 using System.Linq;
+using System.Linq.More;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Common;
 using parlex;
-
-using Nfa = Common.Nfa<parlex.OldProduction, int>;
-using State = Common.Nfa<parlex.OldProduction, int>.State;
+ 
+using Nfa = IDE.Nfa<parlex.Product, int>;
+using State = IDE.Nfa<parlex.Product, int>.State;
 using ProductSpan = parlex.GrammarDocument.ProductSpanSource;
 
 namespace IDE {
@@ -127,7 +130,7 @@ namespace IDE {
             var currentSpanIndex = GetCurrentSpanIndex(existingSpans);
             var currentMacroCycle = SelectMacroCycle(currentState, macroCycles);
             var isMacroCycleEntrance = currentMacroCycle != null;
-            var branches = productNfa.TransitionFunction[currentState].SelectMany(x => x.Value.Where(s => !ignoredToStates.Contains(s) || s == tailState).Select(y => new KeyValuePair<OldProduction, State>(x.Key, y))).ToList(); //list of key-value pairs of transition product and to state
+            var branches = productNfa.TransitionFunction[currentState].SelectMany(x => x.Value.Where(s => !ignoredToStates.Contains(s) || s == tailState).Select(y => new KeyValuePair<Product, State>(x.Key, y))).ToList(); //list of key-value pairs of transition product and to state
             if (isMacroCycleEntrance) {
                 if (isTailState && !forceIteration) {
                     UnfoldMacroCycle(productNfa, existingSpans, currentState, currentState, currentMacroCycle, followUpAction);
@@ -150,30 +153,26 @@ namespace IDE {
             }
         }
 
-        public static GrammarDocument ToGrammarDocument(this Nfa productNfa, String name, Dictionary<String, OldProduction> products) {
-            var result = new GrammarDocument();
+        public static GrammarDocument.ExemplarSource[] ToExemplarSources(this Nfa productNfa, String name, Dictionary<String, Product> products) {
+            var resultList = new List<GrammarDocument.ExemplarSource>();
             foreach (var startState in productNfa.StartStates) {
                 foreach (var acceptState in productNfa.AcceptStates) {
                     var productSpans = new List<ProductSpan>();
                     Process(productNfa, productSpans, startState, acceptState, new HashSet<State>(), () => {
-                        if (productSpans.Count == 1) {
-                            result.IsASources.Add(new GrammarDocument.IsA(productSpans[0].Name, name));
-                        } else {
-                            var item = new GrammarDocument.ExemplarSource("");
-                            foreach (var productSpanSource in productSpans) {
-                                item.Add(new ProductSpan(productSpanSource)); //copy it so exemplification doesn't have cross-interference between exemplars.
-                            }
-                            var length = GetCurrentSpanIndex(productSpans);
-                            item.Add(new ProductSpan(name, 0, length));
-                            result.ExemplarSources.Add(item);
+                        var item = new GrammarDocument.ExemplarSource("");
+                        foreach (var productSpanSource in productSpans) {
+                            item.Add(productSpanSource);
                         }
+                        var length = GetCurrentSpanIndex(productSpans);
+                        item.Add(new ProductSpan(name, 0, length));
+                        resultList.Add(item);
                     });
                 }
             }
-            foreach (var exemplar in result.ExemplarSources) {
-                exemplar.TryExemplify(products);
+            foreach (var result in resultList) {
+                result.TryExemplify(products);
             }
-            return result;
+            return resultList.ToArray();
         }
 
         public static void SaveToGraphMLFile(this Nfa productNfa, String path) {

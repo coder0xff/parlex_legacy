@@ -16,34 +16,42 @@ relation:
 || : newline
 
 exemplar:
-12
-| : letter_or_digit_or_underscore*
- | : letter_or_digit_or_underscore
+_
+| : letter_or_digit_or_underscore
+
+letter is a letter_or_digit_or_underscore
+digit is a letter_or_digit_or_underscore
+
+relation:
+| : letter_or_digit_or_underscore
+ | : letter_or_digit_or_underscore*
 || : name
 
 exemplar:
-_J*
-|| : name
-| | : product_name
+a*
+| : name
+|| : product_name
+
+name is a product_name
 
 exemplar:
- | : D_*
-| : codePoint000020*
-  | : white_space
-    | : white_space
-     | | : product_name
-|      | : product_span_without_newline
-
-exemplar:
- | | : _9*
+ | | : a_product
 | : codePoint000020*
   | : codePoint000020*
     | : white_space
       | : white_space
-       | | : product_name
-|        | : product_span_without_newline
+       |       | : product_name
+|              | : product_span_without_newline
 
-relation:
+exemplar:
+ | : a_product
+| : codePoint000020*
+  | : white_space
+    | : white_space
+     |       | : product_name
+|            | : product_span_without_newline
+
+relation: 
 | : product_span_without_newline
  | : newline
 || : product_span
@@ -69,10 +77,9 @@ exemplar:
          | : white_space_not_cr_not_lf*
 |        | : exemplar_start
 
-exemplar:
-u
-| : not_cr_not_lf*
- | : not_cr_not_lf
+relation:
+| : not_cr_not_lf
+ | : not_cr_not_lf*
 || : exemplar_text
 
 relation:
@@ -84,16 +91,16 @@ relation:
 |   | : exemplar
 
 exemplar:
-_9* is a 6z*
-|| : product_name
-         | | : product_name
-|          | : is_a_relation_without_newline
+a is a b
+| : product_name
+       | : product_name
+|      | : is_a_relation_without_newline
 
 exemplar:
-I5 is an 31*
-|| : product_name
-         | | : product_name
-|          | : is_a_relation_without_newline
+a is an b
+| : product_name
+        | : product_name
+|       | : is_a_relation_without_newline
 
 relation:
 | : is_a_relation_without_newline
@@ -101,10 +108,10 @@ relation:
 || : is_a_relation
 
 exemplar:
-S_ precedes z9
-|| : product_name
-            || : product_name
-|            | : precedes_without_newline
+a precedes b
+| : product_name
+           | : product_name
+|          | : precedes_without_newline
 
 relation:
 | : precedes_without_newline
@@ -112,7 +119,7 @@ relation:
 || : precedes
 
 exemplar:
-codePointFCb9F9
+codePoint000000
          | : hex_digit
           | : hex_digit
            | : hex_digit
@@ -121,24 +128,26 @@ codePointFCb9F9
               | : hex_digit
 |             | : code_point_name
 
-exemplar:
-ge
+relation:
 | : not_white_space_not_cr_not_lf
  | : not_white_space_not_cr_not_lf*
 || : character_list
 
-exemplar:
-  codePointBBdF2e
+character_list is a character_set_list_entry
+code_point_name is a character_set_list_entry
+code_point_name precedes character_list
+
+relation:
 | : white_space_not_cr_not_lf
  | : white_space_not_cr_not_lf*
-  |             | : character_set_list_entry
-|               | : character_set_list_entry_with_white_space
+  | : character_set_list_entry
+| | : character_set_list_entry_with_white_space
 
 exemplar:
-character set: 9b  fp
-               || : name
-                 |  | : character_set_list_entry_with_white_space*
-|                   | : character_set_without_newline
+character set: my_char_set foobar
+               |         | : name
+                          |     | : character_set_list_entry_with_white_space*
+|                               | : character_set_without_newline
 
 relation:
 | : character_set_without_newline
@@ -146,42 +155,43 @@ relation:
   | : newline
 | | : character_set
 
-exemplar:
-  _W
+relation:
 | : white_space_not_cr_not_lf
  | : white_space_not_cr_not_lf*
-  || : name
-|  | : character_set_name_with_white_space
+  | : name
+| | : character_set_name_with_white_space
 
 exemplar:
-character set inverted: S_  P8
-                        || : name
-                          |  | : character_set_name_with_white_space
-|                            | : character_set_inverted_without_newline
+character set inverted: my_char_set foobar
+                        |         | : name
+                                   |     | : character_set_name_with_white_space
+|                                        | : character_set_inverted_without_newline
 
 relation:
 | : character_set_inverted_without_newline
  | : white_space_not_cr_not_lf*
   | : newline
+   | : newline*
 | | : character_set_inverted
 
 exemplar:
-character set union: __  _7
-                     || : name
-                       |  | : character_set_name_with_white_space*
-|                         | : character_set_union_without_newline
+character set union: my_char_set foobar
+                     |         | : name
+                                |     | : character_set_name_with_white_space*
+|                                     | : character_set_union_without_newline
 
 relation:
 | : character_set_union_without_newline
  | : white_space_not_cr_not_lf*
   | : newline
+   | : newline*
 | | : character_set_union
 
 exemplar:
-character set intersection: 5_  O9
-                            || : name
-                              |  | : character_set_name_with_white_space*
-|                                | : character_set_intersection_without_newline
+character set intersection: my_char_set foobar
+                            |         | : name
+                                       |     | : character_set_name_with_white_space*
+|                                            | : character_set_intersection_without_newline
 
 relation:
 | : character_set_intersection_without_newline
@@ -189,25 +199,18 @@ relation:
   | : newline
 | | : character_set_intersection
 
+relation is a top_level_entry
+exemplar is a top_level_entry
+is_a_relation is a top_level_entry
+precedes is a top_level_entry
+character_set is a top_level_entry
+character_set_inverted is a top_level_entry
+character_set_union is a top_level_entry
+character_set_intersection is a top_level_entry
+newline is a top_level_entry
+
 relation:
 | : top_level_entry
  | : top_level_entry*
 || : document
 
-digit is a letter_or_digit_or_underscore
-letter is a letter_or_digit_or_underscore
-codePoint00005F is a letter_or_digit_or_underscore
-name is a product_name
-character_list is a character_set_list_entry
-code_point_name is a character_set_list_entry
-character_set_intersection is a top_level_entry
-relation is a top_level_entry
-exemplar is a top_level_entry
-character_set_union is a top_level_entry
-character_set is a top_level_entry
-newline is a top_level_entry
-is_a_relation is a top_level_entry
-precedes is a top_level_entry
-character_set_inverted is a top_level_entry
-
-code_point_name precedes character_list

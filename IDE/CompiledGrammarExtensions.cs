@@ -1,4 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using parlex;
 
 namespace IDE {
@@ -14,11 +18,7 @@ namespace IDE {
                     if (characterProduct != null) {
                         result.CharacterSetSources.Add(characterProduct.Source);
                     } else {
-                        var subGrammarDocument = product.Value.ToGrammarDocument(allProducts);
-                        result.ExemplarSources.AddRange(subGrammarDocument.ExemplarSources);
-                        foreach (var isASource in subGrammarDocument.IsASources) {
-                            result.IsASources.Add(isASource);
-                        }
+                        result.ExemplarSources.AddRange(product.Value.GenerateExemplarSources(allProducts));
                     }
                 }
             }

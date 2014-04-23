@@ -11,7 +11,6 @@
                 <MenuItem Header="_New" Click="MenuItem_New_Click"></MenuItem>
                 <MenuItem Header="_Open" Click="MenuItem_Open_Click"></MenuItem>
                 <MenuItem Header="_Save" Click="MenuItem_Save_Click"></MenuItem>
-                <MenuItem Header="Save _As..." Click="MenuItem_SaveAs_OnClick"></MenuItem>
                 <MenuItem Header="E_xit" Click="MenuItem_Exit_Click"></MenuItem>
             </MenuItem>
             <MenuItem Header="_Edit">
@@ -32,13 +31,7 @@
                         <Button Click="Button_AddProduct_Click">Add Product</Button>
                         <Button>RemoveProduct</Button>
                     </StatusBar>
-                    <ListBox ItemsSource="{Binding Path=(parlex:CompiledGrammar.NonCharacterProducts)}" Name="ProductList" SelectionChanged="ProductList_SelectionChanged">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBox Text="{Binding Title, Mode=OneWay}" Tag="{Binding}" LostKeyboardFocus="UIElement_ProductName_OnLostKeyboardFocus" KeyUp="UIElement_ProductName_OnKeyUp"></TextBox>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                    <ListBox ItemsSource="{Binding Path=(parlex:CompiledGrammar.NonCharacterProducts)}" Name="ProductList" SelectionChanged="ProductList_SelectionChanged"></ListBox>
                 </DockPanel>
                 <GridSplitter HorizontalAlignment="Right" Grid.Column="0" VerticalAlignment="Stretch" Width="6"/>
                 <ScrollViewer Grid.Column ="1">

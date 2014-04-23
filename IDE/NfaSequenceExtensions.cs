@@ -1,19 +1,22 @@
-﻿using System.Collections.Concurrent.More;
+﻿using System;
+using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Common;
 using parlex;
 
 namespace IDE {
     public static class NfaSequenceExtensions {
-        public static Nfa<OldProduction, int> ToNfa(this CompiledGrammar.NfaSequence sequence) {
-            var positionToState = new AutoDictionary<int /*position*/, Nfa<OldProduction, int>.State>(position => new Nfa<OldProduction, int>.State(position));
-            var result = new Nfa<OldProduction, int>();
+        public static Nfa<Product, int> ToNfa(this CompiledGrammar.NfaSequence sequence) {
+            var positionToState = new AutoDictionary<int /*position*/, Nfa<Product, int>.State>(position => new Nfa<Product, int>.State(position));
+            var result = new Nfa<Product, int>();
             var skipAheadTable = new AutoDictionary<int, HashSet<int>>(i => new HashSet<int>());
             for (int position = 0; position < sequence.RelationBranches.Length; position++) {
                 foreach (var productReference in sequence.RelationBranches[position]) {
                     var fromState = positionToState[position];
-                    Nfa<OldProduction, int>.State toState = productReference.IsRepetitious ? fromState : positionToState[productReference.ExitSequenceCounter - sequence.SpanStart];
+                    Nfa<Product, int>.State toState = productReference.IsRepetitious ? fromState : positionToState[productReference.ExitSequenceCounter - sequence.SpanStart];
                     if (productReference.IsRepetitious) {
                         skipAheadTable[position].Add(productReference.ExitSequenceCounter - sequence.SpanStart);
                     }

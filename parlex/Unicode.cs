@@ -36,7 +36,7 @@ namespace parlex {
         public static Int32[] Numbers = DecimalDigitNumbers.Union(OtherNumber).ToArray();
         public static Int32[] AlphaNumerics = Letters.Union(DecimalDigitNumbers).ToArray();
         public static Int32[] WhiteSpace = LineSeparator.Union(ParagraphSeparator.Union(SpaceSeparator)).ToArray();
-        public static Int32[] LineTerminators = {0x000A, 0x000B, 0x000C, 0x000D, 0x0085, 0x2028, 0x2029};
+
         public static Int32[] Printable =
             LowercaseLetters.Union(
                 ModifierLetter.Union(
