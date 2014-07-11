@@ -1,12 +1,15 @@
-﻿using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace System.Collections.Generic.More {
     /// <summary>
     /// An immutable set of States that can be quickly tested for set inequality.
     /// Note that returning 'true' from equals is still O(n) as it requires comparing every element.
     /// </summary>
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public class ReadOnlyHashSet<T> : ISet<T> {
         public bool Equals(ReadOnlyHashSet<T> other) {
+            if (other == null) return false;
             return _hashCode == other._hashCode && _items.SetEquals(other._items);
         }
 
@@ -14,7 +17,8 @@ namespace System.Collections.Generic.More {
             if (ReferenceEquals(null, obj)) {
                 return false;
             }
-            return obj is ReadOnlyHashSet<T> && Equals((ReadOnlyHashSet<T>)obj);
+            var castObj = obj as ReadOnlyHashSet<T>;
+            return castObj != null && Equals(castObj);
         }
 
         public override int GetHashCode() {
@@ -29,14 +33,14 @@ namespace System.Collections.Generic.More {
             return (Object)left != null && !left.Equals(right);
         }
 
-        public readonly HashSet<T> _items;
-        public readonly int _hashCode;
+        readonly HashSet<T> _items;
+        readonly int _hashCode;
 
         public ReadOnlyHashSet(IEnumerable<T> items)
         {
             _items = new HashSet<T>(items);
             _hashCode = 0;
-            List<int> hashes = items.Select(state => state.GetHashCode()).ToList();
+            var hashes = items.Select(state => state.GetHashCode()).ToList();
             hashes.Sort();
             foreach (var hash in hashes) {
                 _hashCode = _hashCode * 397 ^ hash;
@@ -123,7 +127,8 @@ namespace System.Collections.Generic.More {
             get { return true; }
         }
 
-        public static ReadOnlyHashSet<T> MultiIntersect(IEnumerable<IEnumerable<T>> sets) {
+        [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes"), SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+        public static ReadOnlyHashSet<T> IntersectMany(IEnumerable<IEnumerable<T>> sets) {
             var firstSet = sets.FirstOrDefault();
             var temp = new HashSet<T>();
             if (firstSet != null) {

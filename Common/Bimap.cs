@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Generic.More;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace System.Collections.Generic.More {
-    public class BiMap<T1, T2> {
+    [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
+    public class Bimap<T1, T2> {
         class BimapView<U1, U2> : IDictionary<U1, U2> {
             public readonly Dictionary<U1, U2> _keyToValue;
             public readonly Dictionary<U2, U1> _valueToKey;
@@ -101,7 +104,7 @@ namespace System.Collections.Generic.More {
                 return _keyToValue.GetEnumerator();
             }
 
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            IEnumerator IEnumerable.GetEnumerator() {
                 return _keyToValue.GetEnumerator();
             }
         }
@@ -109,7 +112,7 @@ namespace System.Collections.Generic.More {
         readonly BimapView<T1, T2> _left;
         readonly BimapView<T2, T1> _right;
 
-        public BiMap() {
+        public Bimap() {
             var leftDictionary = new Dictionary<T1, T2>();
             var rightDictionary = new Dictionary<T2, T1>();
             _left = new BimapView<T1, T2>(leftDictionary, rightDictionary);
@@ -128,18 +131,29 @@ namespace System.Collections.Generic.More {
 }
 
 namespace System.Linq.More {
+    [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
     public static class BimapIEnumerableExtensions {
-        public static Collections.Generic.More.BiMap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
-            var result = new Collections.Generic.More.BiMap<TLeft, TRight>();
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
+        public static Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
+            if (enumerable == null) throw new ArgumentNullException("enumerable");
+            if (leftFunc == null) throw new ArgumentNullException("leftFunc");
+            if (rightFunc == null) throw new ArgumentNullException("rightFunc");
+
+            var result = new Bimap<TLeft, TRight>();
             foreach (var variable in enumerable) {
                 result.Left.Add(leftFunc(variable), rightFunc(variable));
             }
             return result;
         }
 
-        public static Collections.Generic.More.BiMap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
-            var result = new Collections.Generic.More.BiMap<TLeft, TRight>();
-            int indexCounter = 0;
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
+        public static Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
+            if (enumerable == null) throw new ArgumentNullException("enumerable");
+            if (leftFunc == null) throw new ArgumentNullException("leftFunc");
+            if (rightFunc == null) throw new ArgumentNullException("rightFunc");
+
+            var result = new Bimap<TLeft, TRight>();
+            var indexCounter = 0;
             foreach (var variable in enumerable) {
                 result.Left.Add(leftFunc(variable, indexCounter), rightFunc(variable, indexCounter));
                 indexCounter++;

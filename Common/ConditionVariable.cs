@@ -2,25 +2,19 @@
 
 namespace System.Threading.More
 {
-    class ConditionVariable
+    public class ConditionVariable
     {
-        class ThreadSync : IDisposable
+        sealed class ThreadSync : IDisposable
         {
-            public readonly System.Threading.Thread thread = System.Threading.Thread.CurrentThread;
-            public readonly ManualResetEventSlim sync = new ManualResetEventSlim();
+            internal readonly ManualResetEventSlim Sync = new ManualResetEventSlim();
 
             public void Dispose()
             {
-                Dispose(true);
-            }
-
-            protected virtual void Dispose(bool disposeManaged)
-            {
-                sync.Dispose();
+                Sync.Dispose();
             }
         }
 
-        ConcurrentQueue<ThreadSync> waitingThreads = new ConcurrentQueue<ThreadSync>();
+        readonly ConcurrentQueue<ThreadSync> _waitingThreads = new ConcurrentQueue<ThreadSync>();
 
         /// <summary>
         /// Atomically unlocks and waits for a signal.
@@ -29,38 +23,53 @@ namespace System.Threading.More
         /// <param name="mutex"></param>
         public void Wait(Mutex mutex)
         {
-            ThreadSync ts = new ThreadSync();
-            waitingThreads.Enqueue(ts);
-            mutex.ReleaseMutex();
-            ts.sync.Wait();
+            if (mutex == null) throw new ArgumentNullException("mutex");
+            var ts = new ThreadSync();
+            try
+            {
+                _waitingThreads.Enqueue(ts);
+                mutex.ReleaseMutex();
+                ts.Sync.Wait();
+            }
+            finally
+            {
+                ts.Dispose();
+            }
             mutex.WaitOne();
         }
 
-        public void WaitRead(ReaderWriterLockSlim rwlock)
+        public void WaitRead(ReaderWriterLockSlim readerWriterLock)
         {
-            ThreadSync ts = new ThreadSync();
-            waitingThreads.Enqueue(ts);
-            rwlock.ExitReadLock();
-            ts.sync.Wait();
-            ts.Dispose();
-            rwlock.EnterReadLock();
+            if (readerWriterLock == null) throw new ArgumentNullException("readerWriterLock");
+            var ts = new ThreadSync();
+            try
+            {
+                _waitingThreads.Enqueue(ts);
+                readerWriterLock.ExitReadLock();
+                ts.Sync.Wait();
+            }
+            finally
+            {
+                ts.Dispose();
+            }
+            readerWriterLock.EnterReadLock();
         }
 
         public void Signal()
         {
             ThreadSync ts;
-            if (waitingThreads.TryDequeue(out ts))
+            if (_waitingThreads.TryDequeue(out ts))
             {
-                ts.sync.Set();
+                ts.Sync.Set();
             }
         }
 
         public void Broadcast()
         {
             ThreadSync ts;
-            while (waitingThreads.TryDequeue(out ts))
+            while (_waitingThreads.TryDequeue(out ts))
             {
-                ts.sync.Set();
+                ts.Sync.Set();
             }
         }
     }

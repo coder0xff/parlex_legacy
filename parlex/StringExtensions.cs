@@ -10,7 +10,7 @@ namespace Parlex {
             var ee = StringInfo.GetTextElementEnumerator(s);
 
             while (ee.MoveNext()) {
-                string e = ee.GetTextElement();
+                var e = ee.GetTextElement();
                 chars.Add(char.ConvertToUtf32(e, 0));
             }
 

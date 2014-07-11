@@ -1,63 +1,65 @@
 ﻿using System;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Parlex
 {
 	// http://standards.iso.org/ittf/PubliclyAvailableStandards/s026153_ISO_IEC_14977_1996(E).zip
-	public class ExtendedBackusNaurForm
+	internal static class ExtendedBackusNaurForm
 	{
-		static Regex nameValidation = new Regex ("^[a-zA-Z0-9]+$");
+		static Regex _nameValidation = new Regex ("^[a-zA-Z0-9]+$");
 
-		public class SyntaxRule {
-			public interface RewriteRuleNode {
+		internal class SyntaxRule {
+			internal interface RewriteRuleNode {
 			}
 
-			public class OrNode : RewriteRuleNode {
-				public RewriteRuleNode left;
-				public RewriteRuleNode right;
+			internal class OrNode : RewriteRuleNode {
+				internal RewriteRuleNode left;
+				internal RewriteRuleNode right;
 			}
 
-			public class AndNode : RewriteRuleNode {
-				public RewriteRuleNode left;
-				public RewriteRuleNode right;
+			internal class AndNode : RewriteRuleNode {
+				internal RewriteRuleNode left;
+				internal RewriteRuleNode right;
 			}
 
-			public class ConcatenationNode : RewriteRuleNode {
-				public RewriteRuleNode left;
-				public RewriteRuleNode right;
+            internal class ConcatenationNode : RewriteRuleNode
+            {
+				internal RewriteRuleNode left;
+				internal RewriteRuleNode right;
 			}
 
-			public class OptionalNode : RewriteRuleNode {
-				public RewriteRuleNode contents;
+            internal class OptionalNode : RewriteRuleNode
+            {
+				internal RewriteRuleNode contents;
 			}
 
-			public class RepetitionNode : RewriteRuleNode {
-				public RewriteRuleNode contents;
+            internal class RepetitionNode : RewriteRuleNode
+            {
+				internal RewriteRuleNode contents;
 			}
 
-			public class SyntacticFactorNode : RewriteRuleNode {
-				public int count;
-				public RewriteRuleNode contents;
+			internal class SyntacticFactorNode : RewriteRuleNode {
+				internal int count;
+				internal RewriteRuleNode contents;
 			}
 
-			public class TerminalNode : RewriteRuleNode {
-				public TerminalString terminalString;
+			internal class TerminalNode : RewriteRuleNode {
+				internal Grammar.StringTerminal terminalString;
 			}
 
-			public class NonterminalNode : RewriteRuleNode {
-				public SyntaxRule productionSymbol;
+			internal class NonterminalNode : RewriteRuleNode {
+				internal SyntaxRule productionSymbol;
 			}
 
-			public class CommentNode : RewriteRuleNode {
-				public String text;
+			internal class CommentNode : RewriteRuleNode {
+				internal String text;
 			}
 
-			public class SpecialSequenceNode : RewriteRuleNode {
-				public String text;
+			internal class SpecialSequenceNode : RewriteRuleNode {
+				internal String text;
 			}
 
-			public String metaIdentifier;
+			internal String metaIdentifier;
 			//RewriteRuleNode definition;
 		}
 	}

@@ -26,6 +26,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -58,6 +59,10 @@
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{225ee06c-3ec1-4d0c-919a-338db9d77548}</Project>
       <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NondeterministicFiniteAutomata\NondeterministicFiniteAutomata.csproj">
+      <Project>{7862b8a9-eebd-49b4-b604-edc03cf90ef1}</Project>
+      <Name>NondeterministicFiniteAutomata</Name>
     </ProjectReference>
     <ProjectReference Include="..\Parlex\Parlex.csproj">
       <Project>{440d651a-2de1-4ae1-b293-4c21d5ecc16a}</Project>

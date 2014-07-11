@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Concurrent.More;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
-namespace Common {
+namespace System.Threading.More {
         /// <summary>
         /// Processes a recursive algorithm in parallel. 
         /// It is initialized with a starting set of 
@@ -14,8 +14,8 @@ namespace Common {
         /// </summary>
         /// <typeparam name="T"></typeparam>
         public class DistinctRecursiveAlgorithmProcessor<T> {
-            public readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
-            public readonly ConcurrentSet<T> _alreadyQueuedItems = new ConcurrentSet<T>();
+            readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
+            readonly ConcurrentSet<T> _alreadyQueuedItems = new ConcurrentSet<T>();
 
             /// <summary>
             /// Add an item to process. If it is identical to a previously added item,
@@ -35,14 +35,18 @@ namespace Common {
             /// Runs the recursive algorithm specified, and blocks until it is complete.
             /// </summary>
             /// <param name="recursiveAlgorithm"></param>
+            [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
             public void Run(Action<T> recursiveAlgorithm) {
                 while(_items.Count > 0) {
                     Parallel.For(0, _items.Count, dontCare => {
                         T item;
-                        if (_items.TryDequeue(out item)) {
+                        if (_items.TryDequeue(out item))
+                        {
                             recursiveAlgorithm(item);
-                        } else {
-                            throw new ApplicationException("This implementation does not function as expected");
+                        }
+                        else
+                        {
+                            throw new ApplicationException("An unknown error occurred.");
                         }
                     });
                 }

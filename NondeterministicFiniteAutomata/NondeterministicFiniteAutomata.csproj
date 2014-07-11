@@ -4,16 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{225EE06C-3EC1-4D0C-919A-338DB9D77548}</ProjectGuid>
+    <ProjectGuid>{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Common</RootNamespace>
-    <AssemblyName>Common</AssemblyName>
-    <FileAlignment>512</FileAlignment>
-    <ProductVersion>12.0.0</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
+    <RootNamespace>NondeterministicFiniteAutomata</RootNamespace>
+    <AssemblyName>NondeterministicFiniteAutomata</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,13 +30,6 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>false</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -50,16 +40,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncSet.cs" />
-    <Compile Include="AutoDictionary.cs" />
-    <Compile Include="Bimap.cs" />
-    <Compile Include="ConcurrentSet.cs" />
-    <Compile Include="ConditionVariable.cs" />
     <Compile Include="GlobalSuppressions.cs" />
+    <Compile Include="Nfa.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="JaggedAutoDictionary.cs" />
-    <Compile Include="ReadOnlyHashSet.cs" />
-    <Compile Include="DistinctRecursiveAlgorithmProcessor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{225ee06c-3ec1-4d0c-919a-338db9d77548}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

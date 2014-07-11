@@ -1,81 +1,78 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Threading.More;
 
 namespace System.Collections.Concurrent.More
 {
-    public class AsyncSet<T> : IEnumerable<T>, IDisposable
+    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public sealed class AsyncSet<T> : IEnumerable<T>, IDisposable
     {
-        List<T> storage = new List<T>();
-        HashSet<T> tester = new HashSet<T>();
-        bool closed = false;
-        System.Threading.ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
-        System.Threading.More.ConditionVariable cv = new ConditionVariable();
+        readonly List<T> _storage = new List<T>();
+        readonly HashSet<T> _tester = new HashSet<T>();
+        bool _closed;
+        readonly ReaderWriterLockSlim _sync = new ReaderWriterLockSlim();
+        readonly ConditionVariable _cv = new ConditionVariable();
 
         public void Add(T item)
         {
-            sync.EnterWriteLock();
-            if (closed)
+            _sync.EnterWriteLock();
+            if (_closed)
             {
                 throw new InvalidOperationException("The set has been closed.");
             }
-            if (tester.Add(item))
+            if (_tester.Add(item))
             {
-                storage.Add(item);
-                cv.Broadcast();
+                _storage.Add(item);
+                _cv.Broadcast();
             }
-            sync.ExitWriteLock();
+            _sync.ExitWriteLock();
         }
 
         public void Close()
         {
-            sync.EnterWriteLock();
-            closed = true;
-            cv.Broadcast();
-            sync.ExitWriteLock();
+            _sync.EnterWriteLock();
+            _closed = true;
+            _cv.Broadcast();
+            _sync.ExitWriteLock();
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            int index = 0;
-            sync.EnterReadLock();
-            while (!closed)
+            var index = 0;
+            _sync.EnterReadLock();
+            while (!_closed)
             {
-                while (index < storage.Count)
+                while (index < _storage.Count)
                 {
-                    T item = storage[index++];
-                    sync.ExitReadLock();
+                    var item = _storage[index++];
+                    _sync.ExitReadLock();
                     yield return item;
-                    sync.EnterReadLock();
+                    _sync.EnterReadLock();
                 }
-                cv.WaitRead(sync);
+                _cv.WaitRead(_sync);
             }
-            sync.ExitReadLock();
-            while (index < storage.Count)
+            _sync.ExitReadLock();
+            while (index < _storage.Count)
             {
-                yield return storage[index++];
+                yield return _storage[index++];
             }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return ((IEnumerable<T>)this).GetEnumerator();
+            return GetEnumerator();
         }
 
         public void Dispose()
         {
-            this.Dispose(true);
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposeManaged)
+        private void Dispose(bool disposeManaged)
         {
-            sync.Dispose();
-            GC.SuppressFinalize(this);
+            _sync.Dispose();
         }
     }
 }

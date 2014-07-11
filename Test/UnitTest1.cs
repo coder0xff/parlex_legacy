@@ -1,5 +1,5 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NondeterministicFiniteAutomata;
 using Parlex;
 
 namespace Test
@@ -10,10 +10,10 @@ namespace Test
         [TestMethod]
         public void TestMethod1()
         {
-            Grammar g = new Grammar();
-            Grammar.Recognizer identifier = new Grammar.Recognizer("identifier", true);
-            Grammar.Recognizer.State identifier0 = new Grammar.Recognizer.State();
-            Grammar.Recognizer.State identifier1 = new Grammar.Recognizer.State();
+            var g = new Grammar();
+            var identifier = new Grammar.Recognizer("identifier", true);
+            var identifier0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var identifier1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
             identifier.States.Add(identifier0);
             identifier.States.Add(identifier1);
             identifier.StartStates.Add(identifier0);
@@ -21,11 +21,11 @@ namespace Test
             identifier.TransitionFunction[identifier0][Grammar.LetterTerminal].Add(identifier1);
             identifier.TransitionFunction[identifier1][Grammar.LetterTerminal].Add(identifier1);
 
-            Grammar.Recognizer syntax = new Grammar.Recognizer("syntax", false);
-            Grammar.Recognizer.State syntax0 = new Grammar.Recognizer.State();
-            Grammar.Recognizer.State syntax1 = new Grammar.Recognizer.State();
-            Grammar.Recognizer.State syntax2 = new Grammar.Recognizer.State();
-            Grammar.Recognizer.State syntax3 = new Grammar.Recognizer.State();
+            var syntax = new Grammar.Recognizer("syntax", false);
+            var syntax0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var syntax1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var syntax2 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var syntax3 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
             syntax.States.Add(syntax0);
             syntax.States.Add(syntax1);
             syntax.States.Add(syntax2);
@@ -40,10 +40,10 @@ namespace Test
             g.Productions.Add(identifier);
             g.MainProduction = syntax;
 
-            Parser p = new Parser(g);
-            Parser.Job j = p.Parse("A=B");
+            var p = new Parser(g);
+            var j = p.Parse("A=B");
             j.Wait();
-            Parser.AbstractSyntaxForest asf = j.abstractSyntaxForest;
+            var asf = j.AbstractSyntaxForest;
         }
     }
 }

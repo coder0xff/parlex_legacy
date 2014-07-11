@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace Parlex {
-	public class BackusNuarForm {
-		public BackusNuarForm() {
+﻿namespace Parlex {
+	public class BackusNaurForm {
+		public BackusNaurForm() {
 		}
 	}
 }

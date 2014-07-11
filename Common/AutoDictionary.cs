@@ -1,12 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Concurrent.More
 {
     //A more convenient way to have a Dictionary<K, HashSet<T>>
-    public class AutoDictionary<KeyType, ValueType> : IEnumerable<KeyValuePair<KeyType, ValueType>> {
-        readonly ConcurrentDictionary<KeyType, ValueType> _storage = new ConcurrentDictionary<KeyType, ValueType>();
+    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix"), SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public class AutoDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>> {
+        readonly ConcurrentDictionary<TKey, TValue> _storage = new ConcurrentDictionary<TKey, TValue>();
 
-        public ValueType this[KeyType key] {
+        public TValue this[TKey key] {
             get {
                 return _storage.GetOrAdd(key, x => _valueFactory(x));
             }
@@ -19,8 +21,8 @@ namespace System.Collections.Concurrent.More
         /// Used to make sure that an entry is created for the specified key
         /// </summary>
         /// <param name="key"></param>
-        public bool EnsureCreated(KeyType key) {
-            bool wasCreated = false;
+        public bool EnsureCreated(TKey key) {
+            var wasCreated = false;
             _storage.GetOrAdd(key, x => { wasCreated = true; return _valueFactory(x); });
             return wasCreated;
         }
@@ -29,29 +31,29 @@ namespace System.Collections.Concurrent.More
             _storage.Clear();
         }
 
-        readonly Func<KeyType, ValueType> _valueFactory;
+        readonly Func<TKey, TValue> _valueFactory;
 
-        public AutoDictionary(Func<KeyType, ValueType> valueFactory) {
+        public AutoDictionary(Func<TKey, TValue> valueFactory) {
             _valueFactory = valueFactory;
         }
 
         public AutoDictionary() {
-            _valueFactory = dontCare => default(ValueType);
+            _valueFactory = dontCare => default(TValue);
         }
 
-        public IEnumerator<KeyValuePair<KeyType, ValueType>> GetEnumerator() {
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
             return _storage.GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+        IEnumerator IEnumerable.GetEnumerator() {
             return _storage.GetEnumerator();
         }
 
-        public IEnumerable<KeyType> Keys { get { return _storage.Keys; }}
-        public IEnumerable<ValueType> Values { get { return _storage.Values; }}
+        public IEnumerable<TKey> Keys { get { return _storage.Keys; }}
+        public IEnumerable<TValue> Values { get { return _storage.Values; }}
 
-        public bool TryRemove(KeyType key) {
-            ValueType dontCare;
+        public bool TryRemove(TKey key) {
+            TValue dontCare;
             return _storage.TryRemove(key, out dontCare);
         }
     }
