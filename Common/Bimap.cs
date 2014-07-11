@@ -2,10 +2,10 @@
 using System.Linq;
 
 namespace System.Collections.Generic.More {
-    public class Bimap<T1, T2> {
-        private class BimapView<U1, U2> : IDictionary<U1, U2> {
-            private readonly Dictionary<U1, U2> _keyToValue;
-            private readonly Dictionary<U2, U1> _valueToKey;
+    public class BiMap<T1, T2> {
+        class BimapView<U1, U2> : IDictionary<U1, U2> {
+            public readonly Dictionary<U1, U2> _keyToValue;
+            public readonly Dictionary<U2, U1> _valueToKey;
 
             public BimapView(Dictionary<U1, U2> keyToValue, Dictionary<U2, U1> valueToKey) {
                 _keyToValue = keyToValue;
@@ -106,10 +106,10 @@ namespace System.Collections.Generic.More {
             }
         }
 
-        private readonly BimapView<T1, T2> _left;
-        private readonly BimapView<T2, T1> _right;
+        readonly BimapView<T1, T2> _left;
+        readonly BimapView<T2, T1> _right;
 
-        public Bimap() {
+        public BiMap() {
             var leftDictionary = new Dictionary<T1, T2>();
             var rightDictionary = new Dictionary<T2, T1>();
             _left = new BimapView<T1, T2>(leftDictionary, rightDictionary);
@@ -129,16 +129,16 @@ namespace System.Collections.Generic.More {
 
 namespace System.Linq.More {
     public static class BimapIEnumerableExtensions {
-        public static Collections.Generic.More.Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
-            var result = new Collections.Generic.More.Bimap<TLeft, TRight>();
+        public static Collections.Generic.More.BiMap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
+            var result = new Collections.Generic.More.BiMap<TLeft, TRight>();
             foreach (var variable in enumerable) {
                 result.Left.Add(leftFunc(variable), rightFunc(variable));
             }
             return result;
         }
 
-        public static Collections.Generic.More.Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
-            var result = new Collections.Generic.More.Bimap<TLeft, TRight>();
+        public static Collections.Generic.More.BiMap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
+            var result = new Collections.Generic.More.BiMap<TLeft, TRight>();
             int indexCounter = 0;
             foreach (var variable in enumerable) {
                 result.Left.Add(leftFunc(variable, indexCounter), rightFunc(variable, indexCounter));

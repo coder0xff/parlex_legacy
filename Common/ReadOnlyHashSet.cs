@@ -29,8 +29,8 @@ namespace System.Collections.Generic.More {
             return (Object)left != null && !left.Equals(right);
         }
 
-        private readonly HashSet<T> _items;
-        private readonly int _hashCode;
+        public readonly HashSet<T> _items;
+        public readonly int _hashCode;
 
         public ReadOnlyHashSet(IEnumerable<T> items)
         {

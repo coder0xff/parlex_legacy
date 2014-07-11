@@ -1,13 +1,14 @@
+//#define SINGLE_THREAD_MODE
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Collections.Concurrent.More;
 
-namespace parlex {
+namespace Parlex {
 	public interface IReceiver<T> {
 		Action<T> GetReceiveHandler();
-
 		Action GetTerminateHandler();
 	}
 
@@ -17,32 +18,75 @@ namespace parlex {
 	}
 
 	public class Transponder<T> {
-		private List<Action<T>> receiveHandlers = new List<Action<T>>();
-		private List<Action> terminateHandlers = new List<Action>();
-		private List<ITransmitter<T>> transmitters = new List<ITransmitter<T>>();
-		private ConcurrentSet<T> values = new ConcurrentSet<T>();
-		private bool terminated = false;
+		public class Desynchronizer {
+			#if SINGLE_THREAD_MODE
+			#else
+			int numberOfPendingTransmits = 0;
+			ManualResetEventSlim mayTerminate = new ManualResetEventSlim(false);
+			#endif
+			Action<T> receive;
+			Action terminate;
+
+			public Desynchronizer(IReceiver<T> receiver) {
+				receive = receiver.GetReceiveHandler();
+				terminate = receiver.GetTerminateHandler();
+			}
+
+			public void Transmit(T value) {
+				#if SINGLE_THREAD_MODE
+				receive(value);
+				#else
+				System.Threading.Interlocked.Increment(ref numberOfPendingTransmits);
+				new Thread(_ => {
+					try {
+						receive(value);
+					}
+					finally {
+						if (System.Threading.Interlocked.Decrement(ref numberOfPendingTransmits) == 0) {
+							mayTerminate.Set();
+						}
+					}
+				}).Start();
+				#endif
+			}
+
+			public void Terminate() {
+				#if SINGLE_THREAD_MODE
+				terminate();
+				#else
+				new Thread(_ => {
+					mayTerminate.Wait();
+					terminate();
+				}).Start();
+				#endif
+			}
+		}
+
+		public List<Desynchronizer> receivers = new List<Desynchronizer>();
+		public List<ITransmitter<T>> transmitters = new List<ITransmitter<T>>();
+		public ConcurrentSet<T> values = new ConcurrentSet<T>();
+		public bool terminated = false;
 
 		public Transponder() {
 			incoming_value_delegate = incoming_value_handler;
 		}
 
-		private void incoming_value_handler(T value) {
+		public void incoming_value_handler(T value) {
 			lock (transmitters) {
 				if (terminated) {
 					throw new InvalidOperationException("New values may not be passed through a Transponder<T> once all its registered IReceiver<T>s have terminated.");
 				}
 				if (values.TryAdd(value)) {
-					lock (receiveHandlers) {
-						foreach (Action<T> receiveHandler in receiveHandlers) {
-							ThreadPool.QueueUserWorkItem(_ => receiveHandler(value));
+					lock (receivers) {
+						foreach (Desynchronizer receiver in receivers) {
+							receiver.Transmit(value);
 						}
 					}
 				}
 			}
 		}
 
-		private Action<T> incoming_value_delegate;
+		public Action<T> incoming_value_delegate;
 
 		public void Register(ITransmitter<T> transmitter) {
 			lock (transmitters) {
@@ -65,9 +109,9 @@ namespace parlex {
 					}
 				}
 				if (didTerminate) {
-					lock (receiveHandlers) {
-						foreach (Action terminateHandler in terminateHandlers) {
-							ThreadPool.QueueUserWorkItem(_ => terminateHandler());
+					lock (receivers) {
+						foreach (Desynchronizer receiver in receivers) {
+							receiver.Terminate();
 						}
 					}
 				}
@@ -76,17 +120,15 @@ namespace parlex {
 
 		public void Register(IReceiver<T> receiver) {
 			lock (transmitters) {
-				lock (receiveHandlers) {
-					Action<T> receiveHandler = receiver.GetReceiveHandler();
-					Action terminateHandler = receiver.GetTerminateHandler();
-					receiveHandlers.Add(receiveHandler);
-					terminateHandlers.Add(terminateHandler);
+				lock (receivers) {
+					Desynchronizer desyncReceiver = new Desynchronizer(receiver);
+					receivers.Add(desyncReceiver);
 					foreach (T value in values) {
-						receiveHandler(value);
-					}
+						desyncReceiver.Transmit(value);
+                    }
 					if (terminated) {
-						terminateHandler();
-					}
+						desyncReceiver.Terminate();
+                    }
 				}
 			}
 		}

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace parlex {
+namespace Parlex {
 	public class BackusNuarForm {
 		public BackusNuarForm() {
 		}

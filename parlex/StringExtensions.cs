@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace parlex {
+namespace Parlex {
     public static class StringExtensions {
         public static Int32[] GetUtf32CodePoints(this string s) {
             var chars = new List<int>((s.Length * 3) / 2);

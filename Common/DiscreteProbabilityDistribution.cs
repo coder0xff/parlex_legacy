@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common {
     public class DiscreteProbabilityDistribution<T> {
-        private List<double> _map = new List<double>{0};
-        private List<T> _items = new List<T>{default(T)};
+        public List<double> _map = new List<double>{0};
+        public List<T> _items = new List<T>{default(T)};
 
         public DiscreteProbabilityDistribution() { } 
         public DiscreteProbabilityDistribution(IEnumerable<Tuple<T, double>> items) {

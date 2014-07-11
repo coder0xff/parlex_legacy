@@ -6,7 +6,7 @@ namespace Common {
     /// (Because making multiple instances of Random is stupid and problematic)
     /// </summary>
     public static class Rng {
-        private static readonly Random Random;
+        public static readonly Random Random;
         static Rng() {
             Random = new Random();
         }

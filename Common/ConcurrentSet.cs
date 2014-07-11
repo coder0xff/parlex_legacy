@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace System.Collections.Concurrent.More {
     public class ConcurrentSet<T> : ICollection<T> {
-        private readonly ConcurrentDictionary<T, byte> _storage;
+        public readonly ConcurrentDictionary<T, byte> _storage;
 
         public ConcurrentSet() {
             _storage = new ConcurrentDictionary<T, byte>();
@@ -54,20 +54,20 @@ namespace System.Collections.Concurrent.More {
             return _storage.TryRemove(item, out dontCare);
         }
 
-        void ICollection<T>.Add(T item) {
+        public void Add(T item) {
             ((ICollection<KeyValuePair<T, byte>>)_storage).Add(new KeyValuePair<T, byte>(item, 0));
         }
 
-        void ICollection<T>.CopyTo(T[] array, int arrayIndex) {
+        public void CopyTo(T[] array, int arrayIndex) {
             foreach (KeyValuePair<T, byte> pair in _storage)
                 array[arrayIndex++] = pair.Key;
         }
 
-        bool ICollection<T>.IsReadOnly {
+        public bool IsReadOnly {
             get { return false; }
         }
 
-        bool ICollection<T>.Remove(T item) {
+        public bool Remove(T item) {
             return TryRemove(item);
         }
 

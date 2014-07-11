@@ -14,8 +14,8 @@ namespace Common {
         /// </summary>
         /// <typeparam name="T"></typeparam>
         public class DistinctRecursiveAlgorithmProcessor<T> {
-            private readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
-            private readonly ConcurrentSet<T> _alreadyQueuedItems = new ConcurrentSet<T>();
+            public readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
+            public readonly ConcurrentSet<T> _alreadyQueuedItems = new ConcurrentSet<T>();
 
             /// <summary>
             /// Add an item to process. If it is identical to a previously added item,

@@ -3,10 +3,10 @@
 namespace System.Collections.Concurrent.More
 {
     //A more convenient way to have a Dictionary<K, HashSet<T>>
-    public class AutoDictionary<TK, TV> : IEnumerable<KeyValuePair<TK, TV>> {
-        private readonly ConcurrentDictionary<TK, TV> _storage = new ConcurrentDictionary<TK, TV>();
+    public class AutoDictionary<KeyType, ValueType> : IEnumerable<KeyValuePair<KeyType, ValueType>> {
+        readonly ConcurrentDictionary<KeyType, ValueType> _storage = new ConcurrentDictionary<KeyType, ValueType>();
 
-        public TV this[TK key] {
+        public ValueType this[KeyType key] {
             get {
                 return _storage.GetOrAdd(key, x => _valueFactory(x));
             }
@@ -19,25 +19,27 @@ namespace System.Collections.Concurrent.More
         /// Used to make sure that an entry is created for the specified key
         /// </summary>
         /// <param name="key"></param>
-        public void EnsureCreated(TK key) {
-            _storage.GetOrAdd(key, x => _valueFactory(x));
+        public bool EnsureCreated(KeyType key) {
+            bool wasCreated = false;
+            _storage.GetOrAdd(key, x => { wasCreated = true; return _valueFactory(x); });
+            return wasCreated;
         }
 
         public void Clear() {
             _storage.Clear();
         }
 
-        private readonly Func<TK, TV> _valueFactory;
+        readonly Func<KeyType, ValueType> _valueFactory;
 
-        public AutoDictionary(Func<TK, TV> valueFactory) {
+        public AutoDictionary(Func<KeyType, ValueType> valueFactory) {
             _valueFactory = valueFactory;
         }
 
         public AutoDictionary() {
-            _valueFactory = dontCare => default(TV);
+            _valueFactory = dontCare => default(ValueType);
         }
 
-        public IEnumerator<KeyValuePair<TK, TV>> GetEnumerator() {
+        public IEnumerator<KeyValuePair<KeyType, ValueType>> GetEnumerator() {
             return _storage.GetEnumerator();
         }
 
@@ -45,11 +47,11 @@ namespace System.Collections.Concurrent.More
             return _storage.GetEnumerator();
         }
 
-        public IEnumerable<TK> Keys { get { return _storage.Keys; }}
-        public IEnumerable<TV> Values { get { return _storage.Values; }}
+        public IEnumerable<KeyType> Keys { get { return _storage.Keys; }}
+        public IEnumerable<ValueType> Values { get { return _storage.Values; }}
 
-        public bool TryRemove(TK key) {
-            TV dontCare;
+        public bool TryRemove(KeyType key) {
+            ValueType dontCare;
             return _storage.TryRemove(key, out dontCare);
         }
     }
