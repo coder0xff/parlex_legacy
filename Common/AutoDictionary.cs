@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Collections.Concurrent.More
-{
+namespace System.Collections.Concurrent.More {
     //A more convenient way to have a Dictionary<K, HashSet<T>>
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix"), SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public class AutoDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>> {
@@ -49,8 +48,8 @@ namespace System.Collections.Concurrent.More
             return _storage.GetEnumerator();
         }
 
-        public IEnumerable<TKey> Keys { get { return _storage.Keys; }}
-        public IEnumerable<TValue> Values { get { return _storage.Values; }}
+        public IEnumerable<TKey> Keys { get { return _storage.Keys; } }
+        public IEnumerable<TValue> Values { get { return _storage.Values; } }
 
         public bool TryRemove(TKey key) {
             TValue dontCare;

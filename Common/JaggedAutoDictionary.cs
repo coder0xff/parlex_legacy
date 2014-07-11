@@ -3,19 +3,22 @@
 namespace System.Collections.Concurrent.More {
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix"), SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public class JaggedAutoDictionary<T0, TValue> : AutoDictionary<T0, TValue> {
-        public JaggedAutoDictionary(Func<T0, TValue> valueFactory) : base(valueFactory) {
+        public JaggedAutoDictionary(Func<T0, TValue> valueFactory)
+            : base(valueFactory) {
         }
 
-        public JaggedAutoDictionary() {            
-        } 
+        public JaggedAutoDictionary() {
+        }
     }
 
     [SuppressMessage("Microsoft.Design", "CA1005:AvoidExcessiveParametersOnGenericTypes"), SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix"), SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public class JaggedAutoDictionary<T0, T1, TValue> : AutoDictionary<T0, JaggedAutoDictionary<T1, TValue>> {
-        public JaggedAutoDictionary(Func<T0, T1, TValue> valueFactory) : base(forward0 => new JaggedAutoDictionary<T1, TValue>(forward1 => valueFactory(forward0, forward1))) {
+        public JaggedAutoDictionary(Func<T0, T1, TValue> valueFactory)
+            : base(forward0 => new JaggedAutoDictionary<T1, TValue>(forward1 => valueFactory(forward0, forward1))) {
         }
 
-        public JaggedAutoDictionary() : base(forward0 => new JaggedAutoDictionary<T1, TValue>()) {
+        public JaggedAutoDictionary()
+            : base(forward0 => new JaggedAutoDictionary<T1, TValue>()) {
         }
     }
 

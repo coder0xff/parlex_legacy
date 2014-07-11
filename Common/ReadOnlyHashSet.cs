@@ -36,8 +36,7 @@ namespace System.Collections.Generic.More {
         readonly HashSet<T> _items;
         readonly int _hashCode;
 
-        public ReadOnlyHashSet(IEnumerable<T> items)
-        {
+        public ReadOnlyHashSet(IEnumerable<T> items) {
             _items = new HashSet<T>(items);
             _hashCode = 0;
             var hashes = items.Select(state => state.GetHashCode()).ToList();

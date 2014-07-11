@@ -24,7 +24,7 @@ namespace System.Collections.Generic.More {
                     _keyToValue.Add(key, value);
                     _valueToKey.Add(value, key);
                 }
-        }
+            }
 
             public bool ContainsKey(U1 key) {
                 return _keyToValue.ContainsKey(key);
@@ -64,9 +64,9 @@ namespace System.Collections.Generic.More {
                 set {
                     U2 oldValue;
                     if (!_keyToValue.TryGetValue(key, out oldValue) || !oldValue.Equals(value)) {
-                            _valueToKey.Add(value, key); //may throw
-                            _keyToValue.Add(key, value);
-                    }                    
+                        _valueToKey.Add(value, key); //may throw
+                        _keyToValue.Add(key, value);
+                    }
                 }
             }
 
@@ -96,7 +96,7 @@ namespace System.Collections.Generic.More {
             }
 
             public bool Remove(KeyValuePair<U1, U2> item) {
-                ((IDictionary<U2, U1>) _valueToKey).Remove(new KeyValuePair<U2, U1>(item.Value, item.Key));
+                ((IDictionary<U2, U1>)_valueToKey).Remove(new KeyValuePair<U2, U1>(item.Value, item.Key));
                 return ((IDictionary<U1, U2>)_keyToValue).Remove(item);
             }
 
@@ -119,10 +119,10 @@ namespace System.Collections.Generic.More {
             _right = new BimapView<T2, T1>(rightDictionary, leftDictionary);
         }
 
-        public IDictionary<T1, T2> Left { get { return _left; }} 
-        public IDictionary<T2, T1> Right { get { return _right; }} 
+        public IDictionary<T1, T2> Left { get { return _left; } }
+        public IDictionary<T2, T1> Right { get { return _right; } }
 
-        public int Count { get { return _left.Count; }}
+        public int Count { get { return _left.Count; } }
 
         public void Clear() {
             _left.Clear();

@@ -2,14 +2,11 @@
 using NondeterministicFiniteAutomata;
 using Parlex;
 
-namespace Test
-{
+namespace Test {
     [TestClass]
-    public class ParserTests
-    {
+    public class ParserTests {
         [TestMethod]
-        public void TestMethod1()
-        {
+        public void TestMethod1() {
             var g = new Grammar();
             var identifier = new Grammar.Recognizer("identifier", true);
             var identifier0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
@@ -45,5 +42,10 @@ namespace Test
             j.Wait();
             var asf = j.AbstractSyntaxForest;
         }
+    }
+
+    [TestClass]
+    public class WirthSyntaxNotationTests {
+
     }
 }

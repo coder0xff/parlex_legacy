@@ -7,47 +7,39 @@ using System.Linq;
 using System.Threading;
 using NondeterministicFiniteAutomata;
 
-namespace Parlex
-{
+namespace Parlex {
     // A zero-based index into the source text
     using Position = Int32;
     // A character count
     using Length = Int32;
     using Recognizer = Grammar.Recognizer;
 
-    public class Parser
-    {
+    public class Parser {
         /// <summary>
         /// All matches with the same Position, and recognizer are in the same MatchCategory
         /// </summary>
-        public class MatchCategory
-        {
+        public class MatchCategory {
             public readonly Position Position;
             public readonly Grammar.ISymbol Symbol;
 
-            protected MatchCategory(MatchCategory other)
-            {
+            protected MatchCategory(MatchCategory other) {
                 Position = other.Position;
                 Symbol = other.Symbol;
             }
 
-            public MatchCategory(Position position, Grammar.ISymbol symbol)
-            {
+            public MatchCategory(Position position, Grammar.ISymbol symbol) {
                 Position = position;
                 Symbol = symbol;
             }
 
-            public override bool Equals(object obj)
-            {
+            public override bool Equals(object obj) {
                 var castObj = obj as MatchCategory;
                 if (castObj == null) return false;
                 return castObj.Position.Equals(Position) && castObj.Symbol.Equals(Symbol);
             }
 
-            public override Length GetHashCode()
-            {
-                unchecked
-                {
+            public override Length GetHashCode() {
+                unchecked {
                     var hash = 17;
                     hash = hash * 31 + Position.GetHashCode();
                     hash = hash * 32 + Symbol.GetHashCode();
@@ -55,8 +47,7 @@ namespace Parlex
                 }
             }
 
-            public override string ToString()
-            {
+            public override string ToString() {
                 return Position + " " + Symbol;
             }
         }
@@ -64,36 +55,32 @@ namespace Parlex
         /// <summary>
         /// All matches with the same Position, Length, and recognizer are in the same MatchClass.
         /// </summary>
-        public class MatchClass : MatchCategory
-        {
+        public class MatchClass : MatchCategory {
             public readonly Length Length;
 
-            protected MatchClass(MatchClass other) : base(other)
-            {
+            protected MatchClass(MatchClass other)
+                : base(other) {
                 Length = other.Length;
             }
 
-            public MatchClass(MatchCategory matchCategory, Length length) : base(matchCategory) {
+            public MatchClass(MatchCategory matchCategory, Length length)
+                : base(matchCategory) {
                 Length = length;
             }
 
             public MatchClass(Position position, Grammar.ISymbol symbol, Length length)
-                : base(position, symbol)
-            {
+                : base(position, symbol) {
                 Length = length;
             }
 
-            public override bool Equals(object obj)
-            {
+            public override bool Equals(object obj) {
                 var castObj = obj as MatchClass;
                 if (castObj == null) return false;
                 return base.Equals(castObj) && Length.Equals(castObj.Length);
             }
 
-            public override Length GetHashCode()
-            {
-                unchecked
-                {
+            public override Length GetHashCode() {
+                unchecked {
                     var hash = 17;
                     hash = hash * 31 + base.GetHashCode();
                     hash = hash * 32 + Length.GetHashCode();
@@ -101,40 +88,32 @@ namespace Parlex
                 }
             }
 
-            public override string ToString()
-            {
+            public override string ToString() {
                 return Position + " " + Symbol + " " + Length;
             }
         }
 
-        public class Match : MatchClass
-        {
+        public class Match : MatchClass {
             public readonly MatchClass[] Children;
 
-            public Match(MatchClass matchClass, MatchClass[] children) : base(matchClass)
-            {
+            public Match(MatchClass matchClass, MatchClass[] children)
+                : base(matchClass) {
                 Children = children;
-            }           
-        }
-
-        public class AbstractSyntaxForest
-        {
-            public MatchClass Root;
-            public Dictionary<MatchClass, List<Match>> NodeTable;
-
-            public bool IsAmbiguous
-            {
-                get
-                { return NodeTable.Keys.Any(matchClass => NodeTable[matchClass].Count > 1); }
             }
         }
 
-        public class Job
-        {
-            internal class SubJob : MatchCategory
-            {
-                internal class RecognizerState
-                {
+        public class AbstractSyntaxForest {
+            public MatchClass Root;
+            public Dictionary<MatchClass, List<Match>> NodeTable;
+
+            public bool IsAmbiguous {
+                get { return NodeTable.Keys.Any(matchClass => NodeTable[matchClass].Count > 1); }
+            }
+        }
+
+        public class Job {
+            internal class SubJob : MatchCategory {
+                internal class RecognizerState {
                     private readonly SubJob _subJob;
                     private readonly Position _position;
                     private readonly NondeterministicFiniteAutomaton<Grammar.ISymbol>.State[] _states;
@@ -151,8 +130,7 @@ namespace Parlex
                         _antecedent = antecedent;
                         _entranceMatchClass = entranceMatchClass;
                         subJob.RecognizerStateCreated();
-                        if (antecedent != null)
-                        {
+                        if (antecedent != null) {
                             antecedent.SubsequentStateCreated();
                         }
 #if FORCE_SINGLE_THREAD
@@ -162,102 +140,80 @@ namespace Parlex
 #endif
                     }
 
-                    private void SubsequentStateCreated()
-                    {
+                    private void SubsequentStateCreated() {
                         Interlocked.Increment(ref _unterminatedSubsequentRecognizerStateCount);
                     }
 
-                    private void SubsequentStateTerminated()
-                    {
-                        if (Interlocked.Decrement(ref _unterminatedSubsequentRecognizerStateCount) == 0)
-                        {
+                    private void SubsequentStateTerminated() {
+                        if (Interlocked.Decrement(ref _unterminatedSubsequentRecognizerStateCount) == 0) {
                             Terminate();
                         }
                     }
 
-                    private void SetSubsequentMadeMatch()
-                    {
+                    private void SetSubsequentMadeMatch() {
                         _subsequentMadeMatch = true;
                         if (_antecedent != null) _antecedent.SetSubsequentMadeMatch();
                     }
 
-                    IEnumerable<Grammar.ISymbol> GetCandidateSymbols()
-                    {
+                    IEnumerable<Grammar.ISymbol> GetCandidateSymbols() {
                         var results = new List<Grammar.ISymbol>();
-                        foreach (var state in _states)
-                        {
+                        foreach (var state in _states) {
                             results.AddRange(((Recognizer)_subJob.Symbol).TransitionFunction[state].Keys);
                         }
                         results = results.Distinct().ToList();
                         return results;
                     }
 
-                    void Apply(MatchClass match)
-                    {
+                    void Apply(MatchClass match) {
                         var nextStates = new List<NondeterministicFiniteAutomaton<Grammar.ISymbol>.State>();
-                        foreach (var currentState in _states)
-                        {
-                            if (((Recognizer)_subJob.Symbol).TransitionFunction[currentState].Keys.Contains(match.Symbol))
-                            {
+                        foreach (var currentState in _states) {
+                            if (((Recognizer)_subJob.Symbol).TransitionFunction[currentState].Keys.Contains(match.Symbol)) {
                                 nextStates.AddRange(((Recognizer)_subJob.Symbol).TransitionFunction[currentState][match.Symbol]);
                             }
                         }
                         nextStates = nextStates.Distinct().ToList();
-// ReSharper disable once ObjectCreationAsStatement
+                        // ReSharper disable once ObjectCreationAsStatement
                         new RecognizerState(_subJob, _position + match.Length, nextStates.ToArray(), this, match);
                     }
 
-                    void Evaluate()
-                    {
+                    void Evaluate() {
                         var searches = GetCandidateSymbols().Select(symbol => new MatchCategory(_position, symbol)).ToList();
-                        foreach (var search in searches)
-                        {
+                        foreach (var search in searches) {
                             _subJob._job.BeginMatching(search);
                         }
                         var didApply = false;
-                        foreach (var search in searches)
-                        {
-                            foreach (var matchClass in _subJob._job.GetMatchClasses(search))
-                            {
+                        foreach (var search in searches) {
+                            foreach (var matchClass in _subJob._job.GetMatchClasses(search)) {
                                 didApply = true;
                                 Apply(matchClass);
                             }
                         }
-                        if (!didApply)
-                        {
+                        if (!didApply) {
                             Terminate();
                         }
                     }
 
-                    private void Terminate()
-                    {
-                        if (IsAcceptState) 
-                        {
-                            if (!((Recognizer)_subJob.Symbol).Greedy || !_subsequentMadeMatch)
-                            {
+                    private void Terminate() {
+                        if (IsAcceptState) {
+                            if (!((Recognizer)_subJob.Symbol).Greedy || !_subsequentMadeMatch) {
                                 _subJob.AddMatch(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position), GetChildren().ToArray()));
-                                if (_antecedent != null)
-                                {
+                                if (_antecedent != null) {
                                     _antecedent.SetSubsequentMadeMatch();
                                 }
                             }
                         }
-                        if (_antecedent != null)
-                        {
+                        if (_antecedent != null) {
                             _antecedent.SubsequentStateTerminated();
                         }
                         _subJob.RecognizerStateTerminated();
                     }
 
-                    private IEnumerable<MatchClass> GetChildren()
-                    {
+                    private IEnumerable<MatchClass> GetChildren() {
                         var results = new List<MatchClass>();
-                        if (_antecedent != null)
-                        {
+                        if (_antecedent != null) {
                             results.AddRange(_antecedent.GetChildren());
                         }
-                        if (_entranceMatchClass != null)
-                        {
+                        if (_entranceMatchClass != null) {
                             results.Add(_entranceMatchClass);
                         }
                         return results;
@@ -271,53 +227,44 @@ namespace Parlex
                 readonly AsyncSet<MatchClass> _matchClasses = new AsyncSet<MatchClass>();
                 readonly JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>> _matches = new JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>>(_ => new ConcurrentSet<Match>());
 
-                public SubJob(Job job, MatchCategory matchCategory) : base(matchCategory)
-                {
+                public SubJob(Job job, MatchCategory matchCategory)
+                    : base(matchCategory) {
                     _job = job;
                     job.SubJobCreated();
                     CreateFirstRecognizerState();
                 }
 
-                void CreateFirstRecognizerState()
-                {
-// ReSharper disable once ObjectCreationAsStatement
+                void CreateFirstRecognizerState() {
+                    // ReSharper disable once ObjectCreationAsStatement
                     new RecognizerState(this, Position, ((Recognizer)Symbol).StartStates.ToArray());
                 }
 
-                private void AddMatch(Match match)
-                {
+                private void AddMatch(Match match) {
                     _matchClasses.Add(match);
                     _matches[match].TryAdd(match);
                 }
 
-                private void RecognizerStateCreated()
-                {
+                private void RecognizerStateCreated() {
                     Interlocked.Increment(ref _unterminatedRecognizerStateCount);
                 }
 
-                private void RecognizerStateTerminated()
-                {
-                    if (Interlocked.Decrement(ref _unterminatedRecognizerStateCount) == 0)
-                    {
+                private void RecognizerStateTerminated() {
+                    if (Interlocked.Decrement(ref _unterminatedRecognizerStateCount) == 0) {
                         Terminate();
                     }
                 }
 
-                private void Terminate()
-                {
+                private void Terminate() {
                     _matchClasses.Close();
                     _job.SubJobTerminated();
                 }
 
-                public IEnumerable<MatchClass> GetMatchClasses()
-                {
+                public IEnumerable<MatchClass> GetMatchClasses() {
                     return _matchClasses;
                 }
 
-                public IEnumerable<Match> GetMatches(MatchClass matchClass)
-                {
-                    if (_matches.Keys.Contains(matchClass))
-                    {
+                public IEnumerable<Match> GetMatches(MatchClass matchClass) {
+                    if (_matches.Keys.Contains(matchClass)) {
                         return _matches[matchClass];
                     }
                     return new Match[] { };
@@ -333,8 +280,7 @@ namespace Parlex
             readonly ManualResetEventSlim _blocker = new ManualResetEventSlim(false);
             public bool IsDone { get { return _blocker.IsSet; } }
             public AbstractSyntaxForest AbstractSyntaxForest { get; private set; }
-            public Job(Grammar grammar, String text)
-            {
+            public Job(Grammar grammar, String text) {
                 _grammar = grammar;
                 Text = text;
                 _unicodeCodePoints = text.GetUtf32CodePoints();
@@ -346,37 +292,28 @@ namespace Parlex
                 ConstructorTerminated();
             }
 
-            void CreateFirstSubJob()
-            {
+            void CreateFirstSubJob() {
                 BeginMatching(new MatchCategory(0, _grammar.MainProduction));
             }
 
-            void ConstructorTerminated()
-            {
+            void ConstructorTerminated() {
                 SubJobTerminated();
             }
 
-            private IEnumerable<MatchClass> GetMatchClasses(MatchCategory matchCategory)
-            {
-                if (matchCategory.Symbol is Recognizer)
-                {
+            private IEnumerable<MatchClass> GetMatchClasses(MatchCategory matchCategory) {
+                if (matchCategory.Symbol is Recognizer) {
                     return _subJobs[matchCategory].GetMatchClasses();
                 }
-                if (_terminalMatches.Keys.Contains(matchCategory))
-                {
+                if (_terminalMatches.Keys.Contains(matchCategory)) {
                     return _terminalMatches[matchCategory];
                 }
                 return new MatchClass[] { };
             }
 
-            private void BeginMatching(MatchCategory search)
-            {
-                if (search.Symbol is Recognizer)
-                {
+            private void BeginMatching(MatchCategory search) {
+                if (search.Symbol is Recognizer) {
                     _subJobs.EnsureCreated(search);
-                }
-                else
-                {
+                } else {
                     var asTerminal = (Grammar.ITerminal)search.Symbol;
                     if (_terminalMatches.EnsureCreated(search)) {
                         if (asTerminal.Matches(_unicodeCodePoints, search.Position)) {
@@ -386,46 +323,35 @@ namespace Parlex
                 }
             }
 
-            private void SubJobCreated()
-            {
+            private void SubJobCreated() {
                 Interlocked.Increment(ref _unterminatedSubJobAndConstructorCount);
             }
 
-            private void SubJobTerminated()
-            {
-                if (Interlocked.Decrement(ref _unterminatedSubJobAndConstructorCount) == 0)
-                {
+            private void SubJobTerminated() {
+                if (Interlocked.Decrement(ref _unterminatedSubJobAndConstructorCount) == 0) {
                     Terminate();
                 }
             }
 
-            private void PruneAbstractSyntaxForest()
-            {
-                var usedMatchClasses = new HashSet<MatchClass> {AbstractSyntaxForest.Root};
-                var priorAdditions = new HashSet<MatchClass> {AbstractSyntaxForest.Root};
+            private void PruneAbstractSyntaxForest() {
+                var usedMatchClasses = new HashSet<MatchClass> { AbstractSyntaxForest.Root };
+                var priorAdditions = new HashSet<MatchClass> { AbstractSyntaxForest.Root };
                 var addedAnyClasses = true;
-                while (addedAnyClasses)
-                {
+                while (addedAnyClasses) {
                     addedAnyClasses = false;
                     var toAdds = new HashSet<MatchClass>();
-                    foreach (var matchClass in priorAdditions)
-                    {
-                        if (AbstractSyntaxForest.NodeTable.ContainsKey(matchClass))
-                        {
-                            foreach (var match in AbstractSyntaxForest.NodeTable[matchClass])
-                            {
-                                foreach (var child in match.Children)
-                                {
+                    foreach (var matchClass in priorAdditions) {
+                        if (AbstractSyntaxForest.NodeTable.ContainsKey(matchClass)) {
+                            foreach (var match in AbstractSyntaxForest.NodeTable[matchClass]) {
+                                foreach (var child in match.Children) {
                                     toAdds.Add(child);
                                 }
                             }
                         }
                     }
                     priorAdditions.Clear();
-                    foreach (var toAdd in toAdds)
-                    {
-                        if (!usedMatchClasses.Contains(toAdd))
-                        {
+                    foreach (var toAdd in toAdds) {
+                        if (!usedMatchClasses.Contains(toAdd)) {
                             addedAnyClasses = true;
                             usedMatchClasses.Add(toAdd);
                             priorAdditions.Add(toAdd);
@@ -433,22 +359,17 @@ namespace Parlex
                     }
                 }
                 var toRemoves = AbstractSyntaxForest.NodeTable.Keys.Where(matchClass => !usedMatchClasses.Contains(matchClass)).ToList();
-                foreach (var matchClassToRemove in toRemoves)
-                {
+                foreach (var matchClassToRemove in toRemoves) {
                     AbstractSyntaxForest.NodeTable.Remove(matchClassToRemove);
                 }
             }
 
-            private void AddProductionMatchesToAbstractSyntaxForest()
-            {
-                foreach (var subJob in _subJobs.Values)
-                {
-                    foreach (var matchClass in subJob.GetMatchClasses())
-                    {
+            private void AddProductionMatchesToAbstractSyntaxForest() {
+                foreach (var subJob in _subJobs.Values) {
+                    foreach (var matchClass in subJob.GetMatchClasses()) {
                         var classMatches = (ConcurrentSet<Match>)subJob.GetMatches(matchClass);
                         if (classMatches.Count == 0) continue;
-                        if (!AbstractSyntaxForest.NodeTable.Keys.Contains(matchClass))
-                        {
+                        if (!AbstractSyntaxForest.NodeTable.Keys.Contains(matchClass)) {
                             AbstractSyntaxForest.NodeTable[matchClass] = new List<Match>();
                         }
                         var subTable = AbstractSyntaxForest.NodeTable[matchClass];
@@ -457,14 +378,10 @@ namespace Parlex
                 }
             }
 
-            private void AddTerminalMatchesToAbstractSyntaxGraph()
-            {
-                foreach (var matches in _terminalMatches.Values)
-                {
-                    foreach (var match in matches)
-                    {
-                        if (!AbstractSyntaxForest.NodeTable.Keys.Contains(match))
-                        {
+            private void AddTerminalMatchesToAbstractSyntaxGraph() {
+                foreach (var matches in _terminalMatches.Values) {
+                    foreach (var match in matches) {
+                        if (!AbstractSyntaxForest.NodeTable.Keys.Contains(match)) {
                             AbstractSyntaxForest.NodeTable[match] = new List<Match>();
                         }
                         AbstractSyntaxForest.NodeTable[match].Add(match);
@@ -472,10 +389,8 @@ namespace Parlex
                 }
             }
 
-            private void ConstructAbstractSyntaxForest()
-            {
-                AbstractSyntaxForest = new AbstractSyntaxForest
-                {
+            private void ConstructAbstractSyntaxForest() {
+                AbstractSyntaxForest = new AbstractSyntaxForest {
                     Root = new MatchClass(0, _grammar.MainProduction, _unicodeCodePoints.Length),
                     NodeTable = new Dictionary<MatchClass, List<Match>>()
                 };
@@ -484,27 +399,23 @@ namespace Parlex
                 PruneAbstractSyntaxForest();
             }
 
-            private void Terminate()
-            {
+            private void Terminate() {
                 ConstructAbstractSyntaxForest();
                 _blocker.Set();
             }
 
-            public void Wait()
-            {
+            public void Wait() {
                 _blocker.Wait();
             }
         }
 
         private readonly Grammar _grammar;
 
-        public Parser(Grammar grammar)
-        {
+        public Parser(Grammar grammar) {
             _grammar = grammar;
         }
 
-        public Job Parse(String text)
-        {
+        public Job Parse(String text) {
             return new Job(_grammar, text);
         }
     }
