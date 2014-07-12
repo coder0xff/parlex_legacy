@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NondeterministicFiniteAutomata;
 using Parlex;
 
@@ -9,8 +10,8 @@ namespace Test {
         public void TestMethod1() {
             var g = new Grammar();
             var identifier = new Grammar.Recognizer("identifier", true);
-            var identifier0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var identifier1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var identifier0 = new NFA<Grammar.ISymbol>.State();
+            var identifier1 = new NFA<Grammar.ISymbol>.State();
             identifier.States.Add(identifier0);
             identifier.States.Add(identifier1);
             identifier.StartStates.Add(identifier0);
@@ -19,10 +20,10 @@ namespace Test {
             identifier.TransitionFunction[identifier1][Grammar.LetterTerminal].Add(identifier1);
 
             var syntax = new Grammar.Recognizer("syntax", false);
-            var syntax0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var syntax1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var syntax2 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var syntax3 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var syntax0 = new NFA<Grammar.ISymbol>.State();
+            var syntax1 = new NFA<Grammar.ISymbol>.State();
+            var syntax2 = new NFA<Grammar.ISymbol>.State();
+            var syntax3 = new NFA<Grammar.ISymbol>.State();
             syntax.States.Add(syntax0);
             syntax.States.Add(syntax1);
             syntax.States.Add(syntax2);
@@ -46,6 +47,12 @@ namespace Test {
 
     [TestClass]
     public class WirthSyntaxNotationTests {
-
+        [TestMethod]
+        public void SelfReferentialParseTest()
+        {
+            var metaMetaSyntax =
+                "P=I \"=\" E \".\"."; //EXPRESSION=TERM {\"|\" whiteSpaces}.TERM=FACTOR{FACTOR}.FACTOR=IDENTIFIER|LITERAL|\"[\" EXPRESSION \"]\"|\"(\" EXPRESSION \")\"|\"{\"EXPRESSION \"}\".IDENTIFIER=letter{letter}.LITERAL=\"\\\"\" character {character} \"\\\"\".";
+            var grammar = WirthSyntaxNotation.LoadGrammar(metaMetaSyntax);
+        }
     }
 }

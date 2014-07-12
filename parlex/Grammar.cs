@@ -98,7 +98,7 @@ namespace Parlex {
 
         public static WhiteSpaceTerminalT WhiteSpaceTerminal = new WhiteSpaceTerminalT();
 
-        public class Recognizer : NondeterministicFiniteAutomaton<ISymbol>, ISymbol {
+        public class Recognizer : NFA<ISymbol>, ISymbol {
             readonly String _name;
             readonly bool _greedy;
 
@@ -107,7 +107,7 @@ namespace Parlex {
                 _greedy = greedy;
             }
 
-            public Recognizer(String name, bool greedy, NondeterministicFiniteAutomaton<ISymbol> source)
+            public Recognizer(String name, bool greedy, NFA<ISymbol> source)
                 : base(source) {
                 _name = name;
                 _greedy = greedy;

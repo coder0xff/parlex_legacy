@@ -116,14 +116,14 @@ namespace Parlex {
                 internal class RecognizerState {
                     private readonly SubJob _subJob;
                     private readonly Position _position;
-                    private readonly NondeterministicFiniteAutomaton<Grammar.ISymbol>.State[] _states;
+                    private readonly NFA<Grammar.ISymbol>.State[] _states;
                     private bool IsAcceptState { get { return _states.Any(x => ((Recognizer)_subJob.Symbol).AcceptStates.Contains(x)); } }
                     int _unterminatedSubsequentRecognizerStateCount;
                     bool _subsequentMadeMatch;
                     readonly RecognizerState _antecedent;
                     private readonly MatchClass _entranceMatchClass;
 
-                    public RecognizerState(SubJob subJob, Position position, NondeterministicFiniteAutomaton<Grammar.ISymbol>.State[] states, RecognizerState antecedent = null, MatchClass entranceMatchClass = null) {
+                    public RecognizerState(SubJob subJob, Position position, NFA<Grammar.ISymbol>.State[] states, RecognizerState antecedent = null, MatchClass entranceMatchClass = null) {
                         _subJob = subJob;
                         _position = position;
                         _states = states;
@@ -165,7 +165,7 @@ namespace Parlex {
                     }
 
                     void Apply(MatchClass match) {
-                        var nextStates = new List<NondeterministicFiniteAutomaton<Grammar.ISymbol>.State>();
+                        var nextStates = new List<NFA<Grammar.ISymbol>.State>();
                         foreach (var currentState in _states) {
                             if (((Recognizer)_subJob.Symbol).TransitionFunction[currentState].Keys.Contains(match.Symbol)) {
                                 nextStates.AddRange(((Recognizer)_subJob.Symbol).TransitionFunction[currentState][match.Symbol]);

@@ -16,7 +16,7 @@ namespace NondeterministicFiniteAutomata {
     /// </summary>
     /// <typeparam name="TAlphabet">The domain of the transition function is S x TAlphabet, where S is the set of states.</typeparam>
     /// <typeparam name="TAssignment">The type of the value associated with a state.</typeparam>
-    public class NondeterministicFiniteAutomaton<TAlphabet, TAssignment> {
+    public class NFA<TAlphabet, TAssignment> {
 
         /// <summary>
         /// A State of an NFA
@@ -93,18 +93,18 @@ namespace NondeterministicFiniteAutomata {
         }
 
         /// <summary>
-        /// Creates a new NondeterministicFiniteAutomaton that has only one transition for each input symbol for each state - i.e. it is deterministic
+        /// Creates a new NFA that has only one transition for each input symbol for each state - i.e. it is deterministic
         /// </summary>
         /// <returns>The new DFA</returns>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Determinize")]
-        public NondeterministicFiniteAutomaton<TAlphabet, StateSet> Determinize() {
-            var stateSetToDState = new ConcurrentDictionary<StateSet, NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State>();
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, StateSet>();
-            var resultAcceptStates = new ConcurrentBag<NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State>();
+        public NFA<TAlphabet, StateSet> Determinize() {
+            var stateSetToDState = new ConcurrentDictionary<StateSet, NFA<TAlphabet, StateSet>.State>();
+            var result = new NFA<TAlphabet, StateSet>();
+            var resultAcceptStates = new ConcurrentBag<NFA<TAlphabet, StateSet>.State>();
 
-            Func<StateSet, NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State> adder = null;
+            Func<StateSet, NFA<TAlphabet, StateSet>.State> adder = null;
             adder = stateSet => stateSetToDState.GetOrAdd(stateSet, stateSetProxy => {
-                var newState = new NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State(stateSetProxy);
+                var newState = new NFA<TAlphabet, StateSet>.State(stateSetProxy);
                 Task.Factory.StartNew(() => {
                     var isAcceptState = stateSetProxy.Any(x => AcceptStates.Contains(x));
                     if (isAcceptState) {
@@ -134,11 +134,11 @@ namespace NondeterministicFiniteAutomata {
         }
 
         /// <summary>
-        /// Creates a new NondeterministicFiniteAutomaton that recognizes the reversed language
+        /// Creates a new NFA that recognizes the reversed language
         /// </summary>
-        /// <returns>The new NondeterministicFiniteAutomaton</returns>
-        public NondeterministicFiniteAutomaton<TAlphabet, TAssignment> Dual() {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, TAssignment>();
+        /// <returns>The new NFA</returns>
+        public NFA<TAlphabet, TAssignment> Dual() {
+            var result = new NFA<TAlphabet, TAssignment>();
             result._startStates.UnionWith(_acceptStates);
             result._states.UnionWith(_states);
             foreach (var keyValuePair in _transitionFunction) {
@@ -177,7 +177,7 @@ namespace NondeterministicFiniteAutomata {
         /// Creates a state map (SM) as described in [1]
         /// </summary>
         /// <returns></returns>
-        StateMap MakeStateMap(out NondeterministicFiniteAutomaton<TAlphabet, StateSet> determinized) {
+        StateMap MakeStateMap(out NFA<TAlphabet, StateSet> determinized) {
             determinized = Determinize();
             var determinizedDual = Dual().Determinize();
 
@@ -218,9 +218,9 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        static NondeterministicFiniteAutomaton<TAlphabet, int> GenerateEquivalenceClassReducedDfa(NondeterministicFiniteAutomaton<TAlphabet, StateSet> subsetConstructionDfa, Dictionary<StateSet, int> equivalenceClassLookup) {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, int>();
-            var intToResultState = new AutoDictionary<int, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(i => new NondeterministicFiniteAutomaton<TAlphabet, int>.State(i));
+        static NFA<TAlphabet, int> GenerateEquivalenceClassReducedDfa(NFA<TAlphabet, StateSet> subsetConstructionDfa, Dictionary<StateSet, int> equivalenceClassLookup) {
+            var result = new NFA<TAlphabet, int>();
+            var intToResultState = new AutoDictionary<int, NFA<TAlphabet, int>.State>(i => new NFA<TAlphabet, int>.State(i));
             result.StartStates.Add(intToResultState[equivalenceClassLookup[subsetConstructionDfa.StartStates.First().Value]]);
             foreach (var acceptState in subsetConstructionDfa.AcceptStates) {
                 result.AcceptStates.Add(intToResultState[equivalenceClassLookup[acceptState.Value]]);
@@ -239,7 +239,7 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        static ReducedStateMap ReduceStateMap(StateMap stateMap, NondeterministicFiniteAutomaton<TAlphabet, StateSet> subsetConstructionDfa, out NondeterministicFiniteAutomaton<TAlphabet, int> minimizedSubsetConstructionDfa) {
+        static ReducedStateMap ReduceStateMap(StateMap stateMap, NFA<TAlphabet, StateSet> subsetConstructionDfa, out NFA<TAlphabet, int> minimizedSubsetConstructionDfa) {
             //construct an elementary automata matrix (EAM) [1]
             var elementaryAutomataMatrix = MakeElementaryAutomatonMatrix(stateMap);
 
@@ -493,13 +493,13 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        static NondeterministicFiniteAutomaton<TAlphabet, int> FromIntersectionRule(NondeterministicFiniteAutomaton<TAlphabet, int> reducedDfa, Cover cover, out Bimap<int, Grid> orderedGrids) {
+        static NFA<TAlphabet, int> FromIntersectionRule(NFA<TAlphabet, int> reducedDfa, Cover cover, out Bimap<int, Grid> orderedGrids) {
             var orderedReducedDfaStates = reducedDfa._states.OrderBy(x => x.Value).ToList();
             var subsetAssignmentFunction = MakeSubsetAssignmentFunction(cover);
             var counter = 0;
             var orderedGridsTemp = cover.ToBimap(x => counter++, x => x);
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, int>();
-            var intToResultState = new AutoDictionary<int, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(i => new NondeterministicFiniteAutomaton<TAlphabet, int>.State(i));
+            var result = new NFA<TAlphabet, int>();
+            var intToResultState = new AutoDictionary<int, NFA<TAlphabet, int>.State>(i => new NFA<TAlphabet, int>.State(i));
             for (var resultStateIndex = 0; resultStateIndex < orderedGridsTemp.Count; resultStateIndex++) {
                 var grid = orderedGridsTemp.Left[resultStateIndex];
                 var resultState = intToResultState[resultStateIndex];
@@ -541,14 +541,14 @@ namespace NondeterministicFiniteAutomata {
             return neededColumns.Count == 0;
         }
 
-        static bool SubsetAssignmentIsLegitimate(NondeterministicFiniteAutomaton<TAlphabet, int> intersectionRuleNondeterministicFiniteAutomaton, NondeterministicFiniteAutomaton<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
-            var intersectionRuleDfa = intersectionRuleNondeterministicFiniteAutomaton.Determinize();
+        static bool SubsetAssignmentIsLegitimate(NFA<TAlphabet, int> intersectionRuleNFA, NFA<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
+            var intersectionRuleDfa = intersectionRuleNFA.Determinize();
             var intersectionRuleDfaOrderedStates = intersectionRuleDfa.States.ToList();
             intersectionRuleDfaOrderedStates.Remove(intersectionRuleDfa.StartStates.First());
             intersectionRuleDfaOrderedStates.Insert(0, intersectionRuleDfa.StartStates.First());
 
-            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State /*minimized*/, NondeterministicFiniteAutomaton<TAlphabet, NondeterministicFiniteAutomaton<TAlphabet, int>.StateSet>.State /*intersection rule*/>>();
-            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, NondeterministicFiniteAutomaton<TAlphabet, int>.StateSet>.State>(minimizedDfa.StartStates.First(), intersectionRuleDfa.StartStates.First()));
+            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NFA<TAlphabet, int>.State /*minimized*/, NFA<TAlphabet, NFA<TAlphabet, int>.StateSet>.State /*intersection rule*/>>();
+            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, NFA<TAlphabet, int>.StateSet>.State>(minimizedDfa.StartStates.First(), intersectionRuleDfa.StartStates.First()));
             var isLegitimate = true;
             processor.Run(pair => {
                 if (isLegitimate) {
@@ -563,7 +563,7 @@ namespace NondeterministicFiniteAutomata {
                         } else if (!GridSetSpansRow(orderedGrids, nextIntersectionRuleDfaState.Value.Select(s => s.Value), reducedAutomataMatrix, nextMinimizedDfaState.Value)) {
                             isLegitimate = false;
                         } else {
-                            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, NondeterministicFiniteAutomaton<TAlphabet, int>.StateSet>.State>(nextMinimizedDfaState, nextIntersectionRuleDfaState));
+                            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, NFA<TAlphabet, int>.StateSet>.State>(nextMinimizedDfaState, nextIntersectionRuleDfaState));
                         }
                     }
                 }
@@ -571,9 +571,9 @@ namespace NondeterministicFiniteAutomata {
             return isLegitimate;
         }
 
-        public NondeterministicFiniteAutomaton<TAlphabet, TAssignment2> Reassign<TAssignment2>(Func<State, TAssignment2> func) {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, TAssignment2>();
-            var stateMapper = new AutoDictionary<State, NondeterministicFiniteAutomaton<TAlphabet, TAssignment2>.State>(state => new NondeterministicFiniteAutomaton<TAlphabet, TAssignment2>.State(func(state)));
+        public NFA<TAlphabet, TAssignment2> Reassign<TAssignment2>(Func<State, TAssignment2> func) {
+            var result = new NFA<TAlphabet, TAssignment2>();
+            var stateMapper = new AutoDictionary<State, NFA<TAlphabet, TAssignment2>.State>(state => new NFA<TAlphabet, TAssignment2>.State(func(state)));
             foreach (var state in _states) {
                 stateMapper.EnsureCreated(state);
             }
@@ -594,9 +594,9 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        public NondeterministicFiniteAutomaton<TAlphabet> Reassign() {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet>();
-            var stateMapper = new AutoDictionary<State, NondeterministicFiniteAutomaton<TAlphabet>.State>(state => new NondeterministicFiniteAutomaton<TAlphabet>.State());
+        public NFA<TAlphabet> Reassign() {
+            var result = new NFA<TAlphabet>();
+            var stateMapper = new AutoDictionary<State, NFA<TAlphabet>.State>(state => new NFA<TAlphabet>.State());
             foreach (var state in _states) {
                 stateMapper.EnsureCreated(state);
             }
@@ -618,13 +618,13 @@ namespace NondeterministicFiniteAutomata {
         }
 
         /// <summary>
-        /// Minimize this NondeterministicFiniteAutomaton using the Kameda-Weiner algorithm [1]
+        /// Minimize this NFA using the Kameda-Weiner algorithm [1]
         /// </summary>
-        /// <returns>A minimal-state NondeterministicFiniteAutomaton accepting the same language</returns>
-        public NondeterministicFiniteAutomaton<TAlphabet, int> Minimized() {
-            NondeterministicFiniteAutomaton<TAlphabet, StateSet> determinized;
+        /// <returns>A minimal-state NFA accepting the same language</returns>
+        public NFA<TAlphabet, int> Minimized() {
+            NFA<TAlphabet, StateSet> determinized;
             var sm = MakeStateMap(out determinized);
-            NondeterministicFiniteAutomaton<TAlphabet, int> minimizedSubsetConstructionDfa;
+            NFA<TAlphabet, int> minimizedSubsetConstructionDfa;
             var rsm = ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = MakeReducedAutomataMatrix(rsm);
             var primeGrids = ComputePrimeGrids(ram);
@@ -634,18 +634,18 @@ namespace NondeterministicFiniteAutomata {
                     break;
                 }
                 Bimap<int, Grid> orderedGrids;
-                var minNondeterministicFiniteAutomaton = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
-                var isLegitimate = SubsetAssignmentIsLegitimate(minNondeterministicFiniteAutomaton, minimizedSubsetConstructionDfa, ram, orderedGrids);
+                var minNFA = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
+                var isLegitimate = SubsetAssignmentIsLegitimate(minNFA, minimizedSubsetConstructionDfa, ram, orderedGrids);
                 if (isLegitimate) {
-                    return minNondeterministicFiniteAutomaton;
+                    return minNFA;
                 }
             }
             var stateCount = 0;
-            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller NondeterministicFiniteAutomaton. Return this;
+            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller NFA. Return this;
         }
 
-        public static NondeterministicFiniteAutomaton<TAlphabet, TAssignment> Union(IEnumerable<NondeterministicFiniteAutomaton<TAlphabet, TAssignment>> nfas) {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, TAssignment>();
+        public static NFA<TAlphabet, TAssignment> Union(IEnumerable<NFA<TAlphabet, TAssignment>> nfas) {
+            var result = new NFA<TAlphabet, TAssignment>();
             foreach (var nfa in nfas) {
                 //don't need to clone the states because they are immutable
                 result._startStates.UnionWith(nfa._startStates);
@@ -660,21 +660,21 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        public NondeterministicFiniteAutomaton<TAlphabet, int> MinimizedDfa() {
-            NondeterministicFiniteAutomaton<TAlphabet, StateSet> determinized;
+        public NFA<TAlphabet, int> MinimizedDfa() {
+            NFA<TAlphabet, StateSet> determinized;
             var sm = MakeStateMap(out determinized);
-            NondeterministicFiniteAutomaton<TAlphabet, int> minimizedSubsetConstructionDfa;
+            NFA<TAlphabet, int> minimizedSubsetConstructionDfa;
             ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             return minimizedSubsetConstructionDfa;
         }
 
-        public bool IsEquivalent<TAssignment2>(NondeterministicFiniteAutomaton<TAlphabet, TAssignment2> that) {
+        public bool IsEquivalent<TAssignment2>(NFA<TAlphabet, TAssignment2> that) {
             var thisMinDfa = MinimizedDfa();
             var thatMinDfa = that.MinimizedDfa();
             var equivalent = true;
-            var stateMap = new ConcurrentDictionary<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>();
-            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>>();
-            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(thisMinDfa._startStates.First(), thatMinDfa._startStates.First())); //only one start state since it's a min dfa
+            var stateMap = new ConcurrentDictionary<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>();
+            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>>();
+            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>(thisMinDfa._startStates.First(), thatMinDfa._startStates.First())); //only one start state since it's a min dfa
             processor.Run(pair => {
                 if (!equivalent) {
                     return;
@@ -688,7 +688,7 @@ namespace NondeterministicFiniteAutomata {
                     } else {
                         var thatMinDfaNextState = thatMinDfaNextStates.First();
                         var mappedThisMinDfaNextState = stateMap.GetOrAdd(thisMinDfaNextState, thisMinDfaNextStateProxy => {
-                            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(thisMinDfaNextState, thatMinDfaNextState));
+                            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>(thisMinDfaNextState, thatMinDfaNextState));
                             return thatMinDfaNextState;
                         });
                         if (thatMinDfaNextState != mappedThisMinDfaNextState) {
@@ -700,17 +700,17 @@ namespace NondeterministicFiniteAutomata {
             return equivalent;
         }
 
-        public static NondeterministicFiniteAutomaton<TAlphabet, int> Intersect(IEnumerable<NondeterministicFiniteAutomaton<TAlphabet, TAssignment>> nfas) {
+        public static NFA<TAlphabet, int> Intersect(IEnumerable<NFA<TAlphabet, TAssignment>> nfas) {
             var minDets = nfas.Select(nfa => nfa.MinimizedDfa());
-            var singleTransitionNondeterministicFiniteAutomaton = NondeterministicFiniteAutomaton<TAlphabet, int>.Union(minDets);
-            var singleTransitionFunction = singleTransitionNondeterministicFiniteAutomaton._transitionFunction;
-            var singleAcceptStates = singleTransitionNondeterministicFiniteAutomaton._acceptStates;
+            var singleTransitionNFA = NFA<TAlphabet, int>.Union(minDets);
+            var singleTransitionFunction = singleTransitionNFA._transitionFunction;
+            var singleAcceptStates = singleTransitionNFA._acceptStates;
             var stateCount = 0;
-            var resultStates = new AutoDictionary<ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(x => new NondeterministicFiniteAutomaton<TAlphabet, int>.State(Interlocked.Increment(ref stateCount)));
-            var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>>();
-            var startStateSet = new ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>(minDets.Select(x => x._startStates.First()));
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, int>();
-            var acceptStates = new ConcurrentSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>();
+            var resultStates = new AutoDictionary<ReadOnlyHashSet<NFA<TAlphabet, int>.State>, NFA<TAlphabet, int>.State>(x => new NFA<TAlphabet, int>.State(Interlocked.Increment(ref stateCount)));
+            var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyHashSet<NFA<TAlphabet, int>.State>>();
+            var startStateSet = new ReadOnlyHashSet<NFA<TAlphabet, int>.State>(minDets.Select(x => x._startStates.First()));
+            var result = new NFA<TAlphabet, int>();
+            var acceptStates = new ConcurrentSet<NFA<TAlphabet, int>.State>();
             processor.Add(startStateSet);
             processor.Run(stateSet => {
                 var fromState = resultStates[stateSet];
@@ -720,7 +720,7 @@ namespace NondeterministicFiniteAutomata {
                 var fromSymbols = ReadOnlyHashSet<TAlphabet>.IntersectMany(stateSet.Select(state => singleTransitionFunction[state].Keys));
                 foreach (var fromSymbol in fromSymbols) {
                     var symbol = fromSymbol;
-                    var nextStateSet = new ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>(stateSet.Select(state => singleTransitionFunction[state][symbol].First()));
+                    var nextStateSet = new ReadOnlyHashSet<NFA<TAlphabet, int>.State>(stateSet.Select(state => singleTransitionFunction[state][symbol].First()));
                     var toState = resultStates[nextStateSet];
                     processor.Add(nextStateSet);
                     result._transitionFunction[fromState][fromSymbol].Add(toState);
@@ -732,7 +732,7 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        public bool Contains(NondeterministicFiniteAutomaton<TAlphabet, TAssignment> that) {
+        public bool Contains(NFA<TAlphabet, TAssignment> that) {
             return Intersect(new[] { this, that }).IsEquivalent(that);
         }
 
@@ -759,7 +759,7 @@ namespace NondeterministicFiniteAutomata {
     /// A Nondeterministic Finite Automaton (∪-NFA)
     /// </summary>
     /// <typeparam name="TAlphabet">The domain of the transition function is S x TAlphabet, where S is the set of states.</typeparam>
-    public class NondeterministicFiniteAutomaton<TAlphabet> {
+    public class NFA<TAlphabet> {
 
         /// <summary>
         /// A State of an NFA
@@ -771,9 +771,9 @@ namespace NondeterministicFiniteAutomata {
         public readonly HashSet<State> StartStates = new HashSet<State>();
         public readonly HashSet<State> AcceptStates = new HashSet<State>();
 
-        public NondeterministicFiniteAutomaton() { }
+        public NFA() { }
 
-        public NondeterministicFiniteAutomaton(NondeterministicFiniteAutomaton<TAlphabet> other) {
+        public NFA(NFA<TAlphabet> other) {
             foreach (var state in other.StartStates) {
                 StartStates.Add(state);
             }
@@ -820,17 +820,17 @@ namespace NondeterministicFiniteAutomata {
         }
 
         /// <summary>
-        /// Creates a new NondeterministicFiniteAutomaton that has only one transition for each input symbol for each state - i.e. it is deterministic
+        /// Creates a new NFA that has only one transition for each input symbol for each state - i.e. it is deterministic
         /// </summary>
         /// <returns>The new DFA</returns>
-        public NondeterministicFiniteAutomaton<TAlphabet, StateSet> Determinize() {
-            var stateSetToDState = new ConcurrentDictionary<StateSet, NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State>();
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, StateSet>();
-            var resultAcceptStates = new ConcurrentBag<NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State>();
+        public NFA<TAlphabet, StateSet> Determinize() {
+            var stateSetToDState = new ConcurrentDictionary<StateSet, NFA<TAlphabet, StateSet>.State>();
+            var result = new NFA<TAlphabet, StateSet>();
+            var resultAcceptStates = new ConcurrentBag<NFA<TAlphabet, StateSet>.State>();
 
-            Func<StateSet, NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State> adder = null;
+            Func<StateSet, NFA<TAlphabet, StateSet>.State> adder = null;
             adder = stateSet => stateSetToDState.GetOrAdd(stateSet, stateSetProxy => {
-                var newState = new NondeterministicFiniteAutomaton<TAlphabet, StateSet>.State(stateSetProxy);
+                var newState = new NFA<TAlphabet, StateSet>.State(stateSetProxy);
                 Task.Factory.StartNew(() => {
                     var isAcceptState = stateSetProxy.Any(x => AcceptStates.Contains(x));
                     if (isAcceptState) {
@@ -860,11 +860,11 @@ namespace NondeterministicFiniteAutomata {
         }
 
         /// <summary>
-        /// Creates a new NondeterministicFiniteAutomaton that recognizes the reversed language
+        /// Creates a new NFA that recognizes the reversed language
         /// </summary>
-        /// <returns>The new NondeterministicFiniteAutomaton</returns>
-        public NondeterministicFiniteAutomaton<TAlphabet> Dual() {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet>();
+        /// <returns>The new NFA</returns>
+        public NFA<TAlphabet> Dual() {
+            var result = new NFA<TAlphabet>();
             result.StartStates.UnionWith(AcceptStates);
             result.States.UnionWith(States);
             foreach (var keyValuePair in TransitionFunction) {
@@ -901,7 +901,7 @@ namespace NondeterministicFiniteAutomata {
         /// Creates a state map (SM) as described in [1]
         /// </summary>
         /// <returns></returns>
-        StateMap MakeStateMap(out NondeterministicFiniteAutomaton<TAlphabet, StateSet> determinized) {
+        StateMap MakeStateMap(out NFA<TAlphabet, StateSet> determinized) {
             determinized = Determinize();
             var determinizedDual = Dual().Determinize();
 
@@ -942,9 +942,9 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        static NondeterministicFiniteAutomaton<TAlphabet, int> GenerateEquivalenceClassReducedDfa(NondeterministicFiniteAutomaton<TAlphabet, StateSet> subsetConstructionDfa, Dictionary<StateSet, int> equivalenceClassLookup) {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, int>();
-            var intToResultState = new AutoDictionary<int, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(i => new NondeterministicFiniteAutomaton<TAlphabet, int>.State(i));
+        static NFA<TAlphabet, int> GenerateEquivalenceClassReducedDfa(NFA<TAlphabet, StateSet> subsetConstructionDfa, Dictionary<StateSet, int> equivalenceClassLookup) {
+            var result = new NFA<TAlphabet, int>();
+            var intToResultState = new AutoDictionary<int, NFA<TAlphabet, int>.State>(i => new NFA<TAlphabet, int>.State(i));
             result.StartStates.Add(intToResultState[equivalenceClassLookup[subsetConstructionDfa.StartStates.First().Value]]);
             foreach (var acceptState in subsetConstructionDfa.AcceptStates) {
                 result.AcceptStates.Add(intToResultState[equivalenceClassLookup[acceptState.Value]]);
@@ -963,7 +963,7 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        static ReducedStateMap ReduceStateMap(StateMap stateMap, NondeterministicFiniteAutomaton<TAlphabet, StateSet> subsetConstructionDfa, out NondeterministicFiniteAutomaton<TAlphabet, int> minimizedSubsetConstructionDfa) {
+        static ReducedStateMap ReduceStateMap(StateMap stateMap, NFA<TAlphabet, StateSet> subsetConstructionDfa, out NFA<TAlphabet, int> minimizedSubsetConstructionDfa) {
             //construct an elementary automata matrix (EAM) [1]
             var elementaryAutomataMatrix = MakeElementaryAutomatonMatrix(stateMap);
 
@@ -1217,13 +1217,13 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        static NondeterministicFiniteAutomaton<TAlphabet, int> FromIntersectionRule(NondeterministicFiniteAutomaton<TAlphabet, int> reducedDfa, Cover cover, out Bimap<int, Grid> orderedGrids) {
+        static NFA<TAlphabet, int> FromIntersectionRule(NFA<TAlphabet, int> reducedDfa, Cover cover, out Bimap<int, Grid> orderedGrids) {
             var orderedReducedDfaStates = reducedDfa.States.OrderBy(x => x.Value).ToList();
             var subsetAssignmentFunction = MakeSubsetAssignmentFunction(cover);
             var counter = 0;
             var orderedGridsTemp = cover.ToBimap(x => counter++, x => x);
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, int>();
-            var intToResultState = new AutoDictionary<int, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(i => new NondeterministicFiniteAutomaton<TAlphabet, int>.State(i));
+            var result = new NFA<TAlphabet, int>();
+            var intToResultState = new AutoDictionary<int, NFA<TAlphabet, int>.State>(i => new NFA<TAlphabet, int>.State(i));
             for (var resultStateIndex = 0; resultStateIndex < orderedGridsTemp.Count; resultStateIndex++) {
                 var grid = orderedGridsTemp.Left[resultStateIndex];
                 var resultState = intToResultState[resultStateIndex];
@@ -1265,14 +1265,14 @@ namespace NondeterministicFiniteAutomata {
             return neededColumns.Count == 0;
         }
 
-        static bool SubsetAssignmentIsLegitimate(NondeterministicFiniteAutomaton<TAlphabet, int> intersectionRuleNondeterministicFiniteAutomaton, NondeterministicFiniteAutomaton<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
-            var intersectionRuleDfa = intersectionRuleNondeterministicFiniteAutomaton.Determinize();
+        static bool SubsetAssignmentIsLegitimate(NFA<TAlphabet, int> intersectionRuleNFA, NFA<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
+            var intersectionRuleDfa = intersectionRuleNFA.Determinize();
             var intersectionRuleDfaOrderedStates = intersectionRuleDfa.States.ToList();
             intersectionRuleDfaOrderedStates.Remove(intersectionRuleDfa.StartStates.First());
             intersectionRuleDfaOrderedStates.Insert(0, intersectionRuleDfa.StartStates.First());
 
-            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State /*minimized*/, NondeterministicFiniteAutomaton<TAlphabet, NondeterministicFiniteAutomaton<TAlphabet, int>.StateSet>.State /*intersection rule*/>>();
-            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, NondeterministicFiniteAutomaton<TAlphabet, int>.StateSet>.State>(minimizedDfa.StartStates.First(), intersectionRuleDfa.StartStates.First()));
+            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NFA<TAlphabet, int>.State /*minimized*/, NFA<TAlphabet, NFA<TAlphabet, int>.StateSet>.State /*intersection rule*/>>();
+            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, NFA<TAlphabet, int>.StateSet>.State>(minimizedDfa.StartStates.First(), intersectionRuleDfa.StartStates.First()));
             var isLegitimate = true;
             processor.Run(pair => {
                 if (isLegitimate) {
@@ -1287,7 +1287,7 @@ namespace NondeterministicFiniteAutomata {
                         } else if (!GridSetSpansRow(orderedGrids, nextIntersectionRuleDfaState.Value.Select(s => s.Value), reducedAutomataMatrix, nextMinimizedDfaState.Value)) {
                             isLegitimate = false;
                         } else {
-                            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, NondeterministicFiniteAutomaton<TAlphabet, int>.StateSet>.State>(nextMinimizedDfaState, nextIntersectionRuleDfaState));
+                            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, NFA<TAlphabet, int>.StateSet>.State>(nextMinimizedDfaState, nextIntersectionRuleDfaState));
                         }
                     }
                 }
@@ -1295,9 +1295,9 @@ namespace NondeterministicFiniteAutomata {
             return isLegitimate;
         }
 
-        public NondeterministicFiniteAutomaton<TAlphabet, TAssignment2> Reassign<TAssignment2>(Func<State, TAssignment2> func) {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, TAssignment2>();
-            var stateMapper = new AutoDictionary<State, NondeterministicFiniteAutomaton<TAlphabet, TAssignment2>.State>(state => new NondeterministicFiniteAutomaton<TAlphabet, TAssignment2>.State(func(state)));
+        public NFA<TAlphabet, TAssignment2> Reassign<TAssignment2>(Func<State, TAssignment2> func) {
+            var result = new NFA<TAlphabet, TAssignment2>();
+            var stateMapper = new AutoDictionary<State, NFA<TAlphabet, TAssignment2>.State>(state => new NFA<TAlphabet, TAssignment2>.State(func(state)));
             foreach (var state in States) {
                 stateMapper.EnsureCreated(state);
             }
@@ -1318,8 +1318,8 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        public NondeterministicFiniteAutomaton<TAlphabet> Clone() {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet>();
+        public NFA<TAlphabet> Clone() {
+            var result = new NFA<TAlphabet>();
             var stateMapper = new AutoDictionary<State, State>(state => new State());
             foreach (var state in States) {
                 stateMapper.EnsureCreated(state);
@@ -1342,13 +1342,13 @@ namespace NondeterministicFiniteAutomata {
         }
 
         /// <summary>
-        /// Minimize this NondeterministicFiniteAutomaton using the Kameda-Weiner algorithm [1]
+        /// Minimize this NFA using the Kameda-Weiner algorithm [1]
         /// </summary>
-        /// <returns>A minimal-state NondeterministicFiniteAutomaton accepting the same language</returns>
-        public NondeterministicFiniteAutomaton<TAlphabet, int> Minimized() {
-            NondeterministicFiniteAutomaton<TAlphabet, StateSet> determinized;
+        /// <returns>A minimal-state NFA accepting the same language</returns>
+        public NFA<TAlphabet, int> Minimized() {
+            NFA<TAlphabet, StateSet> determinized;
             var sm = MakeStateMap(out determinized);
-            NondeterministicFiniteAutomaton<TAlphabet, int> minimizedSubsetConstructionDfa;
+            NFA<TAlphabet, int> minimizedSubsetConstructionDfa;
             var rsm = ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             var ram = MakeReducedAutomataMatrix(rsm);
             var primeGrids = ComputePrimeGrids(ram);
@@ -1358,18 +1358,18 @@ namespace NondeterministicFiniteAutomata {
                     break;
                 }
                 Bimap<int, Grid> orderedGrids;
-                var minNondeterministicFiniteAutomaton = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
-                var isLegitimate = SubsetAssignmentIsLegitimate(minNondeterministicFiniteAutomaton, minimizedSubsetConstructionDfa, ram, orderedGrids);
+                var minNFA = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
+                var isLegitimate = SubsetAssignmentIsLegitimate(minNFA, minimizedSubsetConstructionDfa, ram, orderedGrids);
                 if (isLegitimate) {
-                    return minNondeterministicFiniteAutomaton;
+                    return minNFA;
                 }
             }
             var stateCount = 0;
-            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller NondeterministicFiniteAutomaton. Return this;
+            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller NFA. Return this;
         }
 
-        public static NondeterministicFiniteAutomaton<TAlphabet> Union(IEnumerable<NondeterministicFiniteAutomaton<TAlphabet>> nfas) {
-            var result = new NondeterministicFiniteAutomaton<TAlphabet>();
+        public static NFA<TAlphabet> Union(IEnumerable<NFA<TAlphabet>> nfas) {
+            var result = new NFA<TAlphabet>();
             foreach (var nfa in nfas) {
                 //don't need to clone the states because they are immutable
                 result.StartStates.UnionWith(nfa.StartStates);
@@ -1384,21 +1384,21 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        public NondeterministicFiniteAutomaton<TAlphabet, int> MinimizedDfa() {
-            NondeterministicFiniteAutomaton<TAlphabet, StateSet> determinized;
+        public NFA<TAlphabet, int> MinimizedDfa() {
+            NFA<TAlphabet, StateSet> determinized;
             var sm = MakeStateMap(out determinized);
-            NondeterministicFiniteAutomaton<TAlphabet, int> minimizedSubsetConstructionDfa;
+            NFA<TAlphabet, int> minimizedSubsetConstructionDfa;
             ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
             return minimizedSubsetConstructionDfa;
         }
 
-        public bool IsEquivalent<TAssignment2>(NondeterministicFiniteAutomaton<TAlphabet, TAssignment2> that) {
+        public bool IsEquivalent<TAssignment2>(NFA<TAlphabet, TAssignment2> that) {
             var thisMinDfa = MinimizedDfa();
             var thatMinDfa = that.MinimizedDfa();
             var equivalent = true;
-            var stateMap = new ConcurrentDictionary<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>();
-            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>>();
-            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(thisMinDfa.StartStates.First(), thatMinDfa.StartStates.First())); //only one start state since it's a min dfa
+            var stateMap = new ConcurrentDictionary<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>();
+            var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>>();
+            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>(thisMinDfa.StartStates.First(), thatMinDfa.StartStates.First())); //only one start state since it's a min dfa
             processor.Run(pair => {
                 if (!equivalent) {
                     return;
@@ -1412,7 +1412,7 @@ namespace NondeterministicFiniteAutomata {
                     } else {
                         var thatMinDfaNextState = thatMinDfaNextStates.First();
                         var mappedThisMinDfaNextState = stateMap.GetOrAdd(thisMinDfaNextState, thisMinDfaNextStateProxy => {
-                            processor.Add(new KeyValuePair<NondeterministicFiniteAutomaton<TAlphabet, int>.State, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(thisMinDfaNextState, thatMinDfaNextState));
+                            processor.Add(new KeyValuePair<NFA<TAlphabet, int>.State, NFA<TAlphabet, int>.State>(thisMinDfaNextState, thatMinDfaNextState));
                             return thatMinDfaNextState;
                         });
                         if (thatMinDfaNextState != mappedThisMinDfaNextState) {
@@ -1424,17 +1424,17 @@ namespace NondeterministicFiniteAutomata {
             return equivalent;
         }
 
-        public static NondeterministicFiniteAutomaton<TAlphabet, int> Intersect(IEnumerable<NondeterministicFiniteAutomaton<TAlphabet>> nfas) {
+        public static NFA<TAlphabet, int> Intersect(IEnumerable<NFA<TAlphabet>> nfas) {
             var minDets = nfas.Select(nfa => nfa.MinimizedDfa());
-            var singleTransitionNondeterministicFiniteAutomaton = NondeterministicFiniteAutomaton<TAlphabet, int>.Union(minDets);
-            var singleTransitionFunction = singleTransitionNondeterministicFiniteAutomaton.TransitionFunction;
-            var singleAcceptStates = singleTransitionNondeterministicFiniteAutomaton.AcceptStates;
+            var singleTransitionNFA = NFA<TAlphabet, int>.Union(minDets);
+            var singleTransitionFunction = singleTransitionNFA.TransitionFunction;
+            var singleAcceptStates = singleTransitionNFA.AcceptStates;
             var stateCount = 0;
-            var resultStates = new AutoDictionary<ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>, NondeterministicFiniteAutomaton<TAlphabet, int>.State>(x => new NondeterministicFiniteAutomaton<TAlphabet, int>.State(Interlocked.Increment(ref stateCount)));
-            var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>>();
-            var startStateSet = new ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>(minDets.Select(x => x.StartStates.First()));
-            var result = new NondeterministicFiniteAutomaton<TAlphabet, int>();
-            var acceptStates = new ConcurrentSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>();
+            var resultStates = new AutoDictionary<ReadOnlyHashSet<NFA<TAlphabet, int>.State>, NFA<TAlphabet, int>.State>(x => new NFA<TAlphabet, int>.State(Interlocked.Increment(ref stateCount)));
+            var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyHashSet<NFA<TAlphabet, int>.State>>();
+            var startStateSet = new ReadOnlyHashSet<NFA<TAlphabet, int>.State>(minDets.Select(x => x.StartStates.First()));
+            var result = new NFA<TAlphabet, int>();
+            var acceptStates = new ConcurrentSet<NFA<TAlphabet, int>.State>();
             processor.Add(startStateSet);
             processor.Run(stateSet => {
                 var fromState = resultStates[stateSet];
@@ -1444,7 +1444,7 @@ namespace NondeterministicFiniteAutomata {
                 var fromSymbols = ReadOnlyHashSet<TAlphabet>.IntersectMany(stateSet.Select(state => singleTransitionFunction[state].Keys));
                 foreach (var fromSymbol in fromSymbols) {
                     var symbol = fromSymbol;
-                    var nextStateSet = new ReadOnlyHashSet<NondeterministicFiniteAutomaton<TAlphabet, int>.State>(stateSet.Select(state => singleTransitionFunction[state][symbol].First()));
+                    var nextStateSet = new ReadOnlyHashSet<NFA<TAlphabet, int>.State>(stateSet.Select(state => singleTransitionFunction[state][symbol].First()));
                     var toState = resultStates[nextStateSet];
                     processor.Add(nextStateSet);
                     result.TransitionFunction[fromState][fromSymbol].Add(toState);
@@ -1456,7 +1456,7 @@ namespace NondeterministicFiniteAutomata {
             return result;
         }
 
-        //public bool Contains(NondeterministicFiniteAutomaton<TAlphabet> that)
+        //public bool Contains(NFA<TAlphabet> that)
         //{
         //    return Intersect(new[] { this, that }).IsEquivalent(that);
         //}
@@ -1487,7 +1487,7 @@ namespace NondeterministicFiniteAutomata {
         /// </summary>
         /// <param name="at">The state to insert the NFA at</param>
         /// <param name="require">The NFA to insert</param>
-        public void Insert(State at, NondeterministicFiniteAutomaton<TAlphabet> require) {
+        public void Insert(State at, NFA<TAlphabet> require) {
             var atIsAcceptState = AcceptStates.Contains(at);
             //Store copies of all the transitions leaving 'at'
             var outgoingTransitions = new JaggedAutoDictionary<TAlphabet, List<State>>(_ => new List<State>());

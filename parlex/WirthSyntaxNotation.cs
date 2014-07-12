@@ -29,17 +29,17 @@ namespace Parlex {
 
         static WirthSyntaxNotation() {
 
-            var syntaxState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var syntaxState0 = new NFA<Grammar.ISymbol>.State();
             syntax.States.Add(syntaxState0);
             syntax.StartStates.Add(syntaxState0);
             syntax.AcceptStates.Add(syntaxState0);
             syntax.TransitionFunction[syntaxState0][production].Add(syntaxState0);
 
-            var productionState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var productionState1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var productionState2 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var productionState3 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var productionState4 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var productionState0 = new NFA<Grammar.ISymbol>.State();
+            var productionState1 = new NFA<Grammar.ISymbol>.State();
+            var productionState2 = new NFA<Grammar.ISymbol>.State();
+            var productionState3 = new NFA<Grammar.ISymbol>.State();
+            var productionState4 = new NFA<Grammar.ISymbol>.State();
             production.States.Add(productionState0);
             production.States.Add(productionState1);
             production.States.Add(productionState2);
@@ -52,8 +52,8 @@ namespace Parlex {
             production.TransitionFunction[productionState2][expression].Add(productionState3);
             production.TransitionFunction[productionState3][periodTerminal].Add(productionState4);
 
-            var expressionState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var expressionState1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var expressionState0 = new NFA<Grammar.ISymbol>.State();
+            var expressionState1 = new NFA<Grammar.ISymbol>.State();
             expression.States.Add(expressionState0);
             expression.States.Add(expressionState1);
             expression.StartStates.Add(expressionState0);
@@ -61,8 +61,8 @@ namespace Parlex {
             expression.TransitionFunction[expressionState0][term].Add(expressionState1);
             expression.TransitionFunction[expressionState1][pipeTerminal].Add(expressionState0);
 
-            var termState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var termState1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var termState0 = new NFA<Grammar.ISymbol>.State();
+            var termState1 = new NFA<Grammar.ISymbol>.State();
             term.States.Add(termState0);
             term.States.Add(termState1);
             term.StartStates.Add(termState0);
@@ -70,14 +70,14 @@ namespace Parlex {
             term.TransitionFunction[termState0][factor].Add(termState1);
             term.TransitionFunction[termState1][factor].Add(termState1);
 
-            var factorState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState2 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState3 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState4 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState5 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState6 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var factorState7 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var factorState0 = new NFA<Grammar.ISymbol>.State();
+            var factorState1 = new NFA<Grammar.ISymbol>.State();
+            var factorState2 = new NFA<Grammar.ISymbol>.State();
+            var factorState3 = new NFA<Grammar.ISymbol>.State();
+            var factorState4 = new NFA<Grammar.ISymbol>.State();
+            var factorState5 = new NFA<Grammar.ISymbol>.State();
+            var factorState6 = new NFA<Grammar.ISymbol>.State();
+            var factorState7 = new NFA<Grammar.ISymbol>.State();
             factor.States.Add(factorState0);
             factor.States.Add(factorState1);
             factor.States.Add(factorState2);
@@ -96,8 +96,8 @@ namespace Parlex {
             factor.TransitionFunction[factorState6][closeParenthesisTerminal].Add(factorState1);
             factor.TransitionFunction[factorState7][closeCurlyTerminal].Add(factorState1);
 
-            var identifierState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var identifierState1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var identifierState0 = new NFA<Grammar.ISymbol>.State();
+            var identifierState1 = new NFA<Grammar.ISymbol>.State();
             identifier.States.Add(identifierState0);
             identifier.States.Add(identifierState1);
             identifier.StartStates.Add(identifierState0);
@@ -105,10 +105,10 @@ namespace Parlex {
             identifier.TransitionFunction[identifierState0][Grammar.LetterTerminal].Add(identifierState1);
             identifier.TransitionFunction[identifierState1][Grammar.LetterTerminal].Add(identifierState1);
 
-            var literalState0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var literalState1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var literalState2 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
-            var literalState3 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+            var literalState0 = new NFA<Grammar.ISymbol>.State();
+            var literalState1 = new NFA<Grammar.ISymbol>.State();
+            var literalState2 = new NFA<Grammar.ISymbol>.State();
+            var literalState3 = new NFA<Grammar.ISymbol>.State();
             literal.States.Add(literalState0);
             literal.States.Add(literalState1);
             literal.States.Add(literalState2);
@@ -150,16 +150,16 @@ namespace Parlex {
         }
 
 
-        static NondeterministicFiniteAutomaton<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Parser.Match factor) {
+        static NFA<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Parser.Match factor) {
             var firstChild = job.AbstractSyntaxForest.NodeTable[factor.Children[0]].First();
 
             if (firstChild.Symbol == identifier) {
                 Grammar.ISymbol transition = new Grammar.Recognizer(placeHolderMarker + ProcessIdentifierClause(job, firstChild), false);
-                var result = new NondeterministicFiniteAutomaton<Grammar.ISymbol>();
-                var state0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+                var result = new NFA<Grammar.ISymbol>();
+                var state0 = new NFA<Grammar.ISymbol>.State();
                 result.StartStates.Add(state0);
                 result.States.Add(state0);
-                var state1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+                var state1 = new NFA<Grammar.ISymbol>.State();
                 result.AcceptStates.Add(state1);
                 result.States.Add(state1);
                 result.TransitionFunction[state0][transition].Add(state1);
@@ -168,11 +168,11 @@ namespace Parlex {
 
             if (firstChild.Symbol == literal) {
                 var transition = new Grammar.StringTerminal(ProcessLiteralClause(job, firstChild));
-                var result = new NondeterministicFiniteAutomaton<Grammar.ISymbol>();
-                var state0 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+                var result = new NFA<Grammar.ISymbol>();
+                var state0 = new NFA<Grammar.ISymbol>.State();
                 result.StartStates.Add(state0);
                 result.States.Add(state0);
-                var state1 = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+                var state1 = new NFA<Grammar.ISymbol>.State();
                 result.AcceptStates.Add(state1);
                 result.States.Add(state1);
                 result.TransitionFunction[state0][transition].Add(state1);
@@ -212,27 +212,27 @@ namespace Parlex {
             throw new InvalidOperationException();
         }
 
-        static NondeterministicFiniteAutomaton<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Parser.Match term) {
-            var result = new NondeterministicFiniteAutomaton<Grammar.ISymbol>();
-            var state = new NondeterministicFiniteAutomaton<Grammar.ISymbol>.State();
+        static NFA<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Parser.Match term) {
+            var result = new NFA<Grammar.ISymbol>();
+            var state = new NFA<Grammar.ISymbol>.State();
             result.StartStates.Add(state);
             result.States.Add(state);
             result.AcceptStates.Add(state);
             foreach (var matchClass in term.Children) {
                 var factor = job.AbstractSyntaxForest.NodeTable[matchClass].First();
-                var factorNondeterministicFiniteAutomaton = ProcessFactorClause(job, factor);
-                result.Insert(result.AcceptStates.First(), factorNondeterministicFiniteAutomaton);
+                var factorNFA = ProcessFactorClause(job, factor);
+                result.Insert(result.AcceptStates.First(), factorNFA);
                 result = result.Determinize().Reassign();
             }
             return result;
         }
 
         static Grammar.Recognizer ProcessExpressionClause(Parser.Job job, Parser.Match expression, String recognizerName) {
-            var builder = new NondeterministicFiniteAutomaton<Grammar.ISymbol>();
+            var builder = new NFA<Grammar.ISymbol>();
 
             for (var index = 0; index < expression.Children.Length; index += 2) {
                 var termNFA = ProcessTermClause(job, job.AbstractSyntaxForest.NodeTable[expression.Children[index]].First());
-                builder = NondeterministicFiniteAutomaton<Grammar.ISymbol>.Union(new NondeterministicFiniteAutomaton<Grammar.ISymbol>[] { builder, termNFA });
+                builder = NFA<Grammar.ISymbol>.Union(new NFA<Grammar.ISymbol>[] { builder, termNFA });
             }
 
             return new Grammar.Recognizer(recognizerName, false, builder);
@@ -254,7 +254,7 @@ namespace Parlex {
             foreach (var recognizer in grammar.Productions) {
                 foreach (var fromState in recognizer.States) {
                     var toRemoves = new List<Grammar.ISymbol>();
-                    var toAdds = new AutoDictionary<Grammar.ISymbol, List<NondeterministicFiniteAutomaton<Grammar.ISymbol>.State>>(_ => new List<NondeterministicFiniteAutomaton<Grammar.ISymbol>.State>());
+                    var toAdds = new AutoDictionary<Grammar.ISymbol, List<NFA<Grammar.ISymbol>.State>>(_ => new List<NFA<Grammar.ISymbol>.State>());
                     foreach (var symbol in recognizer.TransitionFunction[fromState].Keys) {
                         var symbolAsRecognizer = symbol as Grammar.Recognizer;
                         if (symbolAsRecognizer != null && symbolAsRecognizer.Name.StartsWith(placeHolderMarker)) {
