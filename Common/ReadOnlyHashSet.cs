@@ -9,7 +9,7 @@ namespace System.Collections.Generic.More {
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public class ReadOnlyHashSet<T> : ISet<T> {
         public bool Equals(ReadOnlyHashSet<T> other) {
-            if (other == null) return false;
+            if (ReferenceEquals(null, other)) return false;
             return _hashCode == other._hashCode && _items.SetEquals(other._items);
         }
 

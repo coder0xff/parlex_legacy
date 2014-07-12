@@ -1,4 +1,4 @@
-﻿//#define FORCE_SINGLE_THREAD
+﻿#define FORCE_SINGLE_THREAD
 
 using System;
 using System.Collections.Concurrent.More;
@@ -34,7 +34,7 @@ namespace Parlex {
 
             public override bool Equals(object obj) {
                 var castObj = obj as MatchCategory;
-                if (castObj == null) return false;
+                if (ReferenceEquals(null, castObj)) return false;
                 return castObj.Position.Equals(Position) && castObj.Symbol.Equals(Symbol);
             }
 
@@ -75,7 +75,7 @@ namespace Parlex {
 
             public override bool Equals(object obj) {
                 var castObj = obj as MatchClass;
-                if (castObj == null) return false;
+                if (ReferenceEquals(null, castObj)) return false;
                 return base.Equals(castObj) && Length.Equals(castObj.Length);
             }
 
@@ -118,7 +118,7 @@ namespace Parlex {
                     private readonly Position _position;
                     private readonly NFA<Grammar.ISymbol>.State[] _states;
                     private bool IsAcceptState { get { return _states.Any(x => ((Recognizer)_subJob.Symbol).AcceptStates.Contains(x)); } }
-                    int _unterminatedSubsequentRecognizerStateCount;
+                    int _unterminatedSubsequentRecognizerStateAndEvaluateCount = 1;
                     bool _subsequentMadeMatch;
                     readonly RecognizerState _antecedent;
                     private readonly MatchClass _entranceMatchClass;
@@ -141,11 +141,19 @@ namespace Parlex {
                     }
 
                     private void SubsequentStateCreated() {
-                        Interlocked.Increment(ref _unterminatedSubsequentRecognizerStateCount);
+                        Interlocked.Increment(ref _unterminatedSubsequentRecognizerStateAndEvaluateCount);
                     }
 
-                    private void SubsequentStateTerminated() {
-                        if (Interlocked.Decrement(ref _unterminatedSubsequentRecognizerStateCount) == 0) {
+                    private void EvaluateTerminated()
+                    {
+                        SubsequentRecognizerStateTerminated();
+                    }
+
+                    private void SubsequentRecognizerStateTerminated() {
+                        if (_terminateCount > 0) {
+                            throw new ApplicationException();
+                        }
+                        if (Interlocked.Decrement(ref _unterminatedSubsequentRecognizerStateAndEvaluateCount) == 0) {
                             Terminate();
                         }
                     }
@@ -165,6 +173,9 @@ namespace Parlex {
                     }
 
                     void Apply(MatchClass match) {
+                        if (_terminateCount > 0 || _subJob._terminateCount > 0) {
+                            throw new ApplicationException();
+                        }
                         var nextStates = new List<NFA<Grammar.ISymbol>.State>();
                         foreach (var currentState in _states) {
                             if (((Recognizer)_subJob.Symbol).TransitionFunction[currentState].Keys.Contains(match.Symbol)) {
@@ -188,12 +199,16 @@ namespace Parlex {
                                 Apply(matchClass);
                             }
                         }
-                        if (!didApply) {
-                            Terminate();
-                        }
+                        EvaluateTerminated();
                     }
 
+                    int _terminateCount;
+
                     private void Terminate() {
+                        var temp = System.Threading.Interlocked.Increment(ref _terminateCount);
+                        if (temp > 1) {
+                            throw new ApplicationException();
+                        }
                         if (IsAcceptState) {
                             if (!((Recognizer)_subJob.Symbol).Greedy || !_subsequentMadeMatch) {
                                 _subJob.AddMatch(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position), GetChildren().ToArray()));
@@ -203,7 +218,7 @@ namespace Parlex {
                             }
                         }
                         if (_antecedent != null) {
-                            _antecedent.SubsequentStateTerminated();
+                            _antecedent.SubsequentRecognizerStateTerminated();
                         }
                         _subJob.RecognizerStateTerminated();
                     }
@@ -222,7 +237,8 @@ namespace Parlex {
 
                 private readonly Job _job;
 
-                int _unterminatedRecognizerStateCount;
+                int _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount = 1;
+                int _terminateCount;
 
                 readonly AsyncSet<MatchClass> _matchClasses = new AsyncSet<MatchClass>();
                 readonly JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>> _matches = new JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>>(_ => new ConcurrentSet<Match>());
@@ -237,6 +253,7 @@ namespace Parlex {
                 void CreateFirstRecognizerState() {
                     // ReSharper disable once ObjectCreationAsStatement
                     new RecognizerState(this, Position, ((Recognizer)Symbol).StartStates.ToArray());
+                    CreateFirstRecognizeStateTerminated();
                 }
 
                 private void AddMatch(Match match) {
@@ -245,16 +262,30 @@ namespace Parlex {
                 }
 
                 private void RecognizerStateCreated() {
-                    Interlocked.Increment(ref _unterminatedRecognizerStateCount);
+                    if (_terminateCount > 0) {
+                        throw new ApplicationException();
+                    }
+                    Interlocked.Increment(ref _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount);
+                }
+
+                private void CreateFirstRecognizeStateTerminated()
+                {
+                    RecognizerStateTerminated();
                 }
 
                 private void RecognizerStateTerminated() {
-                    if (Interlocked.Decrement(ref _unterminatedRecognizerStateCount) == 0) {
+                    var temp = Interlocked.Decrement(ref _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount);
+                    if (temp == 0) {
                         Terminate();
+                    } else if (temp < 0) {
+                        throw new ApplicationException();
                     }
                 }
 
                 private void Terminate() {
+                    if (System.Threading.Interlocked.Increment(ref _terminateCount) > 1) {
+                        throw new ApplicationException();
+                    }
                     _matchClasses.Close();
                     _job.SubJobTerminated();
                 }
@@ -328,8 +359,11 @@ namespace Parlex {
             }
 
             private void SubJobTerminated() {
-                if (Interlocked.Decrement(ref _unterminatedSubJobAndConstructorCount) == 0) {
+                var temp = Interlocked.Decrement(ref _unterminatedSubJobAndConstructorCount);
+                if (temp == 0) {
                     Terminate();
+                } else if (temp < 0) {
+                    throw new ApplicationException();
                 }
             }
 

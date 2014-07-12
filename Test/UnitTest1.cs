@@ -51,7 +51,7 @@ namespace Test {
         public void SelfReferentialParseTest()
         {
             var metaMetaSyntax =
-                "P=I \"=\" E \".\"."; //EXPRESSION=TERM {\"|\" whiteSpaces}.TERM=FACTOR{FACTOR}.FACTOR=IDENTIFIER|LITERAL|\"[\" EXPRESSION \"]\"|\"(\" EXPRESSION \")\"|\"{\"EXPRESSION \"}\".IDENTIFIER=letter{letter}.LITERAL=\"\\\"\" character {character} \"\\\"\".";
+                "P=I \"=\" E.E=T {\"|\" whiteSpaces}.T=F{F}.F=I|L|\"[\" E \"]\"|\"(\" E \")\"|\"{\" E \"}\".I=letter{letter}.L=\"'\" character {character} \"'\".";
             var grammar = WirthSyntaxNotation.LoadGrammar(metaMetaSyntax);
         }
     }
