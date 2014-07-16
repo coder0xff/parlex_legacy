@@ -4,8 +4,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Generic.More;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Linq.More;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.More;
@@ -29,6 +31,10 @@ namespace NondeterministicFiniteAutomata {
                 get { return _value; }
             }
 
+            public override string ToString()
+            {
+                return _value.ToString();
+            }
 
             public State(TAssignment value) {
                 _value = value;
@@ -98,24 +104,24 @@ namespace NondeterministicFiniteAutomata {
         /// <returns>The new DFA</returns>
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Determinize")]
         public NFA<TAlphabet, StateSet> Determinize() {
-            var stateSetToDState = new ConcurrentDictionary<StateSet, NFA<TAlphabet, StateSet>.State>();
+            var stateSetToDeterminizedState = new ConcurrentDictionary<StateSet, NFA<TAlphabet, StateSet>.State>();
             var result = new NFA<TAlphabet, StateSet>();
             var resultAcceptStates = new ConcurrentBag<NFA<TAlphabet, StateSet>.State>();
 
             Func<StateSet, NFA<TAlphabet, StateSet>.State> adder = null;
-            adder = stateSet => stateSetToDState.GetOrAdd(stateSet, stateSetProxy => {
+            adder = stateSet => stateSetToDeterminizedState.GetOrAdd(stateSet, stateSetProxy => {
                 var newState = new NFA<TAlphabet, StateSet>.State(stateSetProxy);
                 Task.Factory.StartNew(() => {
                     var isAcceptState = stateSetProxy.Any(x => AcceptStates.Contains(x));
                     if (isAcceptState) {
                         resultAcceptStates.Add(newState);
                     }
-                    var awayInputs = stateSetProxy.Select(x => TransitionFunction[x]).SelectMany(y => y.Keys).Distinct();
-                    Parallel.ForEach(awayInputs, input => {
-                        var nextStateSet = TransitionFunctionExtended(stateSetProxy, input);
+                    var transitions = stateSetProxy.Select(x => TransitionFunction[x]).SelectMany(y => y.Keys).Distinct();
+                    Parallel.ForEach(transitions, transition => {
+                        var nextStateSet = TransitionFunctionExtended(stateSetProxy, transition);
                         if (nextStateSet.Count > 0) {
                             var nextState = adder(new StateSet(nextStateSet));
-                            result.TransitionFunction[newState][input].Add(nextState);
+                            result.TransitionFunction[newState][transition].Add(nextState);
                         }
                     });
                 }, TaskCreationOptions.AttachedToParent);
@@ -126,7 +132,7 @@ namespace NondeterministicFiniteAutomata {
             Task.Factory.StartNew(() => {
                 result.StartStates.Add(adder(startStateSet));
             }).Wait();
-            result.States.UnionWith(stateSetToDState.Values);
+            result.States.UnionWith(stateSetToDeterminizedState.Values);
             foreach (var acceptState in resultAcceptStates) {
                 result.AcceptStates.Add(acceptState);
             }
@@ -600,20 +606,20 @@ namespace NondeterministicFiniteAutomata {
             foreach (var state in _states) {
                 stateMapper.EnsureCreated(state);
             }
-            foreach (var state in _transitionFunction.Keys) {
-                var sourcePartialEvaluation0 = _transitionFunction[state];
-                var targetPartialEvaluation0 = result.TransitionFunction[stateMapper[state]];
-                foreach (var inputSymbol in _transitionFunction[state].Keys) {
-                    var sourcePartialEvaluation1 = sourcePartialEvaluation0[inputSymbol];
-                    var targetPartialEvaluation1 = targetPartialEvaluation0[inputSymbol];
-                    foreach (var state1 in sourcePartialEvaluation1) {
-                        targetPartialEvaluation1.Add(stateMapper[state1]);
+            foreach (var fromStateKeyValuePair in TransitionFunction)
+            {
+                foreach (var transitionKeyValuePair in fromStateKeyValuePair.Value)
+                {
+                    foreach (var toState in transitionKeyValuePair.Value)
+                    {
+                        result.TransitionFunction[stateMapper[fromStateKeyValuePair.Key]][transitionKeyValuePair.Key].Add(stateMapper[toState]);
                     }
                 }
             }
             result.StartStates.UnionWith(_startStates.Select(state => stateMapper[state]));
             result.AcceptStates.UnionWith(_acceptStates.Select(state => stateMapper[state]));
             result.States.UnionWith(stateMapper.Values);
+            result.ToString();
             return result;
         }
 
@@ -753,6 +759,45 @@ namespace NondeterministicFiniteAutomata {
         public IEnumerable<IEnumerable<State>> GetCycles() {
             return _states.SelectMany(state => GetRoutes(state, state, new HashSet<State>()));
         }
+
+        public string ToString(Func<TAlphabet, String> transitionStringifier)
+        {
+            var result = new StringBuilder();
+            var nodeCounter = 0;
+            var labels = new AutoDictionary<State, int>(_ => Interlocked.Increment(ref nodeCounter));
+            result.Append("Start: ");
+            result.Append(String.Join(", ", StartStates.Select(x => labels[x]).ToArray()));
+            //make sure non-accept states are numbered begore accept states
+            foreach (State nonAccept in States.Except(AcceptStates)) {
+                labels.EnsureCreated(nonAccept);
+            }
+            result.Append(" Accept: ");
+            result.Append(String.Join(", ", AcceptStates.Select(x => labels[x]).ToArray()));
+            result.Append(" Transitions:");
+            result.Append(Environment.NewLine);
+
+            foreach (var fromStateKeyValuePair in TransitionFunction) {
+                var fromStateBuilder = labels[fromStateKeyValuePair.Key].ToString();
+                foreach (var transitionKeyValuePair in fromStateKeyValuePair.Value) {
+                    var transitionBuilder = transitionStringifier(transitionKeyValuePair.Key);
+                    foreach (var toState in transitionKeyValuePair.Value) {
+                        result.Append(fromStateBuilder);
+                        result.Append(" -> ");
+                        result.Append(transitionBuilder);
+                        result.Append(" -> ");
+                        result.Append(labels[toState]);
+                        result.Append(System.Environment.NewLine);
+                    }
+                }
+            }
+            return result.ToString();
+
+        }
+
+        public override string ToString()
+        {
+            return ToString(x => x.ToString());
+        }
     }
 
     /// <summary>
@@ -764,7 +809,13 @@ namespace NondeterministicFiniteAutomata {
         /// <summary>
         /// A State of an NFA
         /// </summary>
-        public class State { }
+        public class State
+        {
+            public override string ToString()
+            {
+                return "State";
+            }
+        }
 
         public readonly HashSet<State> States = new HashSet<State>();
         public readonly JaggedAutoDictionary<State, TAlphabet, HashSet<State>> TransitionFunction = new JaggedAutoDictionary<State, TAlphabet, HashSet<State>>((dontCare0, dontCare1) => new HashSet<State>());
@@ -783,10 +834,13 @@ namespace NondeterministicFiniteAutomata {
             foreach (var state in other.AcceptStates) {
                 AcceptStates.Add(state);
             }
-            foreach (var state in other.TransitionFunction.Keys) {
-                foreach (var symbol in other.TransitionFunction[state].Keys) {
-                    foreach (var toState in other.TransitionFunction[state][symbol]) {
-                        TransitionFunction[state][symbol].Add(toState);
+            foreach (var fromStateKeyValuePair in other.TransitionFunction)
+            {
+                foreach (var transitionKeyValuePair in fromStateKeyValuePair.Value)
+                {
+                    foreach (var toState in transitionKeyValuePair.Value)
+                    {
+                        TransitionFunction[fromStateKeyValuePair.Key][transitionKeyValuePair.Key].Add(toState);
                     }
                 }
             }
@@ -1295,6 +1349,12 @@ namespace NondeterministicFiniteAutomata {
             return isLegitimate;
         }
 
+        public NFA<TAlphabet, int> Reassign()
+        {
+            int counter = 0;
+            return Reassign(_ => Interlocked.Increment(ref counter));
+        } 
+
         public NFA<TAlphabet, TAssignment2> Reassign<TAssignment2>(Func<State, TAssignment2> func) {
             var result = new NFA<TAlphabet, TAssignment2>();
             var stateMapper = new AutoDictionary<State, NFA<TAlphabet, TAssignment2>.State>(state => new NFA<TAlphabet, TAssignment2>.State(func(state)));
@@ -1345,27 +1405,9 @@ namespace NondeterministicFiniteAutomata {
         /// Minimize this NFA using the Kameda-Weiner algorithm [1]
         /// </summary>
         /// <returns>A minimal-state NFA accepting the same language</returns>
-        public NFA<TAlphabet, int> Minimized() {
-            NFA<TAlphabet, StateSet> determinized;
-            var sm = MakeStateMap(out determinized);
-            NFA<TAlphabet, int> minimizedSubsetConstructionDfa;
-            var rsm = ReduceStateMap(sm, determinized, out minimizedSubsetConstructionDfa);
-            var ram = MakeReducedAutomataMatrix(rsm);
-            var primeGrids = ComputePrimeGrids(ram);
-            var covers = EnumerateCovers(ram, primeGrids);
-            foreach (var cover in covers) {
-                if (cover.Count == States.Count) {
-                    break;
-                }
-                Bimap<int, Grid> orderedGrids;
-                var minNFA = FromIntersectionRule(minimizedSubsetConstructionDfa, cover, out orderedGrids);
-                var isLegitimate = SubsetAssignmentIsLegitimate(minNFA, minimizedSubsetConstructionDfa, ram, orderedGrids);
-                if (isLegitimate) {
-                    return minNFA;
-                }
-            }
-            var stateCount = 0;
-            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller NFA. Return this;
+        public NFA<TAlphabet, int> Minimized()
+        {
+            return Reassign().Minimized();
         }
 
         public static NFA<TAlphabet> Union(IEnumerable<NFA<TAlphabet>> nfas) {
@@ -1498,7 +1540,7 @@ namespace NondeterministicFiniteAutomata {
             }
 
             //Remove all the transitions leaving 'at'
-            TransitionFunction[at].Clear();
+            TransitionFunction.TryRemove(at);
 
             //Add all of 'require's states to storage, except start and accept states
             //Simultaneously, create a map from 'require's states to storage's states
@@ -1550,6 +1592,16 @@ namespace NondeterministicFiniteAutomata {
             }
         }
 
+        public string ToString(Func<TAlphabet, String> transitionStringifier)
+        {
+            int counter = 0;
+            return Reassign(_ => Interlocked.Increment(ref counter)).ToString(transitionStringifier);
+        }
+
+        public override string ToString()
+        {
+            return ToString(x => x.ToString());
+        }
     }
 }
 /*
