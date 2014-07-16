@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NondeterministicFiniteAutomata;
 using Parlex;
@@ -38,8 +39,7 @@ namespace Test {
             g.Productions.Add(identifier);
             g.MainProduction = syntax;
 
-            var p = new Parser(g);
-            var j = p.Parse("A=B");
+            var j = Parser.Parse("A=B", 0, g.MainProduction);
             j.Wait();
             var asf = j.AbstractSyntaxForest;
         }
@@ -50,9 +50,12 @@ namespace Test {
         [TestMethod]
         public void SelfReferentialParseTest()
         {
-            var metaMetaSyntax =
-                "P=I \"=\" E.E=T {\"|\" whiteSpaces}.T=F{F}.F=I|L|\"[\" E \"]\"|\"(\" E \")\"|\"{\" E \"}\".I=letter{letter}.L=\"'\" character {character} \"'\".";
+            var metaMetaSyntax = System.IO.File.ReadAllText("C:\\WirthSyntaxNotationDefinedInItself.txt");
             var grammar = WirthSyntaxNotation.LoadGrammar(metaMetaSyntax);
+            grammar.MainProduction = grammar.Productions.First(x => x.Name == "SYNTAX");
+            var job = Parser.Parse(metaMetaSyntax, 0, grammar.MainProduction);
+            job.Wait();
+            var asf = job.AbstractSyntaxForest;
         }
     }
 }

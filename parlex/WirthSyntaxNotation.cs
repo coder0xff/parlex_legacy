@@ -139,7 +139,7 @@ namespace Parlex {
         }
 
         static string ProcessLiteralClause(Parser.Job job, Parser.Match literal) {
-            return job.Text.Substring(literal.Position + 1, literal.Length - 2); //remove quotes
+            return job.Text.Substring(literal.Position + 1, literal.Length - 2).Replace("'"[0], '"'); //remove quotes and change single quotes to double
         }
 
         static Grammar.Recognizer GetRecognizerByIdentifierString(Grammar result, String identifierString) {
@@ -248,6 +248,7 @@ namespace Parlex {
 
         static void ProcessSyntaxClause(Parser.Job job, Parser.Match syntax, Grammar result) {
             foreach (var matchClass in syntax.Children) {
+                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) continue;
                 var recognizer = ProcessProductionClause(job, job.AbstractSyntaxForest.NodeTable[matchClass].First());
                 result.Productions.Add(recognizer);
             }
@@ -260,12 +261,23 @@ namespace Parlex {
                     var toAdds = new AutoDictionary<Grammar.ISymbol, List<NFA<Grammar.ISymbol>.State>>(_ => new List<NFA<Grammar.ISymbol>.State>());
                     foreach (var symbol in recognizer.TransitionFunction[fromState].Keys) {
                         var symbolAsRecognizer = symbol as Grammar.Recognizer;
-                        if (symbolAsRecognizer != null && symbolAsRecognizer.Name.StartsWith(PlaceHolderMarker)) {
-                            toRemoves.Add(symbol);
-                            Grammar.ISymbol resolved = grammar.GetRecognizerByName(symbolAsRecognizer.Name.Substring(PlaceHolderMarker.Length)) ??
-                                                       new Grammar.Recognizer(symbolAsRecognizer.Name.Substring(PlaceHolderMarker.Length), false);
-                            foreach (var toState in recognizer.TransitionFunction[fromState][symbol]) {
-                                toAdds[resolved].Add(toState);
+                        if (symbolAsRecognizer != null)
+                        {
+                            if (symbolAsRecognizer.Name.StartsWith(PlaceHolderMarker))
+                            {
+                                toRemoves.Add(symbol);
+                                var deMarkedName = symbolAsRecognizer.Name.Substring(PlaceHolderMarker.Length);
+                                Grammar.ISymbol resolved;
+                                if (!Grammar.TryGetBuiltinISymbolByName(deMarkedName, out resolved))
+                                {
+                                    resolved =
+                                        grammar.GetRecognizerByName(deMarkedName) ??
+                                        new Grammar.Recognizer(deMarkedName, false);
+                                }
+                                foreach (var toState in recognizer.TransitionFunction[fromState][symbol])
+                                {
+                                    toAdds[resolved].Add(toState);
+                                }
                             }
                         }
                     }
@@ -282,8 +294,7 @@ namespace Parlex {
         }
 
         public static Grammar LoadGrammar(String text) {
-            var worthSyntaxNotationParser = new Parser(WorthSyntaxNotationParserGrammar);
-            var j = worthSyntaxNotationParser.Parse(text);
+            var j = Parser.Parse(text, 0, WorthSyntaxNotationParserGrammar.MainProduction);
             j.Wait();
             var asg = j.AbstractSyntaxForest;
             if (asg.IsAmbiguous) {

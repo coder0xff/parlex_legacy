@@ -98,6 +98,15 @@ namespace Parlex {
 
         public static WhiteSpaceTerminalT WhiteSpaceTerminal = new WhiteSpaceTerminalT();
 
+        static Dictionary<String, ISymbol> nameToBuiltInSymbol = new Dictionary<string, ISymbol>();
+
+        static Grammar()
+        {
+            nameToBuiltInSymbol["letter"] = LetterTerminal;
+            nameToBuiltInSymbol["character"] = CharacterTerminal;
+            nameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
+        }
+
         public class Recognizer : NFA<ISymbol>, ISymbol {
             readonly String _name;
             readonly bool _greedy;
@@ -147,6 +156,11 @@ namespace Parlex {
 
         public Recognizer GetRecognizerByName(String name) {
             return Productions.FirstOrDefault(x => x.Name == name);
+        }
+
+        public static bool TryGetBuiltinISymbolByName(String name, out ISymbol symbol)
+        {
+            return nameToBuiltInSymbol.TryGetValue(name, out symbol);
         }
     }
 }

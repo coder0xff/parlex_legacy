@@ -14,41 +14,49 @@ namespace Parlex {
     using Length = Int32;
     using Recognizer = Grammar.Recognizer;
 
-    public class Parser {
+    public static class Parser {
         /// <summary>
         /// All matches with the same Position, and recognizer are in the same MatchCategory
         /// </summary>
         public class MatchCategory {
             public readonly Position Position;
             public readonly Grammar.ISymbol Symbol;
+            internal Job Job { get; private set; }
 
             protected MatchCategory(MatchCategory other) {
                 Position = other.Position;
                 Symbol = other.Symbol;
+                Job = other.Job;
             }
 
-            public MatchCategory(Position position, Grammar.ISymbol symbol) {
+            internal MatchCategory(Position position, Grammar.ISymbol symbol, Job job) {
                 Position = position;
                 Symbol = symbol;
+                Job = job;
             }
 
             public override bool Equals(object obj) {
                 var castObj = obj as MatchCategory;
                 if (ReferenceEquals(null, castObj)) return false;
-                return castObj.Position.Equals(Position) && castObj.Symbol.Equals(Symbol);
+                return castObj.Position.Equals(Position) && castObj.Symbol.Equals(Symbol) && ReferenceEquals(Job, castObj.Job);
             }
 
             public override Length GetHashCode() {
                 unchecked {
                     var hash = 17;
                     hash = hash * 31 + Position.GetHashCode();
-                    hash = hash * 32 + Symbol.GetHashCode();
+                    hash = hash * 31 + Symbol.GetHashCode();
+                    hash = hash * 31 + (Job ?? (Object)0).GetHashCode();
                     return hash;
                 }
             }
 
             public override string ToString() {
-                return Position + " " + Symbol;
+                var temp = Position + " " + Symbol;
+                if (ReferenceEquals(Job, null)) return temp;
+                var docText = Job.Text;
+                temp += " " + docText.Substring(Position, Math.Min(docText.Length - Position, 8)).Truncate(7);
+                return temp;
             }
         }
 
@@ -68,8 +76,8 @@ namespace Parlex {
                 Length = length;
             }
 
-            public MatchClass(Position position, Grammar.ISymbol symbol, Length length)
-                : base(position, symbol) {
+            internal MatchClass(Position position, Grammar.ISymbol symbol, Length length, Job job)
+                : base(position, symbol, job) {
                 Length = length;
             }
 
@@ -89,7 +97,11 @@ namespace Parlex {
             }
 
             public override string ToString() {
-                return Position + " " + Symbol + " " + Length;
+                var temp = Position + " " + Symbol + " " + Length;
+                if (ReferenceEquals(Job, null)) return temp;
+                var docText = Job.Text;
+                temp += " " + docText.Substring(Position, Math.Min(docText.Length - Position, 8)).Truncate(7);
+                return temp;
             }
         }
 
@@ -144,8 +156,7 @@ namespace Parlex {
                         Interlocked.Increment(ref _unterminatedSubsequentRecognizerStateAndEvaluateCount);
                     }
 
-                    private void EvaluateTerminated()
-                    {
+                    private void EvaluateTerminated() {
                         SubsequentRecognizerStateTerminated();
                     }
 
@@ -188,14 +199,12 @@ namespace Parlex {
                     }
 
                     void Evaluate() {
-                        var searches = GetCandidateSymbols().Select(symbol => new MatchCategory(_position, symbol)).ToList();
+                        var searches = GetCandidateSymbols().Select(symbol => new MatchCategory(_position, symbol, _subJob.Job)).ToList();
                         foreach (var search in searches) {
-                            _subJob._job.BeginMatching(search);
+                            _subJob.Job.BeginMatching(search);
                         }
-                        var didApply = false;
                         foreach (var search in searches) {
-                            foreach (var matchClass in _subJob._job.GetMatchClasses(search)) {
-                                didApply = true;
+                            foreach (var matchClass in _subJob.Job.GetMatchClasses(search)) {
                                 Apply(matchClass);
                             }
                         }
@@ -205,13 +214,13 @@ namespace Parlex {
                     int _terminateCount;
 
                     private void Terminate() {
-                        var temp = System.Threading.Interlocked.Increment(ref _terminateCount);
+                        var temp = Interlocked.Increment(ref _terminateCount);
                         if (temp > 1) {
                             throw new ApplicationException();
                         }
                         if (IsAcceptState) {
                             if (!((Recognizer)_subJob.Symbol).Greedy || !_subsequentMadeMatch) {
-                                _subJob.AddMatch(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position), GetChildren().ToArray()));
+                                _subJob.AddMatch(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position, _subJob.Job), GetChildren().ToArray()));
                                 if (_antecedent != null) {
                                     _antecedent.SetSubsequentMadeMatch();
                                 }
@@ -235,18 +244,15 @@ namespace Parlex {
                     }
                 }
 
-                private readonly Job _job;
-
                 int _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount = 1;
                 int _terminateCount;
 
                 readonly AsyncSet<MatchClass> _matchClasses = new AsyncSet<MatchClass>();
                 readonly JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>> _matches = new JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>>(_ => new ConcurrentSet<Match>());
 
-                public SubJob(Job job, MatchCategory matchCategory)
+                public SubJob(MatchCategory matchCategory)
                     : base(matchCategory) {
-                    _job = job;
-                    job.SubJobCreated();
+                    Job.SubJobCreated();
                     CreateFirstRecognizerState();
                 }
 
@@ -268,8 +274,7 @@ namespace Parlex {
                     Interlocked.Increment(ref _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount);
                 }
 
-                private void CreateFirstRecognizeStateTerminated()
-                {
+                private void CreateFirstRecognizeStateTerminated() {
                     RecognizerStateTerminated();
                 }
 
@@ -283,11 +288,11 @@ namespace Parlex {
                 }
 
                 private void Terminate() {
-                    if (System.Threading.Interlocked.Increment(ref _terminateCount) > 1) {
+                    if (Interlocked.Increment(ref _terminateCount) > 1) {
                         throw new ApplicationException();
                     }
                     _matchClasses.Close();
-                    _job.SubJobTerminated();
+                    Job.SubJobTerminated();
                 }
 
                 public IEnumerable<MatchClass> GetMatchClasses() {
@@ -302,7 +307,6 @@ namespace Parlex {
                 }
             }
 
-            private readonly Grammar _grammar;
             public readonly String Text;
             private readonly Int32[] _unicodeCodePoints;
             private readonly JaggedAutoDictionary<MatchCategory, SubJob> _subJobs;
@@ -310,21 +314,27 @@ namespace Parlex {
             int _unterminatedSubJobAndConstructorCount = 1;
             readonly ManualResetEventSlim _blocker = new ManualResetEventSlim(false);
             public bool IsDone { get { return _blocker.IsSet; } }
+            private readonly MatchClass _root;
             public AbstractSyntaxForest AbstractSyntaxForest { get; private set; }
-            public Job(Grammar grammar, String text) {
-                _grammar = grammar;
+
+            public Job(string text, int startPosition, Recognizer rootProduction)
+            {
                 Text = text;
                 _unicodeCodePoints = text.GetUtf32CodePoints();
+                _root = new MatchClass(startPosition, rootProduction, _unicodeCodePoints.Length - startPosition, this);
+                _subJobs = new JaggedAutoDictionary<MatchCategory, SubJob>(matchCategory => {
+                    System.Diagnostics.Debug.WriteLine("BeginMatching(" + matchCategory + ")");
+                    return new SubJob(matchCategory);
+                });
 
-                _subJobs = new JaggedAutoDictionary<MatchCategory, SubJob>(matchCategory => new SubJob(this, matchCategory));
                 _terminalMatches = new JaggedAutoDictionary<MatchCategory, List<Match>>(_ => new List<Match>());
 
-                CreateFirstSubJob();
+                CreateFirstSubJob(startPosition, rootProduction);
                 ConstructorTerminated();
             }
 
-            void CreateFirstSubJob() {
-                BeginMatching(new MatchCategory(0, _grammar.MainProduction));
+            void CreateFirstSubJob(int startPosition, Recognizer rootProduction) {
+                BeginMatching(new MatchCategory(startPosition, rootProduction, this));
             }
 
             void ConstructorTerminated() {
@@ -425,7 +435,7 @@ namespace Parlex {
 
             private void ConstructAbstractSyntaxForest() {
                 AbstractSyntaxForest = new AbstractSyntaxForest {
-                    Root = new MatchClass(0, _grammar.MainProduction, _unicodeCodePoints.Length),
+                    Root = _root,
                     NodeTable = new Dictionary<MatchClass, List<Match>>()
                 };
                 AddProductionMatchesToAbstractSyntaxForest();
@@ -443,14 +453,9 @@ namespace Parlex {
             }
         }
 
-        private readonly Grammar _grammar;
-
-        public Parser(Grammar grammar) {
-            _grammar = grammar;
-        }
-
-        public Job Parse(String text) {
-            return new Job(_grammar, text);
+        public static Job Parse(String text, int startPosition, Recognizer rootProduction)
+        {
+            return new Job(text, startPosition, rootProduction);
         }
     }
 }
