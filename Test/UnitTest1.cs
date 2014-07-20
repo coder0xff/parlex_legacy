@@ -1,10 +1,62 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NondeterministicFiniteAutomata;
 using Parlex;
 
 namespace Test {
+    [TestClass]
+    public class NfaTests
+    {
+        [TestMethod]
+        public void TestDeterminize()
+        {
+            for (int counter = 0; counter < 10; counter++)
+            {
+                NFA<Char, int>.State state0 = new NFA<Char, int>.State(0);
+                NFA<Char, int>.State state1 = new NFA<Char, int>.State(1);
+                NFA<Char, int> nfa = new NFA<Char, int>();
+                nfa.States.Add(state1);
+                nfa.States.Add(state0);
+                nfa.StartStates.Add(state0);
+                nfa.AcceptStates.Add(state1);
+                nfa.TransitionFunction[state0]['A'].Add(state1);
+                var result = nfa.Determinize();
+                Debug.Assert(result.States.Count == 2);
+                Debug.Assert(result.StartStates.Count == 1);
+                Debug.Assert(result.AcceptStates.Count == 1);
+                var resultStartState = result.StartStates.First();
+                Debug.Assert(result.TransitionFunction[resultStartState].Keys.Contains('A'));
+                Debug.Assert(result.TransitionFunction[resultStartState]['A'].Count == 1);
+                var resultAcceptState = result.TransitionFunction[resultStartState]['A'].First();
+                Debug.Assert(resultStartState != resultAcceptState);
+            }
+        }
+
+        [TestMethod]
+        public void TestMinimize() {
+            for (int counter = 0; counter < 10; counter++) {
+                NFA<Char, int>.State state0 = new NFA<Char, int>.State(0);
+                NFA<Char, int>.State state1 = new NFA<Char, int>.State(1);
+                NFA<Char, int> nfa = new NFA<Char, int>();
+                nfa.States.Add(state1);
+                nfa.States.Add(state0);
+                nfa.StartStates.Add(state0);
+                nfa.AcceptStates.Add(state1);
+                nfa.TransitionFunction[state0]['A'].Add(state1);
+                var result = nfa.Minimized();
+                Debug.Assert(result.States.Count == 2);
+                Debug.Assert(result.StartStates.Count == 1);
+                Debug.Assert(result.AcceptStates.Count == 1);
+                var resultStartState = result.StartStates.First();
+                Debug.Assert(result.TransitionFunction[resultStartState].Keys.Contains('A'));
+                Debug.Assert(result.TransitionFunction[resultStartState]['A'].Count == 1);
+                var resultAcceptState = result.TransitionFunction[resultStartState]['A'].First();
+                Debug.Assert(resultStartState != resultAcceptState);
+            }
+        }
+    }
     [TestClass]
     public class ParserTests {
         [TestMethod]
