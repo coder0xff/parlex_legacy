@@ -1,11 +1,7 @@
-SYNTAX     = { PRODUCTION } .
-PRODUCTION = IDENTIFIER "=" EXPRESSION "." .
-EXPRESSION = TERM { "|" TERM } .
-TERM       = FACTOR { FACTOR } .
-FACTOR     = IDENTIFIER
-           | LITERAL
-           | "[" EXPRESSION "]"
-           | "(" EXPRESSION ")"
-           | "{" EXPRESSION "}" .
-IDENTIFIER = letter { letter } .
-LITERAL    = """" character { character } """" .
+SYNTAX={whiteSpace}{{whiteSpace}PRODUCTION}.
+PRODUCTION=IDENTIFIER"="EXPRESSION".".
+EXPRESSION=TERM{"|"TERM}.
+TERM=FACTOR{{whiteSpace}FACTOR}.
+FACTOR=IDENTIFIER|LITERAL|"[" EXPRESSION "]"|"(" EXPRESSION ")"|"{" EXPRESSION "}".
+IDENTIFIER=letter{letter}.
+LITERAL=doubleQuote nonDoubleQuote {nonDoubleQuote} doubleQuote.
