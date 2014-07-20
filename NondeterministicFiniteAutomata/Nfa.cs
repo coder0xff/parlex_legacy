@@ -619,7 +619,6 @@ namespace NondeterministicFiniteAutomata {
             result.StartStates.UnionWith(_startStates.Select(state => stateMapper[state]));
             result.AcceptStates.UnionWith(_acceptStates.Select(state => stateMapper[state]));
             result.States.UnionWith(stateMapper.Values);
-            result.ToString();
             return result;
         }
 
@@ -1535,12 +1534,24 @@ namespace NondeterministicFiniteAutomata {
             var outgoingTransitions = new JaggedAutoDictionary<TAlphabet, List<State>>(_ => new List<State>());
             foreach (var symbol in TransitionFunction[at].Keys) {
                 foreach (var toState in TransitionFunction[at][symbol]) {
-                    outgoingTransitions[symbol].Add(toState);
+                    if (!ReferenceEquals(at, toState))
+                        outgoingTransitions[symbol].Add(toState);
                 }
             }
 
-            //Remove all the transitions leaving 'at'
-            TransitionFunction.TryRemove(at);
+            foreach (TAlphabet outGoingSymbol in outgoingTransitions.Keys)
+            {
+                foreach (State toState in outgoingTransitions[outGoingSymbol])
+                {
+                    TransitionFunction[at][outGoingSymbol].Remove(toState);
+                }
+                if (TransitionFunction[at][outGoingSymbol].Count == 0)
+                {
+                    TransitionFunction[at].TryRemove(outGoingSymbol);
+                }
+            }
+
+            if (!TransitionFunction[at].Any()) TransitionFunction.TryRemove(at);
 
             //Add all of 'require's states to storage, except start and accept states
             //Simultaneously, create a map from 'require's states to storage's states

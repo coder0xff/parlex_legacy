@@ -112,6 +112,11 @@ namespace Parlex {
                 : base(matchClass) {
                 Children = children;
             }
+
+            public override string ToString()
+            {
+                return Symbol.Name + ": \"" + Job.Text.Substring(Position, Length) + "\"";
+            }
         }
 
         public class AbstractSyntaxForest {
@@ -317,8 +322,7 @@ namespace Parlex {
             private readonly MatchClass _root;
             public AbstractSyntaxForest AbstractSyntaxForest { get; private set; }
 
-            public Job(string text, int startPosition, Recognizer rootProduction)
-            {
+            public Job(string text, int startPosition, Recognizer rootProduction) {
                 Text = text;
                 _unicodeCodePoints = text.GetUtf32CodePoints();
                 _root = new MatchClass(startPosition, rootProduction, _unicodeCodePoints.Length - startPosition, this);
@@ -453,8 +457,7 @@ namespace Parlex {
             }
         }
 
-        public static Job Parse(String text, int startPosition, Recognizer rootProduction)
-        {
+        public static Job Parse(String text, int startPosition, Recognizer rootProduction) {
             return new Job(text, startPosition, rootProduction);
         }
     }

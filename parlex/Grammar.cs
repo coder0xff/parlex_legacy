@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent.More;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using NondeterministicFiniteAutomata;
 
 namespace Parlex {
@@ -96,15 +99,38 @@ namespace Parlex {
             }
         }
 
-        public static WhiteSpaceTerminalT WhiteSpaceTerminal = new WhiteSpaceTerminalT();
+        public static readonly WhiteSpaceTerminalT WhiteSpaceTerminal = new WhiteSpaceTerminalT();
 
-        static Dictionary<String, ISymbol> nameToBuiltInSymbol = new Dictionary<string, ISymbol>();
-
-        static Grammar()
+        public class NonDoubleQuoteCharacterTerminalT : ITerminal
         {
-            nameToBuiltInSymbol["letter"] = LetterTerminal;
-            nameToBuiltInSymbol["character"] = CharacterTerminal;
-            nameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
+
+            public bool Matches(int[] documentUtf32CodePoints, int documentIndex)
+            {
+                return documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\"", 0);
+            }
+
+            public int Length
+            {
+                get { return 1; }
+            }
+
+            public string Name
+            {
+                get { return "Non-double quote character"; }
+            }
+        }
+
+        public static readonly NonDoubleQuoteCharacterTerminalT NonDoubleQuoteCharacterTerminal = new NonDoubleQuoteCharacterTerminalT();
+        public static readonly StringTerminal DoubleQuoteTerminal = new StringTerminal("\"");
+
+        private static readonly Dictionary<String, ISymbol> NameToBuiltInSymbol = new Dictionary<string, ISymbol>();
+
+        static Grammar() {
+            NameToBuiltInSymbol["letter"] = LetterTerminal;
+            NameToBuiltInSymbol["character"] = CharacterTerminal;
+            NameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
+            NameToBuiltInSymbol["doubleQuote"] = DoubleQuoteTerminal;
+            NameToBuiltInSymbol["nonDoubleQuote"] = NonDoubleQuoteCharacterTerminal;
         }
 
         public class Recognizer : NFA<ISymbol>, ISymbol {
@@ -123,7 +149,15 @@ namespace Parlex {
             }
 
             public String Name { get { return _name; } }
-            public override string ToString() { return Name; }
+
+            public override string ToString()
+            {
+                var result = new StringBuilder("Name: ");
+                result.Append(Name);
+                result.Append(" ");
+                result.Append(base.ToString(x => x.Name));
+                return result.ToString();
+            }
 
             public bool Greedy { get { return _greedy; } }
         }
@@ -158,9 +192,8 @@ namespace Parlex {
             return Productions.FirstOrDefault(x => x.Name == name);
         }
 
-        public static bool TryGetBuiltinISymbolByName(String name, out ISymbol symbol)
-        {
-            return nameToBuiltInSymbol.TryGetValue(name, out symbol);
+        public static bool TryGetBuiltinISymbolByName(String name, out ISymbol symbol) {
+            return NameToBuiltInSymbol.TryGetValue(name, out symbol);
         }
     }
 }
