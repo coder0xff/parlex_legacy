@@ -6,7 +6,7 @@ using NondeterministicFiniteAutomata;
 
 namespace Parlex {
     public static class WirthSyntaxNotation {
-        static readonly Grammar WorthSyntaxNotationParserGrammar;
+        public static readonly Grammar WorthSyntaxNotationParserGrammar;
         static readonly Grammar.ITerminal EqualsTerminal = new Grammar.StringTerminal("=");
         static readonly Grammar.ITerminal PeriodTerminal = new Grammar.StringTerminal(".");
         static readonly Grammar.ITerminal PipeTerminal = new Grammar.StringTerminal("|");

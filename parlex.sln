@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parlex", "Parlex\Parlex.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NondeterministicFiniteAutomata", "NondeterministicFiniteAutomata\NondeterministicFiniteAutomata.csproj", "{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitTests", "NUnitTests\NUnitTests.csproj", "{678552FE-E227-46C4-A3AC-E8A948759E32}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,11 +49,17 @@ Global
 		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
 		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = parlex\parlex.csproj
+		StartupItem = Common\Common.csproj
 	EndGlobalSection
 EndGlobal

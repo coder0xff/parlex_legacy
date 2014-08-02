@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -52,11 +52,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj">
-      <Project>{225ee06c-3ec1-4d0c-919a-338db9d77548}</Project>
+      <Project>{225EE06C-3EC1-4D0C-919A-338DB9D77548}</Project>
       <Name>Common</Name>
     </ProjectReference>
     <ProjectReference Include="..\NondeterministicFiniteAutomata\NondeterministicFiniteAutomata.csproj">
-      <Project>{7862b8a9-eebd-49b4-b604-edc03cf90ef1}</Project>
+      <Project>{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}</Project>
       <Name>NondeterministicFiniteAutomata</Name>
     </ProjectReference>
   </ItemGroup>

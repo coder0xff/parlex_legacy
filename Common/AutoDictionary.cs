@@ -55,5 +55,10 @@ namespace System.Collections.Concurrent.More {
             TValue dontCare;
             return _storage.TryRemove(key, out dontCare);
         }
+
+        public void Add(KeyValuePair<TKey, TValue> value)
+        {
+            if (!_storage.TryAdd(value.Key, value.Value)) throw new InvalidOperationException("Could not add key");
+        }
     }
 }
