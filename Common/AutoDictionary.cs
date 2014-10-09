@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
-namespace System.Collections.Concurrent.More
-{
+namespace System.Collections.Concurrent.More {
     //A more convenient way to have a Dictionary<K, HashSet<T>>
-    public class AutoDictionary<TK, TV> : IEnumerable<KeyValuePair<TK, TV>> {
-        private readonly ConcurrentDictionary<TK, TV> _storage = new ConcurrentDictionary<TK, TV>();
+    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix"), SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
+    public class AutoDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>> {
+        readonly ConcurrentDictionary<TKey, TValue> _storage = new ConcurrentDictionary<TKey, TValue>();
 
-        public TV this[TK key] {
+        public TValue this[TKey key] {
             get {
                 return _storage.GetOrAdd(key, x => _valueFactory(x));
             }
@@ -19,38 +20,45 @@ namespace System.Collections.Concurrent.More
         /// Used to make sure that an entry is created for the specified key
         /// </summary>
         /// <param name="key"></param>
-        public void EnsureCreated(TK key) {
-            _storage.GetOrAdd(key, x => _valueFactory(x));
+        public bool EnsureCreated(TKey key) {
+            var wasCreated = false;
+            _storage.GetOrAdd(key, x => { wasCreated = true; return _valueFactory(x); });
+            return wasCreated;
         }
 
         public void Clear() {
             _storage.Clear();
         }
 
-        private readonly Func<TK, TV> _valueFactory;
+        readonly Func<TKey, TValue> _valueFactory;
 
-        public AutoDictionary(Func<TK, TV> valueFactory) {
+        public AutoDictionary(Func<TKey, TValue> valueFactory) {
             _valueFactory = valueFactory;
         }
 
         public AutoDictionary() {
-            _valueFactory = dontCare => default(TV);
+            _valueFactory = dontCare => default(TValue);
         }
 
-        public IEnumerator<KeyValuePair<TK, TV>> GetEnumerator() {
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() {
             return _storage.GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+        IEnumerator IEnumerable.GetEnumerator() {
             return _storage.GetEnumerator();
         }
 
-        public IEnumerable<TK> Keys { get { return _storage.Keys; }}
-        public IEnumerable<TV> Values { get { return _storage.Values; }}
+        public IEnumerable<TKey> Keys { get { return _storage.Keys; } }
+        public IEnumerable<TValue> Values { get { return _storage.Values; } }
 
-        public bool TryRemove(TK key) {
-            TV dontCare;
+        public bool TryRemove(TKey key) {
+            TValue dontCare;
             return _storage.TryRemove(key, out dontCare);
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> value)
+        {
+            if (!_storage.TryAdd(value.Key, value.Value)) throw new InvalidOperationException("Could not add key");
         }
     }
 }

@@ -1,16 +1,40 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="parlex\Parser.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="parlex\WirthSyntaxNotation.cs">
     <Files>
-      <File FileName="parlex\Grammar.cs" Line="1" Column="1" />
-      <File FileName="parlex\TerminalString.cs" Line="1" Column="1" />
-      <File FileName="parlex\ExtendedBackusNaurForm.cs" Line="1" Column="1" />
-      <File FileName="parlex\Parser.cs" Line="403" Column="169" />
-      <File FileName="Common\ConcurrentSet.cs" Line="1" Column="1" />
+      <File FileName="parlex\WirthSyntaxNotation.cs" Line="12" Column="1" />
+      <File FileName="parlex\Grammar.cs" Line="210" Column="4" />
+      <File FileName="parlex\Parser.cs" Line="1" Column="1" />
+      <File FileName="Common\Bimap.cs" Line="1" Column="1" />
+      <File FileName="NUnitTests\Test.cs" Line="66" Column="1" />
     </Files>
+    <Pads>
+      <Pad Id="MonoDevelop.NUnit.TestPad">
+        <State expanded="True">
+          <Node name="NUnitTests" expanded="True">
+            <Node name="NUnitTests" expanded="True">
+              <Node name="GrammarTests" expanded="True">
+                <Node name="TestSerialization" selected="True" />
+              </Node>
+              <Node name="WirthSyntaxNotationTests" expanded="True" />
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="C:\Users\Rachel\Dropbox\parlex\parlex\WorthSyntaxNotation.cs" line="120" column="1" />
+      <Breakpoint file="/Users/brent/Personal/Dropbox/parlex/parlex/WirthSyntaxNotation.cs" line="128" column="1" />
+      <Breakpoint file="/Users/brent/Personal/Dropbox/parlex/parlex/WirthSyntaxNotation.cs" line="125" column="1" />
+      <Breakpoint file="/Users/brent/Personal/Dropbox/parlex/parlex/Transponder.cs" line="58" column="1" />
+      <Breakpoint file="/Users/brent/Personal/Dropbox/parlex/parlex/Transponder.cs" line="45" column="1" />
+      <Breakpoint file="/Users/brent/Personal/Dropbox/parlex/parlex/Transponder.cs" line="42" column="1" />
+      <Breakpoint file="/Users/brent/Personal/Dropbox/parlex/parlex/Transponder.cs" line="46" column="1" />
+      <Breakpoint file="C:\Users\Brent\Dropbox\parlex\NUnitTests\Test.cs" line="115" column="1" />
+      <Breakpoint file="C:\Users\Brent\Dropbox\parlex\NUnitTests\Test.cs" line="66" column="77" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>

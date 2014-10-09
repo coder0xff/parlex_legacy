@@ -10,8 +10,8 @@
     <RootNamespace>Common</RootNamespace>
     <AssemblyName>Common</AssemblyName>
     <FileAlignment>512</FileAlignment>
-    <ProductVersion>12.0.0</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -40,15 +41,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AsyncSet.cs" />
     <Compile Include="AutoDictionary.cs" />
     <Compile Include="Bimap.cs" />
     <Compile Include="ConcurrentSet.cs" />
-    <Compile Include="DiscreteProbabilityDistribution.cs" />
+    <Compile Include="ConditionVariable.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="JaggedAutoDictionary.cs" />
     <Compile Include="ReadOnlyHashSet.cs" />
     <Compile Include="DistinctRecursiveAlgorithmProcessor.cs" />
-    <Compile Include="Rng.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

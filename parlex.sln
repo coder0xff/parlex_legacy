@@ -1,14 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "parlex", "parlex\parlex.csproj", "{5E9DDC58-4C19-4E62-B37C-9682B08D2960}"
-EndProject
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{225EE06C-3EC1-4D0C-919A-338DB9D77548}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D3EDB85-8150-40ED-9E88-057823E71E65}"
 	ProjectSection(SolutionItems) = preProject
 		Performance1.psess = Performance1.psess
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parlex", "Parlex\Parlex.csproj", "{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnitTests", "NUnitTests\NUnitTests.csproj", "{678552FE-E227-46C4-A3AC-E8A948759E32}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automata", "Automata\Automata.csproj", "{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,22 +29,29 @@ Global
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{225EE06C-3EC1-4D0C-919A-338DB9D77548}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5E9DDC58-4C19-4E62-B37C-9682B08D2960}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = parlex\parlex.csproj
+		{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
+		{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
+		{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{678552FE-E227-46C4-A3AC-E8A948759E32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
+		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
+		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Common\Common.csproj
 	EndGlobalSection
 EndGlobal

@@ -1,18 +1,19 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("UnitTestProject1")]
+[assembly: AssemblyTitle("NondeterministicFiniteAutomata")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("UnitTestProject1")]
-[assembly: AssemblyCopyright("Copyright ©  2013")]
+[assembly: AssemblyProduct("NondeterministicFiniteAutomata")]
+[assembly: AssemblyCopyright("Copyright ©  2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
+[assembly: CLSCompliant(true)]
 
 // Setting ComVisible to false makes the types in this assembly not visible 
 // to COM components.  If you need to access a type in this assembly from 
@@ -20,7 +21,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("a43cff86-79e0-49c9-8592-10267f91f22c")]
+[assembly: Guid("d196da2d-bb80-4c8d-b92a-00a2d40ad471")]
 
 // Version information for an assembly consists of the following four values:
 //

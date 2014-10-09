@@ -1,414 +1,464 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Concurrent;
+﻿#define FORCE_SINGLE_THREAD
+
+using System;
 using System.Collections.Concurrent.More;
+using System.Collections.Generic;
 using System.Linq;
-
-namespace parlex
-{
-	public class Parser
-	{
-		public Parser (Grammar grammar)
-		{
-			g = grammar;
-		}
-
-		Grammar g;
-
-		/// <summary>
-		/// Represents a successful matching by a Recognizer. The permutation in Match.children is unique at the Match's location and length (though these values are not stored here).
-		/// </summary>
-		class Match {
-			public Grammar.Symbol symbol;
-			public int position;
-			public int length;
-			public List<MatchGroup> children;
-
-			public Match(Grammar.Symbol symbol, int position, int length, List<MatchGroup> children) {
-				this.symbol = symbol;
-				this.position = position;
-				this.length = length;
-				this.children = children;
-			}
-		}
-
-		/// <summary>
-		/// A grouping of Matches that are all the same Grammar.Symbol, document position, and length
-		/// </summary>
-		class MatchGroup {
-			int documentPosition;
-
-			public int DocumentPosition {
-				get {
-					return documentPosition;
-				}
-			}
-
-			int parseLength;
-
-			public int ParseLength {
-				get {
-					return parseLength;
-				}
-			}
-
-			Grammar.Symbol symbol;
-
-			public Grammar.Symbol Symbol {
-				get {
-					return symbol;
-				}
-			}
-
-			List<Match> matches;
-
-			public MatchGroup (int parsePosition, int parseLength, Grammar.Symbol symbol)
-			{
-				this.documentPosition = parsePosition;
-				this.parseLength = parseLength;
-				this.symbol = symbol;
-				matches = new List<Match>();
-			}
-
-			public void AddMatch(Match match) {
-				matches.Add (match);
-			}
-		}
-
-		/// <summary>
-		/// IDependent and IProvider are similar to the producer consumer design pattern, but an IDependent is Terminate()'d when it no longer has any IProviders.
-		/// </summary>
-		interface IDependent<T> {
-			void Receive(T data);
-			void Terminate();
-			void Subcribe(IProvider<T> Provider);
-		}
-
-		/// <summary>
-		/// See IDependent
-		/// </summary>
-		interface IProvider<T> {
-			void SubscriptionCreatedHandler(IDependent<T> dependent);
-		}
-
-		/// <summary>
-		/// Acts as a combined IProvider and IDependent in such a way that all IDependents that subscribe to this (on the IProvider side) will be Received every piece of data that come in (on the IDependent side).
-		/// This essentially removes temporal ordering - it doesn't matter when an IDependent subcribes or when an IProvider generates data. All data will go everywhere.
-		/// When the adapter is created it will be subscribed to IProviders. When all such Providers call Terminate (on the IDependent side) the adapter will call Terminate (on the IProvider side).
-		/// </summary>
-		class TemporallyUnorderedMultiProviderDependentAdapter<T> : IProvider<T>, IDependent<T> {
-			List<IDependent<T>> dependents = new List<IDependent<T>>();
-			List<T> alreadyProvidedValues = new List<T>();
-			bool isTerminated = false;
-			int providerCount = 0;
-
-			#region IDependent implementation
-
-			public void Receive(T data)
-			{
-				lock (dependents) {
-					if (isTerminated)
-						throw new Exception();
-					for (int index = 0; index < dependents.Count; index++) {
-						dependents[index].Receive(data);
-					}
-					alreadyProvidedValues.Add (data);
-				}
-			}
-
-			public void Terminate()
-			{
-				lock (dependents) {
-					if (isTerminated)
-						throw new Exception();
-					if (System.Threading.Interlocked.Decrement(ref providerCount) == 0) {
-						isTerminated = true;
-						for (int index = 0; index < dependents.Count; index++) {
-							dependents[index].Terminate();
-						}
-					}
-				}
-			}
-
-			public void Subcribe (IProvider<T> Provider) {
-				System.Threading.Interlocked.Increment(ref providerCount);
-				Provider.SubscriptionCreatedHandler(this);
-			}
-
-			#endregion
-
-			#region IProvider implementation
-			public void SubscriptionCreatedHandler(IDependent<T> dependent)
-			{
-				lock (dependents) {
-					lock (alreadyProvidedValues) {
-						foreach (T alreadyProvidedValue in alreadyProvidedValues) {
-							dependent.Receive(alreadyProvidedValue);
-						}
-					}
-					dependents.Add(dependent);
-					if (isTerminated) {
-						dependent.Terminate();
-					}
-				}
-			}
-			#endregion
-
-		}
-
-		/// <summary>
-		/// Searches for MatchGroups using the specified Grammar.Recognizer, at the specified location
-		/// Results are returned through the IProvider interface.
-		/// It also places all Matches is receives into the Abstract Syntax Graph
-		/// </summary>
-		class ParseSubJob : IProvider<MatchGroup>, IDependent<Match> {
-			ParseJob owner;
-
-			public ParseJob Owner {
-				get {
-					return owner;
-				}
-			}
-
-			Grammar.Recognizer recognizer;
-
-			public Grammar.Recognizer Recognizer {
-				get {
-					return recognizer;
-				}
-			}
-
-			int parsePosition;
-
-			public int ParsePosition {
-				get {
-					return parsePosition;
-				}
-			}
-
-			public ParseSubJob (ParseJob owner, Grammar.Recognizer recognizer, int parsePosition)
-			{
-				this.owner = owner;
-				this.recognizer = recognizer;
-				this.parsePosition = parsePosition;
-			}
-
-			TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup> providerDependentAdapter = new TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup>();
-
-			#region IProvider implementation
-			public void SubscriptionCreatedHandler(IDependent<MatchGroup> dependent)
-			{
-				providerDependentAdapter.SubscriptionCreatedHandler(dependent);
-			}
-			#endregion
-
-			#region IDependent implementation
-
-			ConcurrentSet<int> alreadyReturnedMatchGroupLengths = new ConcurrentSet<int>();
-
-			public void Receive (Match data)
-			{
-				MatchGroup matchGroup = owner.matchGroups [data.symbol as Grammar.Recognizer] [data.position] [data.length];
-				matchGroup.AddMatch (data);
-				if (alreadyReturnedMatchGroupLengths.TryAdd(data.length)) {
-					providerDependentAdapter.Receive (matchGroup);
-				}
-			}
-
-			public void Terminate ()
-			{
-				providerDependentAdapter.Terminate ();
-			}
-
-			public void Subcribe (IProvider<Match> provider)
-			{
-				provider.SubscriptionCreatedHandler (this);
-			}
-
-			#endregion
-
-			public void CreateAndQueueFirstRecognizerState() {
-				RecognizerState state = new RecognizerState(this);
-			}
-		}
-
-		/// <summary>
-		/// Stores a reference to a SubParseJobInfo, and stores the current states of the recognizer (which is a NFA)
-		/// It also stores information regarding previous transition symbols, so that when an accept state is terminated upon, a record of all the transitions can be compiled into the Abstract Syntax Graph
-		/// It depends on the MatchGroups returned by ParseSubJobs, and (on completing recognition) returns new Matches through it's IProvider interface
-		/// </summary>
-		class RecognizerState : IProvider<Match>, IDependent<MatchGroup> {
-
-			/// <summary>
-			/// The ParseJob that owns this instance
-			/// </summary>
-			ParseSubJob parseSubJob;
-
-			/// <summary>
-			/// The state of the recognizer for subParseJobInfo.symbol that this ParseState represents
-			/// </summary>
-			Grammar.Recognizer.State[] recognizerNfaState;
-
-			/// <summary>
-			/// A history of the transition symbols that led to the current NFA state, which are used when each satisfaction of the PositionedMatchJobInfo occurs, as a means of creating the hierarchy of the resulting Abstract Syntax Graph
-			/// </summary>
-			List<MatchGroup> transitionHistory;
-
-			/// <summary>
-			/// The document position that the next transition symbol will be read from
-			/// </summary>
-			int currentDocumentPosition;
-
-			public RecognizerState(ParseSubJob parseSubJob) {
-				this.parseSubJob = parseSubJob;
-				this.recognizerNfaState = this.parseSubJob.Recognizer.StartStates.ToArray();
-				this.transitionHistory = new List<MatchGroup>();
-				this.currentDocumentPosition = this.parseSubJob.ParsePosition;
-				parseSubJob.Subcribe(this);
-			}
-
-			RecognizerState (ParseSubJob parseSubJob, Grammar.Recognizer.State[] recognizerNfaState, List<MatchGroup> transitionHistory, int currentDocumentPosition) {
-				this.parseSubJob = parseSubJob;
-				this.recognizerNfaState = recognizerNfaState.ToArray();
-				this.transitionHistory = transitionHistory;
-				this.currentDocumentPosition = currentDocumentPosition;
-				parseSubJob.Subcribe(this);
-			}
-
-			RecognizerState Transition(MatchGroup matchGroup) {
-				Grammar.Symbol transitionSymbol = matchGroup.Symbol;
-				int length = matchGroup.ParseLength;
-				HashSet<Grammar.Recognizer.State> nfaStatesAfterTransition = new HashSet<Nfa<Grammar.Symbol, int>.State>();
-				foreach (Grammar.Recognizer.State fromState in recognizerNfaState) {
-					foreach (Grammar.Recognizer.State toState in parseSubJob.Recognizer.TransitionFunction[fromState][transitionSymbol]) {
-						nfaStatesAfterTransition.Add(toState);
-					}
-				}
-				var updatedTransitionHistory = new List<MatchGroup> (transitionHistory);
-				updatedTransitionHistory.Add (matchGroup);
-				return new RecognizerState(parseSubJob, nfaStatesAfterTransition.ToArray(), updatedTransitionHistory, currentDocumentPosition + length);
-			}
-				
-			#region IDependent implementation
-
-			public void Receive (MatchGroup data)
-			{
-				RecognizerState next = Transition (data);
-				next.SubscribeToSubJobs ();
-			}
-
-			public void Terminate ()
-			{
-				if (IsAcceptState) {
-					Match match = new Match (parseSubJob.Recognizer, parseSubJob.ParsePosition, currentDocumentPosition - parseSubJob.ParsePosition, transitionHistory);
-					for (int index = 0; index < dependents.Count; index++) {
-						dependents [index].Receive (match);
-						dependents [index].Terminate ();
-					}
-				}
-			}
-
-			public void Subcribe (IProvider<MatchGroup> Provider)
-			{
-				Provider.SubscriptionCreatedHandler (this);
-			}
-
-			#endregion
-
-			#region IProvider implementation
-
-			List<IDependent<Match>> dependents = new List<IDependent<Match>> ();
-			public void SubscriptionCreatedHandler (IDependent<Match> dependent)
-			{
-				lock (dependents) {
-					dependents.Add (dependent);
-				}
-			}
-
-			#endregion
-				
-			public bool IsAcceptState { get { return recognizerNfaState.Any(x => parseSubJob.Recognizer.AcceptStates.Contains(x)); } }
-
-			void SubscribeToSubJobs() {
-				HashSet<Grammar.Symbol> soughtTransitionSymbols = new HashSet<Grammar.Symbol>();
-				foreach (Grammar.Recognizer.State fromState in recognizerNfaState) {
-					foreach (Grammar.Symbol transitionSymbol in parseSubJob.Recognizer.TransitionFunction[fromState].Keys) {
-						soughtTransitionSymbols.Add(transitionSymbol);
-					}
-				}
-				foreach (Grammar.Symbol soughtTransitionSymbol in soughtTransitionSymbols) {
-					Subcribe(parseSubJob.Owner.GetSubParseResultsProvider(soughtTransitionSymbol, currentDocumentPosition));
-				}
-			}
-		}
-
-		class TerminalParseSubJob : IProvider<MatchGroup> {
-			TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup> providerDependentAdapter;
-
-			public TerminalParseSubJob(ParseJob owner, Grammar.Terminal terminal, int documentPosition) {
-				providerDependentAdapter = new TemporallyUnorderedMultiProviderDependentAdapter<MatchGroup>();
-				bool result = true;
-				foreach (UInt32 codePoint in terminal.UnicodeCodePoints) {
-					if (codePoint != owner.TextAsUTF32[documentPosition++]) {
-						result = false;
-						break;
-					}
-				}
-				if (result) {
-					providerDependentAdapter.Receive(new MatchGroup(documentPosition, terminal.UnicodeCodePoints.Length, null));
-				}
-				providerDependentAdapter.Terminate();
-			}
-
-			#region IProvider implementation
-			public void SubscriptionCreatedHandler (IDependent<MatchGroup> dependent)
-			{
-				providerDependentAdapter.SubscriptionCreatedHandler (dependent);
-			}
-			#endregion
-		}
-
-		class ParseJob {
-
-			String text;
-
-			public String Text {
-				get {
-					return text;
-				}
-			}
-
-			Int32[] textAsUTF32;
-
-			public Int32[] TextAsUTF32 {
-				get {
-					return textAsUTF32;
-				}
-			}
-
-			ParseJob(String text) {
-				this.text = text;
-				this.textAsUTF32 = text.GetUtf32CodePoints();
-				matchGroups = new JaggedAutoDictionary<Grammar.Recognizer, int, int, MatchGroup>((Grammar.Recognizer recognizer, int parsePosition, int parseLength) => new MatchGroup(parsePosition, parseLength, recognizer));
-				subParseJobs = new JaggedAutoDictionary<Grammar.Recognizer, int, ParseSubJob>((Grammar.Recognizer recognizer, int parsePosition) => new ParseSubJob(this, recognizer, parsePosition));
-			}
-
-			internal JaggedAutoDictionary<Grammar.Recognizer, int /* parsePosition */, int /* parseLength */, MatchGroup> matchGroups;
-			JaggedAutoDictionary<Grammar.Recognizer, int /*parsePosition */, ParseSubJob> subParseJobs;
-			ConcurrentSet<ParseSubJob> pendingAndCompletedStates = new ConcurrentSet<ParseSubJob>();
-
-			/// <summary>
-			/// Queue a sub-parse job for the parser to process, but only if an identical sub-parse job has not already been queued or completed
-			/// </summary>
-			/// <param name="parsePosition">Parse position.</param>
-			/// <param name="symbol">Symbol.</param>
-			public IProvider<MatchGroup> GetSubParseResultsProvider(Grammar.Symbol symbol, int documentPosition) {
-				if (symbol is Grammar.Terminal) {
-					return new TerminalParseSubJob (this, symbol as Grammar.Terminal, documentPosition);
-				}
-				return subParseJobs [symbol as Grammar.Recognizer] [documentPosition];
-			}
-		}
-	}
+using System.Threading;
+using Automata;
+
+namespace Parlex {
+    // A zero-based index into the source text
+    using Position = Int32;
+    // A character count
+    using Length = Int32;
+    using Recognizer = Grammar.Recognizer;
+
+    public static class Parser {
+        /// <summary>
+        /// All matches with the same Position, and recognizer are in the same MatchCategory
+        /// </summary>
+        public class MatchCategory {
+            public readonly Position Position;
+            public readonly Grammar.ISymbol Symbol;
+            internal Job Job { get; private set; }
+
+            protected MatchCategory(MatchCategory other) {
+                Position = other.Position;
+                Symbol = other.Symbol;
+                Job = other.Job;
+            }
+
+            internal MatchCategory(Position position, Grammar.ISymbol symbol, Job job) {
+                Position = position;
+                Symbol = symbol;
+                Job = job;
+            }
+
+            public override bool Equals(object obj) {
+                var castObj = obj as MatchCategory;
+                if (ReferenceEquals(null, castObj)) return false;
+                return castObj.Position.Equals(Position) && castObj.Symbol.Equals(Symbol) && ReferenceEquals(Job, castObj.Job);
+            }
+
+            public override Length GetHashCode() {
+                unchecked {
+                    var hash = 17;
+                    hash = hash * 31 + Position.GetHashCode();
+                    hash = hash * 31 + Symbol.GetHashCode();
+                    hash = hash * 31 + (Job ?? (Object)0).GetHashCode();
+                    return hash;
+                }
+            }
+
+            public override string ToString() {
+                var temp = Position + " " + Symbol;
+                if (ReferenceEquals(Job, null)) return temp;
+                var docText = Job.Text;
+                temp += " " + docText.Substring(Position, Math.Min(docText.Length - Position, 8)).Truncate(7);
+                return temp;
+            }
+        }
+
+        /// <summary>
+        /// All matches with the same Position, Length, and recognizer are in the same MatchClass.
+        /// </summary>
+        public class MatchClass : MatchCategory {
+            public readonly Length Length;
+
+            protected MatchClass(MatchClass other)
+                : base(other) {
+                Length = other.Length;
+            }
+
+            public MatchClass(MatchCategory matchCategory, Length length)
+                : base(matchCategory) {
+                Length = length;
+            }
+
+            internal MatchClass(Position position, Grammar.ISymbol symbol, Length length, Job job)
+                : base(position, symbol, job) {
+                Length = length;
+            }
+
+            public override bool Equals(object obj) {
+                var castObj = obj as MatchClass;
+                if (ReferenceEquals(null, castObj)) return false;
+                return base.Equals(castObj) && Length.Equals(castObj.Length);
+            }
+
+            public override Length GetHashCode() {
+                unchecked {
+                    var hash = 17;
+                    hash = hash * 31 + base.GetHashCode();
+                    hash = hash * 32 + Length.GetHashCode();
+                    return hash;
+                }
+            }
+
+            public override string ToString() {
+                var temp = Position + " " + Symbol + " " + Length;
+                if (ReferenceEquals(Job, null)) return temp;
+                var docText = Job.Text;
+                temp += " " + docText.Substring(Position, Math.Min(docText.Length - Position, 8)).Truncate(7);
+                return temp;
+            }
+        }
+
+        public class Match : MatchClass {
+            public readonly MatchClass[] Children;
+
+            public Match(MatchClass matchClass, MatchClass[] children)
+                : base(matchClass) {
+                Children = children;
+            }
+
+            public override string ToString()
+            {
+                return Symbol.Name + ": \"" + Job.Text.Substring(Position, Length) + "\"";
+            }
+        }
+
+        public class AbstractSyntaxForest {
+            public MatchClass Root;
+            public Dictionary<MatchClass, List<Match>> NodeTable;
+
+            public bool IsAmbiguous {
+                get { return NodeTable.Keys.Any(matchClass => NodeTable[matchClass].Count > 1); }
+            }
+        }
+
+        public class Job {
+            internal class SubJob : MatchCategory {
+                internal class RecognizerState {
+                    private readonly SubJob _subJob;
+                    private readonly Position _position;
+                    private readonly Nfa<Grammar.ISymbol>.State[] _states;
+                    private bool IsAcceptState { get { return _states.Any(x => ((Recognizer)_subJob.Symbol).AcceptStates.Contains(x)); } }
+                    int _unterminatedSubsequentRecognizerStateAndEvaluateCount = 1;
+                    bool _subsequentMadeMatch;
+                    readonly RecognizerState _antecedent;
+                    private readonly MatchClass _entranceMatchClass;
+
+                    public RecognizerState(SubJob subJob, Position position, Nfa<Grammar.ISymbol>.State[] states, RecognizerState antecedent = null, MatchClass entranceMatchClass = null) {
+                        _subJob = subJob;
+                        _position = position;
+                        _states = states;
+                        _antecedent = antecedent;
+                        _entranceMatchClass = entranceMatchClass;
+                        subJob.RecognizerStateCreated();
+                        if (antecedent != null) {
+                            antecedent.SubsequentStateCreated();
+                        }
+#if FORCE_SINGLE_THREAD
+                        Evaluate();
+#else
+                        new Thread(_ => Evaluate()).Start();
+#endif
+                    }
+
+                    private void SubsequentStateCreated() {
+                        Interlocked.Increment(ref _unterminatedSubsequentRecognizerStateAndEvaluateCount);
+                    }
+
+                    private void EvaluateTerminated() {
+                        SubsequentRecognizerStateTerminated();
+                    }
+
+                    private void SubsequentRecognizerStateTerminated() {
+                        if (_terminateCount > 0) {
+                            throw new ApplicationException();
+                        }
+                        if (Interlocked.Decrement(ref _unterminatedSubsequentRecognizerStateAndEvaluateCount) == 0) {
+                            Terminate();
+                        }
+                    }
+
+                    private void SetSubsequentMadeMatch() {
+                        _subsequentMadeMatch = true;
+                        if (_antecedent != null) _antecedent.SetSubsequentMadeMatch();
+                    }
+
+                    IEnumerable<Grammar.ISymbol> GetCandidateSymbols() {
+                        var results = new List<Grammar.ISymbol>();
+                        foreach (var state in _states) {
+                            results.AddRange(((Recognizer)_subJob.Symbol).TransitionFunction[state].Keys);
+                        }
+                        results = results.Distinct().ToList();
+                        return results;
+                    }
+
+                    void Apply(MatchClass match) {
+                        if (_terminateCount > 0 || _subJob._terminateCount > 0) {
+                            throw new ApplicationException();
+                        }
+                        var nextStates = new List<Nfa<Grammar.ISymbol>.State>();
+                        foreach (var currentState in _states) {
+                            if (((Recognizer)_subJob.Symbol).TransitionFunction[currentState].Keys.Contains(match.Symbol)) {
+                                nextStates.AddRange(((Recognizer)_subJob.Symbol).TransitionFunction[currentState][match.Symbol]);
+                            }
+                        }
+                        nextStates = nextStates.Distinct().ToList();
+                        // ReSharper disable once ObjectCreationAsStatement
+                        new RecognizerState(_subJob, _position + match.Length, nextStates.ToArray(), this, match);
+                    }
+
+                    void Evaluate() {
+                        var searches = GetCandidateSymbols().Select(symbol => new MatchCategory(_position, symbol, _subJob.Job)).ToList();
+                        foreach (var search in searches) {
+                            _subJob.Job.BeginMatching(search);
+                        }
+                        foreach (var search in searches) {
+                            foreach (var matchClass in _subJob.Job.GetMatchClasses(search)) {
+                                Apply(matchClass);
+                            }
+                        }
+                        EvaluateTerminated();
+                    }
+
+                    int _terminateCount;
+
+                    private void Terminate() {
+                        var temp = Interlocked.Increment(ref _terminateCount);
+                        if (temp > 1) {
+                            throw new ApplicationException();
+                        }
+                        if (IsAcceptState) {
+                            if (!((Recognizer)_subJob.Symbol).Greedy || !_subsequentMadeMatch) {
+                                _subJob.AddMatch(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position, _subJob.Job), GetChildren().ToArray()));
+                                if (_antecedent != null) {
+                                    _antecedent.SetSubsequentMadeMatch();
+                                }
+                            }
+                        }
+                        if (_antecedent != null) {
+                            _antecedent.SubsequentRecognizerStateTerminated();
+                        }
+                        _subJob.RecognizerStateTerminated();
+                    }
+
+                    private IEnumerable<MatchClass> GetChildren() {
+                        var results = new List<MatchClass>();
+                        if (_antecedent != null) {
+                            results.AddRange(_antecedent.GetChildren());
+                        }
+                        if (_entranceMatchClass != null) {
+                            results.Add(_entranceMatchClass);
+                        }
+                        return results;
+                    }
+                }
+
+                int _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount = 1;
+                int _terminateCount;
+
+                readonly AsyncSet<MatchClass> _matchClasses = new AsyncSet<MatchClass>();
+                readonly JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>> _matches = new JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>>(_ => new ConcurrentSet<Match>());
+
+                public SubJob(MatchCategory matchCategory)
+                    : base(matchCategory) {
+                    Job.SubJobCreated();
+                    CreateFirstRecognizerState();
+                }
+
+                void CreateFirstRecognizerState() {
+                    // ReSharper disable once ObjectCreationAsStatement
+                    new RecognizerState(this, Position, ((Recognizer)Symbol).StartStates.ToArray());
+                    CreateFirstRecognizeStateTerminated();
+                }
+
+                private void AddMatch(Match match) {
+                    _matchClasses.Add(match);
+                    _matches[match].TryAdd(match);
+                }
+
+                private void RecognizerStateCreated() {
+                    if (_terminateCount > 0) {
+                        throw new ApplicationException();
+                    }
+                    Interlocked.Increment(ref _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount);
+                }
+
+                private void CreateFirstRecognizeStateTerminated() {
+                    RecognizerStateTerminated();
+                }
+
+                private void RecognizerStateTerminated() {
+                    var temp = Interlocked.Decrement(ref _unterminatedRecognizerStateAndCreateFirstRecognizerStateCount);
+                    if (temp == 0) {
+                        Terminate();
+                    } else if (temp < 0) {
+                        throw new ApplicationException();
+                    }
+                }
+
+                private void Terminate() {
+                    if (Interlocked.Increment(ref _terminateCount) > 1) {
+                        throw new ApplicationException();
+                    }
+                    _matchClasses.Close();
+                    Job.SubJobTerminated();
+                }
+
+                public IEnumerable<MatchClass> GetMatchClasses() {
+                    return _matchClasses;
+                }
+
+                public IEnumerable<Match> GetMatches(MatchClass matchClass) {
+                    if (_matches.Keys.Contains(matchClass)) {
+                        return _matches[matchClass];
+                    }
+                    return new Match[] { };
+                }
+            }
+
+            public readonly String Text;
+            private readonly Int32[] _unicodeCodePoints;
+            private readonly JaggedAutoDictionary<MatchCategory, SubJob> _subJobs;
+            private readonly JaggedAutoDictionary<MatchCategory, List<Match>> _terminalMatches;
+            int _unterminatedSubJobAndConstructorCount = 1;
+            readonly ManualResetEventSlim _blocker = new ManualResetEventSlim(false);
+            public bool IsDone { get { return _blocker.IsSet; } }
+            private readonly MatchClass _root;
+            public AbstractSyntaxForest AbstractSyntaxForest { get; private set; }
+
+            public Job(string text, int startPosition, Recognizer rootProduction) {
+                Text = text;
+                _unicodeCodePoints = text.GetUtf32CodePoints();
+                _root = new MatchClass(startPosition, rootProduction, _unicodeCodePoints.Length - startPosition, this);
+                _subJobs = new JaggedAutoDictionary<MatchCategory, SubJob>(matchCategory => {
+                    System.Diagnostics.Debug.WriteLine("BeginMatching(" + matchCategory + ")");
+                    return new SubJob(matchCategory);
+                });
+
+                _terminalMatches = new JaggedAutoDictionary<MatchCategory, List<Match>>(_ => new List<Match>());
+
+                CreateFirstSubJob(startPosition, rootProduction);
+                ConstructorTerminated();
+            }
+
+            void CreateFirstSubJob(int startPosition, Recognizer rootProduction) {
+                BeginMatching(new MatchCategory(startPosition, rootProduction, this));
+            }
+
+            void ConstructorTerminated() {
+                SubJobTerminated();
+            }
+
+            private IEnumerable<MatchClass> GetMatchClasses(MatchCategory matchCategory) {
+                if (matchCategory.Symbol is Recognizer) {
+                    return _subJobs[matchCategory].GetMatchClasses();
+                }
+                if (_terminalMatches.Keys.Contains(matchCategory)) {
+                    return _terminalMatches[matchCategory];
+                }
+                return new MatchClass[] { };
+            }
+
+            private void BeginMatching(MatchCategory search) {
+                if (search.Symbol is Recognizer) {
+                    _subJobs.EnsureCreated(search);
+                } else {
+                    var asTerminal = (Grammar.ITerminal)search.Symbol;
+                    if (_terminalMatches.EnsureCreated(search)) {
+                        if (asTerminal.Matches(_unicodeCodePoints, search.Position)) {
+                            _terminalMatches[search].Add(new Match(new MatchClass(search, asTerminal.Length), new MatchClass[] { }));
+                        }
+                    }
+                }
+            }
+
+            private void SubJobCreated() {
+                Interlocked.Increment(ref _unterminatedSubJobAndConstructorCount);
+            }
+
+            private void SubJobTerminated() {
+                var temp = Interlocked.Decrement(ref _unterminatedSubJobAndConstructorCount);
+                if (temp == 0) {
+                    Terminate();
+                } else if (temp < 0) {
+                    throw new ApplicationException();
+                }
+            }
+
+            private void PruneAbstractSyntaxForest() {
+                var usedMatchClasses = new HashSet<MatchClass> { AbstractSyntaxForest.Root };
+                var priorAdditions = new HashSet<MatchClass> { AbstractSyntaxForest.Root };
+                var addedAnyClasses = true;
+                while (addedAnyClasses) {
+                    addedAnyClasses = false;
+                    var toAdds = new HashSet<MatchClass>();
+                    foreach (var matchClass in priorAdditions) {
+                        if (AbstractSyntaxForest.NodeTable.ContainsKey(matchClass)) {
+                            foreach (var match in AbstractSyntaxForest.NodeTable[matchClass]) {
+                                foreach (var child in match.Children) {
+                                    toAdds.Add(child);
+                                }
+                            }
+                        }
+                    }
+                    priorAdditions.Clear();
+                    foreach (var toAdd in toAdds) {
+                        if (!usedMatchClasses.Contains(toAdd)) {
+                            addedAnyClasses = true;
+                            usedMatchClasses.Add(toAdd);
+                            priorAdditions.Add(toAdd);
+                        }
+                    }
+                }
+                var toRemoves = AbstractSyntaxForest.NodeTable.Keys.Where(matchClass => !usedMatchClasses.Contains(matchClass)).ToList();
+                foreach (var matchClassToRemove in toRemoves) {
+                    AbstractSyntaxForest.NodeTable.Remove(matchClassToRemove);
+                }
+            }
+
+            private void AddProductionMatchesToAbstractSyntaxForest() {
+                foreach (var subJob in _subJobs.Values) {
+                    foreach (var matchClass in subJob.GetMatchClasses()) {
+                        var classMatches = (ConcurrentSet<Match>)subJob.GetMatches(matchClass);
+                        if (classMatches.Count == 0) continue;
+                        if (!AbstractSyntaxForest.NodeTable.Keys.Contains(matchClass)) {
+                            AbstractSyntaxForest.NodeTable[matchClass] = new List<Match>();
+                        }
+                        var subTable = AbstractSyntaxForest.NodeTable[matchClass];
+                        subTable.AddRange(classMatches);
+                    }
+                }
+            }
+
+            private void AddTerminalMatchesToAbstractSyntaxGraph() {
+                foreach (var matches in _terminalMatches.Values) {
+                    foreach (var match in matches) {
+                        if (!AbstractSyntaxForest.NodeTable.Keys.Contains(match)) {
+                            AbstractSyntaxForest.NodeTable[match] = new List<Match>();
+                        }
+                        AbstractSyntaxForest.NodeTable[match].Add(match);
+                    }
+                }
+            }
+
+            private void ConstructAbstractSyntaxForest() {
+                AbstractSyntaxForest = new AbstractSyntaxForest {
+                    Root = _root,
+                    NodeTable = new Dictionary<MatchClass, List<Match>>()
+                };
+                AddProductionMatchesToAbstractSyntaxForest();
+                AddTerminalMatchesToAbstractSyntaxGraph();
+                PruneAbstractSyntaxForest();
+            }
+
+            private void Terminate() {
+                ConstructAbstractSyntaxForest();
+                _blocker.Set();
+            }
+
+            public void Wait() {
+                _blocker.Wait();
+            }
+        }
+
+        public static Job Parse(String text, int startPosition, Recognizer rootProduction) {
+            return new Job(text, startPosition, rootProduction);
+        }
+    }
 }
-
