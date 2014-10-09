@@ -201,6 +201,49 @@ namespace Parlex
             }
         }
 
+        static bool CollapseRedundantNodes(ref Node root) {
+            if (root is Sequence) {
+                var t = root as Sequence;
+                if (t.Children.Count == 1) {
+                    root = t.Children[0];
+                    CollapseRedundantNodes(ref root);
+                    return true;
+                } else {
+                    var result = false;
+                    for (var i = 0; i < t.Children.Count; i++) {
+                        var c = t.Children[i];
+                        result |= CollapseRedundantNodes(ref c);
+                        t.Children[i] = c;
+                    }
+                    return result;
+                }
+            } else if (root is Choice) {
+                var t = root as Choice;
+                if (t.Children.Count == 1) {
+                    root = t.Children[0];
+                    CollapseRedundantNodes(ref root);
+                    return true;
+                } else {
+                    var result = false;
+                    for (var i = 0; i < t.Children.Count; i++) {
+                        var c = t.Children[i];
+                        result |= CollapseRedundantNodes(ref c);
+                        t.Children[i] = c;
+                    }
+                    return result;
+                }
+            } else if (root is Repetition) {
+                var t = root as Repetition;
+                return CollapseRedundantNodes(ref t.Child);
+            } else if (root is Optional) {
+                var t = root as Optional;
+                return CollapseRedundantNodes(ref t.Child);
+            } else {
+                return false;
+            }
+
+        }
+
         static Node Treeify(GNfa gnfa) {
             Nfa nfa = Preprocess(gnfa);
             var ripableStates = nfa.States.Where(x => !nfa.StartStates.Contains(x) && !nfa.AcceptStates.Contains(x));
@@ -211,6 +254,9 @@ namespace Parlex
             if (possibleResults.Count() == 0) return new Null();
             Node result = possibleResults.First().Key;
             result.Optimize();
+            while (CollapseRedundantNodes(ref result)) {
+                result.Optimize();
+            }
             return result;
         }
 
