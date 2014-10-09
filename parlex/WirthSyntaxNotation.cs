@@ -2,7 +2,8 @@
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Linq;
-using NondeterministicFiniteAutomata;
+using System.Text;
+using Automata;
 
 namespace Parlex {
     public static class WirthSyntaxNotation {
@@ -29,18 +30,18 @@ namespace Parlex {
 
         static WirthSyntaxNotation() {
 
-            var syntaxState0 = new NFA<Grammar.ISymbol>.State();
+            var syntaxState0 = new Nfa<Grammar.ISymbol>.State();
             Syntax.States.Add(syntaxState0);
             Syntax.StartStates.Add(syntaxState0);
             Syntax.AcceptStates.Add(syntaxState0);
             Syntax.TransitionFunction[syntaxState0][Production].Add(syntaxState0);
             Syntax.TransitionFunction[syntaxState0][Grammar.WhiteSpaceTerminal].Add(syntaxState0);
 
-            var productionState0 = new NFA<Grammar.ISymbol>.State();
-            var productionState1 = new NFA<Grammar.ISymbol>.State();
-            var productionState2 = new NFA<Grammar.ISymbol>.State();
-            var productionState3 = new NFA<Grammar.ISymbol>.State();
-            var productionState4 = new NFA<Grammar.ISymbol>.State();
+            var productionState0 = new Nfa<Grammar.ISymbol>.State();
+            var productionState1 = new Nfa<Grammar.ISymbol>.State();
+            var productionState2 = new Nfa<Grammar.ISymbol>.State();
+            var productionState3 = new Nfa<Grammar.ISymbol>.State();
+            var productionState4 = new Nfa<Grammar.ISymbol>.State();
             Production.States.Add(productionState0);
             Production.States.Add(productionState1);
             Production.States.Add(productionState2);
@@ -53,8 +54,8 @@ namespace Parlex {
             Production.TransitionFunction[productionState2][Expression].Add(productionState3);
             Production.TransitionFunction[productionState3][PeriodTerminal].Add(productionState4);
 
-            var expressionState0 = new NFA<Grammar.ISymbol>.State();
-            var expressionState1 = new NFA<Grammar.ISymbol>.State();
+            var expressionState0 = new Nfa<Grammar.ISymbol>.State();
+            var expressionState1 = new Nfa<Grammar.ISymbol>.State();
             Expression.States.Add(expressionState0);
             Expression.States.Add(expressionState1);
             Expression.StartStates.Add(expressionState0);
@@ -62,8 +63,8 @@ namespace Parlex {
             Expression.TransitionFunction[expressionState0][Term].Add(expressionState1);
             Expression.TransitionFunction[expressionState1][PipeTerminal].Add(expressionState0);
 
-            var termState0 = new NFA<Grammar.ISymbol>.State();
-            var termState1 = new NFA<Grammar.ISymbol>.State();
+            var termState0 = new Nfa<Grammar.ISymbol>.State();
+            var termState1 = new Nfa<Grammar.ISymbol>.State();
             Term.States.Add(termState0);
             Term.States.Add(termState1);
             Term.StartStates.Add(termState0);
@@ -72,18 +73,22 @@ namespace Parlex {
             Term.TransitionFunction[termState1][Factor].Add(termState1);
             Term.TransitionFunction[termState1][Grammar.WhiteSpaceTerminal].Add(termState1);
 
-            var factorState0 = new NFA<Grammar.ISymbol>.State();
-            var factorState1 = new NFA<Grammar.ISymbol>.State();
-            var factorState2 = new NFA<Grammar.ISymbol>.State();
-            var factorState3 = new NFA<Grammar.ISymbol>.State();
-            var factorState4 = new NFA<Grammar.ISymbol>.State();
-            var factorState5 = new NFA<Grammar.ISymbol>.State();
-            var factorState6 = new NFA<Grammar.ISymbol>.State();
-            var factorState7 = new NFA<Grammar.ISymbol>.State();
+            var factorState0 = new Nfa<Grammar.ISymbol>.State();
+            var factorState1 = new Nfa<Grammar.ISymbol>.State();
+            var factorState2 = new Nfa<Grammar.ISymbol>.State();
+            var factorState3 = new Nfa<Grammar.ISymbol>.State();
+            var factorState4 = new Nfa<Grammar.ISymbol>.State();
+            var factorState5 = new Nfa<Grammar.ISymbol>.State();
+            var factorState6 = new Nfa<Grammar.ISymbol>.State();
+            var factorState7 = new Nfa<Grammar.ISymbol>.State();
             Factor.States.Add(factorState0);
             Factor.States.Add(factorState1);
             Factor.States.Add(factorState2);
             Factor.States.Add(factorState3);
+            Factor.States.Add(factorState4);
+            Factor.States.Add(factorState5);
+            Factor.States.Add(factorState6);
+            Factor.States.Add(factorState7);
             Factor.StartStates.Add(factorState0);
             Factor.AcceptStates.Add(factorState1);
             Factor.TransitionFunction[factorState0][Identifier].Add(factorState1);
@@ -98,8 +103,8 @@ namespace Parlex {
             Factor.TransitionFunction[factorState6][CloseParenthesisTerminal].Add(factorState1);
             Factor.TransitionFunction[factorState7][CloseCurlyTerminal].Add(factorState1);
 
-            var identifierState0 = new NFA<Grammar.ISymbol>.State();
-            var identifierState1 = new NFA<Grammar.ISymbol>.State();
+            var identifierState0 = new Nfa<Grammar.ISymbol>.State();
+            var identifierState1 = new Nfa<Grammar.ISymbol>.State();
             Identifier.States.Add(identifierState0);
             Identifier.States.Add(identifierState1);
             Identifier.StartStates.Add(identifierState0);
@@ -107,10 +112,10 @@ namespace Parlex {
             Identifier.TransitionFunction[identifierState0][Grammar.LetterTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState1][Grammar.LetterTerminal].Add(identifierState1);
 
-            var literalState0 = new NFA<Grammar.ISymbol>.State();
-            var literalState1 = new NFA<Grammar.ISymbol>.State();
-            var literalState2 = new NFA<Grammar.ISymbol>.State();
-            var literalState3 = new NFA<Grammar.ISymbol>.State();
+            var literalState0 = new Nfa<Grammar.ISymbol>.State();
+            var literalState1 = new Nfa<Grammar.ISymbol>.State();
+            var literalState2 = new Nfa<Grammar.ISymbol>.State();
+            var literalState3 = new Nfa<Grammar.ISymbol>.State();
             Literal.States.Add(literalState0);
             Literal.States.Add(literalState1);
             Literal.States.Add(literalState2);
@@ -152,16 +157,16 @@ namespace Parlex {
         }
 
 
-        static NFA<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Parser.Match factor) {
+        static Nfa<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Parser.Match factor) {
             var firstChild = job.AbstractSyntaxForest.NodeTable[factor.Children[0]].First();
 
             if (firstChild.Symbol == Identifier) {
                 Grammar.ISymbol transition = new Grammar.Recognizer(PlaceHolderMarker + ProcessIdentifierClause(job, firstChild), false);
-                var result = new NFA<Grammar.ISymbol>();
-                var state0 = new NFA<Grammar.ISymbol>.State();
+                var result = new Nfa<Grammar.ISymbol>();
+                var state0 = new Nfa<Grammar.ISymbol>.State();
                 result.StartStates.Add(state0);
                 result.States.Add(state0);
-                var state1 = new NFA<Grammar.ISymbol>.State();
+                var state1 = new Nfa<Grammar.ISymbol>.State();
                 result.AcceptStates.Add(state1);
                 result.States.Add(state1);
                 result.TransitionFunction[state0][transition].Add(state1);
@@ -170,11 +175,11 @@ namespace Parlex {
 
             if (firstChild.Symbol == Literal) {
                 var transition = new Grammar.StringTerminal(ProcessLiteralClause(job, firstChild));
-                var result = new NFA<Grammar.ISymbol>();
-                var state0 = new NFA<Grammar.ISymbol>.State();
+                var result = new Nfa<Grammar.ISymbol>();
+                var state0 = new Nfa<Grammar.ISymbol>.State();
                 result.StartStates.Add(state0);
                 result.States.Add(state0);
-                var state1 = new NFA<Grammar.ISymbol>.State();
+                var state1 = new Nfa<Grammar.ISymbol>.State();
                 result.AcceptStates.Add(state1);
                 result.States.Add(state1);
                 result.TransitionFunction[state0][transition].Add(state1);
@@ -212,16 +217,16 @@ namespace Parlex {
                         }
                     }
                 }
-                result = result.Minimized().Reassign();
+                result = result.Minimized();
                 return result;
             }
 
             throw new InvalidOperationException();
         }
 
-        static NFA<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Parser.Match term) {
-            var result = new NFA<Grammar.ISymbol>();
-            var state = new NFA<Grammar.ISymbol>.State();
+        static Nfa<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Parser.Match term) {
+            var result = new Nfa<Grammar.ISymbol>();
+            var state = new Nfa<Grammar.ISymbol>.State();
             result.StartStates.Add(state);
             result.States.Add(state);
             result.AcceptStates.Add(state);
@@ -230,20 +235,20 @@ namespace Parlex {
                 var factor = job.AbstractSyntaxForest.NodeTable[matchClass].First();
                 var factorNfa = ProcessFactorClause(job, factor);
                 result.Insert(result.AcceptStates.First(), factorNfa);
-                result = result.Minimized().Reassign();
+                result = result.Minimized();
             }
             return result;
         }
 
-        static NFA<Grammar.ISymbol> ProcessExpressionClause(Parser.Job job, Parser.Match expression) {
-            var result = new NFA<Grammar.ISymbol>();
+        static Nfa<Grammar.ISymbol> ProcessExpressionClause(Parser.Job job, Parser.Match expression) {
+            var result = new Nfa<Grammar.ISymbol>();
 
             for (var index = 0; index < expression.Children.Length; index += 2) {
                 var termNfa = ProcessTermClause(job, job.AbstractSyntaxForest.NodeTable[expression.Children[index]].First());
-                result = NFA<Grammar.ISymbol>.Union(new[] { result, termNfa });
+                result = Nfa<Grammar.ISymbol>.Union(new[] { result, termNfa });
             }
 
-            return result.Minimized().Reassign();
+            return result.Minimized();
         }
 
         static Grammar.Recognizer ProcessProductionClause(Parser.Job job, Parser.Match production) {
@@ -264,7 +269,7 @@ namespace Parlex {
             foreach (var recognizer in grammar.Productions) {
                 foreach (var fromState in recognizer.States) {
                     var toRemoves = new List<Grammar.ISymbol>();
-                    var toAdds = new AutoDictionary<Grammar.ISymbol, List<NFA<Grammar.ISymbol>.State>>(_ => new List<NFA<Grammar.ISymbol>.State>());
+                    var toAdds = new AutoDictionary<Grammar.ISymbol, List<Nfa<Grammar.ISymbol>.State>>(_ => new List<Nfa<Grammar.ISymbol>.State>());
                     foreach (var symbol in recognizer.TransitionFunction[fromState].Keys) {
                         var symbolAsRecognizer = symbol as Grammar.Recognizer;
                         if (symbolAsRecognizer != null) {
@@ -306,6 +311,90 @@ namespace Parlex {
             ProcessSyntaxClause(j, j.AbstractSyntaxForest.NodeTable[j.AbstractSyntaxForest.Root].First(), result);
             ResolveIdentifiers(result);
             return result;
+        }
+
+        static String BehaviorTreeSequenceToString(BehaviorTree.Sequence sequence) {
+            StringBuilder sb = new StringBuilder();
+            var temp = sequence.Children.ToArray();
+            for (int i = 0; i < temp.Length; ++i) {
+                var parenthesetize = !(temp[i] is BehaviorTree.Terminal || temp[i] is BehaviorTree.Repetition);
+                if (parenthesetize) sb.Append("(");
+                sb.Append(BehaviorTreeNodeToString(temp[i]));
+                if (parenthesetize) sb.Append(")");
+                sb.Append(" ");
+            }
+            return sb.ToString();
+        }
+
+        static String BehaviorTreeChoiceToString(BehaviorTree.Choice choice) {
+            StringBuilder sb = new StringBuilder();
+            var temp = choice.Children.ToArray();
+            for (int i = 0; i < temp.Length; ++i) {
+                var parenthesetize = !(temp[i] is BehaviorTree.Terminal || temp[i] is BehaviorTree.Repetition);
+                if (parenthesetize) sb.Append("(");
+                sb.Append(BehaviorTreeNodeToString(temp[i]));
+                if (parenthesetize) sb.Append(")");
+                if (i < temp.Length - 1) sb.Append("|");
+            }
+            return sb.ToString();
+        }
+
+        static String BehaviorTreeRepetitionToString(BehaviorTree.Repetition repetition) {
+            StringBuilder sb = new StringBuilder();
+            var parenthesetize = !(repetition.Child is BehaviorTree.Terminal || repetition.Child is BehaviorTree.Repetition);
+            if (parenthesetize) sb.Append("(");
+            sb.Append(BehaviorTreeNodeToString(repetition.Child));
+            if (parenthesetize) sb.Append(")");
+            sb.Append("*");
+            return sb.ToString();
+        }
+
+        static String BehaviorTreeTerminalToString(BehaviorTree.Terminal terminal) {
+            var temp = terminal.Symbol.ToString();
+            if (terminal.Symbol is Grammar.StringTerminal) {
+                if (temp.Any(x => !Char.IsLetterOrDigit(x))) {
+                    if (temp.Any(x => x == '"')) {
+                        temp = temp.Replace("\"", "\\\"");
+                    }
+                    temp = "\"" + temp + "\"";
+                }
+            }
+            return temp;
+        }
+
+        static String BehaviorTreeNodeToString(BehaviorTree.Node node) {
+            if (node is BehaviorTree.Sequence) {
+                return BehaviorTreeSequenceToString(node as BehaviorTree.Sequence);
+            } 
+            if (node is BehaviorTree.Choice) {
+                return BehaviorTreeChoiceToString(node as BehaviorTree.Choice);
+            }
+            if (node is BehaviorTree.Repetition) {
+                return BehaviorTreeRepetitionToString(node as BehaviorTree.Repetition);
+            }
+            if (node is BehaviorTree.Terminal) {
+                return BehaviorTreeTerminalToString(node as BehaviorTree.Terminal);
+            }
+            throw new InvalidOperationException();
+        }
+
+        static void AppendRecognizer(StringBuilder builder, Grammar.Recognizer recognizer)
+        {
+            builder.Append(recognizer.Name);
+            builder.Append("=");
+            var bht = new BehaviorTree(recognizer);
+            builder.Append(BehaviorTreeNodeToString(bht.Root));
+            builder.AppendLine(".");
+        }
+
+        public static String SaveGrammar(Grammar grammar)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (Grammar.Recognizer recognizer in grammar.Productions)
+            {
+                AppendRecognizer(builder, recognizer);
+            }
+            return builder.ToString();
         }
     }
 }

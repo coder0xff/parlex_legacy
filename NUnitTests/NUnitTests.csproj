@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -29,17 +29,21 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL" />
     <Reference Include="System" />
-    <Reference Include="nunit.framework, Version=2.6.0.12051, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Test.cs" />
+    <Compile Include="GrammarTests.cs" />
+    <Compile Include="BehaviorTreeTests.cs" />
+    <Compile Include="NfaTests.cs" />
+    <Compile Include="ParserTests.cs" />
+    <Compile Include="WirthSyntaxNotationTests.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\NondeterministicFiniteAutomata\NondeterministicFiniteAutomata.csproj">
-      <Project>{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}</Project>
-      <Name>NondeterministicFiniteAutomata</Name>
+    <ProjectReference Include="..\Automata\Automata.csproj">
+      <Project>{7862b8a9-eebd-49b4-b604-edc03cf90ef1}</Project>
+      <Name>Automata</Name>
     </ProjectReference>
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{225EE06C-3EC1-4D0C-919A-338DB9D77548}</Project>

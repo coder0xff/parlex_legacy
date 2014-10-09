@@ -5,7 +5,7 @@ using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using NondeterministicFiniteAutomata;
+using Automata;
 
 namespace Parlex {
     // A zero-based index into the source text
@@ -133,14 +133,14 @@ namespace Parlex {
                 internal class RecognizerState {
                     private readonly SubJob _subJob;
                     private readonly Position _position;
-                    private readonly NFA<Grammar.ISymbol>.State[] _states;
+                    private readonly Nfa<Grammar.ISymbol>.State[] _states;
                     private bool IsAcceptState { get { return _states.Any(x => ((Recognizer)_subJob.Symbol).AcceptStates.Contains(x)); } }
                     int _unterminatedSubsequentRecognizerStateAndEvaluateCount = 1;
                     bool _subsequentMadeMatch;
                     readonly RecognizerState _antecedent;
                     private readonly MatchClass _entranceMatchClass;
 
-                    public RecognizerState(SubJob subJob, Position position, NFA<Grammar.ISymbol>.State[] states, RecognizerState antecedent = null, MatchClass entranceMatchClass = null) {
+                    public RecognizerState(SubJob subJob, Position position, Nfa<Grammar.ISymbol>.State[] states, RecognizerState antecedent = null, MatchClass entranceMatchClass = null) {
                         _subJob = subJob;
                         _position = position;
                         _states = states;
@@ -192,7 +192,7 @@ namespace Parlex {
                         if (_terminateCount > 0 || _subJob._terminateCount > 0) {
                             throw new ApplicationException();
                         }
-                        var nextStates = new List<NFA<Grammar.ISymbol>.State>();
+                        var nextStates = new List<Nfa<Grammar.ISymbol>.State>();
                         foreach (var currentState in _states) {
                             if (((Recognizer)_subJob.Symbol).TransitionFunction[currentState].Keys.Contains(match.Symbol)) {
                                 nextStates.AddRange(((Recognizer)_subJob.Symbol).TransitionFunction[currentState][match.Symbol]);

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using NondeterministicFiniteAutomata;
+using Automata;
 
 namespace Parlex {
     public class Grammar {
@@ -39,7 +39,7 @@ namespace Parlex {
 
             public String Name { get { return "String terminal: " + _text; } }
 
-            public override string ToString() { return Name; }
+            public override string ToString() { return _text; }
         }
 
         public class LetterTerminalT : ITerminal {
@@ -56,7 +56,7 @@ namespace Parlex {
 
             public String Name { get { return "Any letter character"; } }
 
-            public override string ToString() { return Name; }
+            public override string ToString() { return "letter"; }
         }
 
         static public readonly LetterTerminalT LetterTerminal = new LetterTerminalT();
@@ -75,7 +75,7 @@ namespace Parlex {
 
             public String Name { get { return "Any character"; } }
 
-            public override string ToString() { return Name; }
+            public override string ToString() { return "character"; }
         }
 
         static public CharacterTerminalT CharacterTerminal = new CharacterTerminalT();
@@ -95,7 +95,7 @@ namespace Parlex {
             public String Name { get { return "Any whitespace character"; } }
 
             public override string ToString() {
-                return Name;
+                return "whitespace";
             }
         }
 
@@ -133,7 +133,7 @@ namespace Parlex {
             NameToBuiltInSymbol["nonDoubleQuote"] = NonDoubleQuoteCharacterTerminal;
         }
 
-        public class Recognizer : NFA<ISymbol>, ISymbol {
+        public class Recognizer : Nfa<ISymbol>, ISymbol {
             readonly String _name;
             readonly bool _greedy;
 
@@ -142,7 +142,7 @@ namespace Parlex {
                 _greedy = greedy;
             }
 
-            public Recognizer(String name, bool greedy, NFA<ISymbol> source)
+            public Recognizer(String name, bool greedy, Nfa<ISymbol> source)
                 : base(source) {
                 _name = name;
                 _greedy = greedy;
@@ -150,13 +150,8 @@ namespace Parlex {
 
             public String Name { get { return _name; } }
 
-            public override string ToString()
-            {
-                var result = new StringBuilder("Name: ");
-                result.Append(Name);
-                result.Append(" ");
-                result.Append(base.ToString(x => x.Name));
-                return result.ToString();
+            public override string ToString() {
+                return Name;
             }
 
             public bool Greedy { get { return _greedy; } }
@@ -182,6 +177,10 @@ namespace Parlex {
 
             public string Name {
                 get { return "Character set: " + _name; }
+            }
+
+            public override string ToString() {
+                return _name;
             }
         }
 
