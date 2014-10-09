@@ -1,10 +1,14 @@
 parlex
 ======
 
-A parser generator, led by example.
+A collection of tools for the design of programming languages.
 
-Parlex creates grammar definitions in an intuitive manner with a minimal learning curve. The user creates examples of valid syntax called exemplars. Then, the user chooses spans of text in the exemplar, and associates one or more grammar products with each span. This information is used to construct an NFA that can recognize the patterns. For an example, see test.ple in the projects root folder (same folder as this README).
-              
-Parlex will, tentatively, also include an editor for editing the .ple files. It is not a text editor. Exemplars are listed, and once selected, each product in an exemplar can be edited using specialized GUI controls. In the editor, matches that can be identified using existing exemplars are displayed as the user types in a new exemplar. The user then adds any missing products.
+More generally speaking, parlex is an effort to improve the available tooling for designing context-free language grammars, which is often an important step in creating a new programming language. The most common tools, such as flex and bison, and even the more advanced ones, such as ANTLR and GOLD, fall short of the sophistication possible. The academic community has researched the areas of state machines, context free languages, and behavior trees extensively, yet much of the knowledge is left untapped in the very tools that are used to work with such data structures. Parlex aims to improve upon the state of the art by implementing, at a minimum, the following functionality:
 
-Parlex will also be able to identify ambiguities. More importantly, parlex will generate text that demonstrates the ambiguity, along with it's possible products using the editors control scheme. No more confusing shift-reduce and reduce-reduce errors.
+ - Graphical representations of the behavior of grammars
+ - Fully automated optimization and minimiztion of grammars
+ - A new intuitive metasyntax for defining language grammars
+ - Cross conversion between common grammars such as GLR, LALR, and LR(k).
+ - Cross conversion between common metasyntaxes such as EBNF, Wirth Syntax Notation, and Regular Expressions
+ - A framework for parallel non-deterministic parsing of text based on a supplid grammar definition
+ - An Integrated Development Environment
