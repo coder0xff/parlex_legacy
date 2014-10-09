@@ -95,7 +95,7 @@ namespace Parlex {
             public String Name { get { return "Any whitespace character"; } }
 
             public override string ToString() {
-                return "whitespace";
+                return "whiteSpace";
             }
         }
 
@@ -117,6 +117,10 @@ namespace Parlex {
             public string Name
             {
                 get { return "Non-double quote character"; }
+            }
+
+            public override string ToString() {
+                return "nonDoubleQuote";
             }
         }
 

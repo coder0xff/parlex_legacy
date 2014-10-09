@@ -321,7 +321,9 @@ namespace Parlex {
                 if (parenthesetize) sb.Append("(");
                 sb.Append(BehaviorTreeNodeToString(temp[i]));
                 if (parenthesetize) sb.Append(")");
-                sb.Append(" ");
+                if (i != temp.Length - 1) {
+                    sb.Append(" ");
+                }
             }
             return sb.ToString();
         }
@@ -341,18 +343,18 @@ namespace Parlex {
 
         static String BehaviorTreeRepetitionToString(BehaviorTree.Repetition repetition) {
             StringBuilder sb = new StringBuilder();
-            var parenthesetize = !(repetition.Child is BehaviorTree.Terminal || repetition.Child is BehaviorTree.Repetition);
-            if (parenthesetize) sb.Append("(");
+            sb.Append("{");
             sb.Append(BehaviorTreeNodeToString(repetition.Child));
-            if (parenthesetize) sb.Append(")");
-            sb.Append("*");
+            sb.Append("}");
             return sb.ToString();
         }
 
         static String BehaviorTreeTerminalToString(BehaviorTree.Terminal terminal) {
             var temp = terminal.Symbol.ToString();
             if (terminal.Symbol is Grammar.StringTerminal) {
-                if (temp.Any(x => !Char.IsLetterOrDigit(x))) {
+                if (temp == "\"") {
+                    temp = "doubleQuote";
+                } else if (temp.Any(x => !Char.IsLetterOrDigit(x))) {
                     if (temp.Any(x => x == '"')) {
                         temp = temp.Replace("\"", "\\\"");
                     }
