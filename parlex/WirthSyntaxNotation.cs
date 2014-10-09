@@ -300,7 +300,7 @@ namespace Parlex {
             }
         }
 
-        public static Grammar LoadGrammar(String text) {
+        public static Grammar GrammarFromString(String text) {
             var j = Parser.Parse(text, 0, WorthSyntaxNotationParserGrammar.MainProduction);
             j.Wait();
             var asg = j.AbstractSyntaxForest;
@@ -387,7 +387,7 @@ namespace Parlex {
             builder.AppendLine(".");
         }
 
-        public static String SaveGrammar(Grammar grammar)
+        public static String GrammarToString(Grammar grammar)
         {
             StringBuilder builder = new StringBuilder();
             foreach (Grammar.Recognizer recognizer in grammar.Productions)
