@@ -23,13 +23,14 @@ namespace Parlex
     public class BehaviorTree
     {
         public abstract class Node {
-            public abstract void Optimize();
+            internal abstract void Optimize();
+            internal abstract GNfa ToNfa();
         }
 
         public class Sequence : Node {
             public readonly List<Node> Children = new List<Node>();
 
-            void expandNestedSequences() {
+            internal void expandNestedSequences() {
                 var oldChildren = Children.ToArray();
                 Children.Clear();
                 foreach (var oldChild in oldChildren) {
@@ -48,20 +49,76 @@ namespace Parlex
                 }
             }
 
-            public override void Optimize() {
+            internal override void Optimize() {
                 expandNestedSequences();
+            }
+
+            internal override GNfa ToNfa() {
+                var result = new Nfa<Grammar.ISymbol>();
+                var state = new Nfa<Grammar.ISymbol>.State();
+                result.StartStates.Add(state);
+                result.States.Add(state);
+                result.AcceptStates.Add(state);
+                foreach (var child in Children) {
+                    var childNfa = child.ToNfa();
+                    result.Insert(result.AcceptStates.First(), childNfa);
+                }
+                result = result.Minimized();
+                return result;
             }
         }
 
         public class Repetition : Node {
             public Node Child;
-            public override void Optimize() {                
+            internal override void Optimize() {                
+            }
+
+            internal override GNfa ToNfa() {
+                var result = Child.ToNfa();
+                foreach (var transition in result.GetTransitions()) {
+                    if (result.AcceptStates.Contains(transition.ToState))
+                    {
+                        foreach (var startState in result.StartStates) {
+                            result.TransitionFunction[transition.FromState][transition.Symbol].Add(startState);
+                        }
+                    }
+                    if (result.AcceptStates.Contains(transition.FromState)) {
+                        foreach (var startState in result.StartStates) {
+                            result.TransitionFunction[startState][transition.Symbol].Add(transition.ToState);
+                        }
+                    }
+                }
+                foreach (var acceptState in result.AcceptStates) {
+                    result.States.Remove(acceptState);
+                    result.AcceptStates.Remove(acceptState);
+                    result.TransitionFunction.TryRemove(acceptState);
+                    foreach (var transition in result.GetTransitions().Where(x => x.ToState == acceptState)) {
+                        result.TransitionFunction[transition.FromState][transition.Symbol].Remove(acceptState);
+                        if (result.TransitionFunction[transition.FromState][transition.Symbol].Count == 0) {
+                            result.TransitionFunction[transition.FromState].TryRemove(transition.Symbol);
+                        }
+                    }
+                }
+                foreach (var startState in result.StartStates) {
+                    result.AcceptStates.Add(startState);
+                }
+                result = result.Minimized();
+                return result;
             }
         }
 
         public class Optional : Node {
             public Node Child;
-            public override void Optimize() {
+            internal override void Optimize() {
+            }
+
+            internal override GNfa ToNfa() {
+                var result = new GNfa();
+                foreach (var startState in result.StartStates) {
+                    result.AcceptStates.Add(startState);
+                }
+                result = result.Minimized();
+                return result;
             }
         }
 
@@ -86,24 +143,44 @@ namespace Parlex
                 }
             }
 
-            public override void Optimize() {
+            internal override void Optimize() {
                 expandNestedChoices();
                 //todo: convert some choices to options
             }
+
+            internal override GNfa ToNfa() {
+                return GNfa.Union(Children.Select(x => x.ToNfa())).Minimized();
+            }
         }
 
-        public class Terminal : Node {
+        public class Leaf : Node {
             public Grammar.ISymbol Symbol;
-            public Terminal(Grammar.ISymbol symbol) {
+            public Leaf(Grammar.ISymbol symbol) {
                 Symbol = symbol;
             }
 
-            public override void Optimize() {                
+            internal override void Optimize() {                
+            }
+
+            internal override GNfa ToNfa() {
+                var result = new GNfa();
+                var startState = new GNfa.State();
+                var acceptState = new GNfa.State();
+                result.StartStates.Add(startState);
+                result.States.Add(startState);
+                result.AcceptStates.Add(acceptState);
+                result.States.Add(acceptState);
+                result.TransitionFunction[startState][Symbol].Add(acceptState);
+                return result;
             }
         }
 
-        public class Null : Node {
-            public override void Optimize() {
+        private class Null : Node {
+            internal override void Optimize() {
+            }
+
+            internal override GNfa ToNfa() {
+                throw new Exception("A Null node cannot be converted to an Nfa.");
             }
         }
 
@@ -129,7 +206,7 @@ namespace Parlex
             }
 
             foreach (var transition in gnfa.GetTransitions()) {
-                nfa.TransitionFunction[stateMap[transition.FromState]][new Terminal(transition.Symbol)].Add(
+                nfa.TransitionFunction[stateMap[transition.FromState]][new Leaf(transition.Symbol)].Add(
                     stateMap[transition.ToState]);
             }
 
@@ -263,7 +340,13 @@ namespace Parlex
         public Node Root;
 
         public BehaviorTree(GNfa gnfa) {
-            Root = Treeify(gnfa);
+            Root = Treeify(gnfa.Minimized());
+        }
+
+        public BehaviorTree() {}
+
+        public GNfa ToNfa() {
+            return Root.ToNfa();
         }
     }
 }
