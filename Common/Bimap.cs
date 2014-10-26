@@ -6,7 +6,33 @@ using System.Linq;
 namespace System.Collections.Generic.More {
     [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
     public class Bimap<T1, T2> {
-        class BimapView<U1, U2> : IDictionary<U1, U2> {
+        private readonly BimapView<T1, T2> _left;
+        private readonly BimapView<T2, T1> _right;
+
+        public Bimap() {
+            var leftDictionary = new Dictionary<T1, T2>();
+            var rightDictionary = new Dictionary<T2, T1>();
+            _left = new BimapView<T1, T2>(leftDictionary, rightDictionary);
+            _right = new BimapView<T2, T1>(rightDictionary, leftDictionary);
+        }
+
+        public IDictionary<T1, T2> Left {
+            get { return _left; }
+        }
+
+        public IDictionary<T2, T1> Right {
+            get { return _right; }
+        }
+
+        public int Count {
+            get { return _left.Count; }
+        }
+
+        public void Clear() {
+            _left.Clear();
+        }
+
+        private class BimapView<U1, U2> : IDictionary<U1, U2> {
             public readonly Dictionary<U1, U2> _keyToValue;
             public readonly Dictionary<U2, U1> _valueToKey;
 
@@ -108,25 +134,6 @@ namespace System.Collections.Generic.More {
                 return _keyToValue.GetEnumerator();
             }
         }
-
-        readonly BimapView<T1, T2> _left;
-        readonly BimapView<T2, T1> _right;
-
-        public Bimap() {
-            var leftDictionary = new Dictionary<T1, T2>();
-            var rightDictionary = new Dictionary<T2, T1>();
-            _left = new BimapView<T1, T2>(leftDictionary, rightDictionary);
-            _right = new BimapView<T2, T1>(rightDictionary, leftDictionary);
-        }
-
-        public IDictionary<T1, T2> Left { get { return _left; } }
-        public IDictionary<T2, T1> Right { get { return _right; } }
-
-        public int Count { get { return _left.Count; } }
-
-        public void Clear() {
-            _left.Clear();
-        }
     }
 }
 
@@ -135,12 +142,18 @@ namespace System.Linq.More {
     public static class BimapIEnumerableExtensions {
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
         public static Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, TLeft> leftFunc, Func<TElement, TRight> rightFunc) {
-            if (enumerable == null) throw new ArgumentNullException("enumerable");
-            if (leftFunc == null) throw new ArgumentNullException("leftFunc");
-            if (rightFunc == null) throw new ArgumentNullException("rightFunc");
+            if (enumerable == null) {
+                throw new ArgumentNullException("enumerable");
+            }
+            if (leftFunc == null) {
+                throw new ArgumentNullException("leftFunc");
+            }
+            if (rightFunc == null) {
+                throw new ArgumentNullException("rightFunc");
+            }
 
             var result = new Bimap<TLeft, TRight>();
-            foreach (var variable in enumerable) {
+            foreach (TElement variable in enumerable) {
                 result.Left.Add(leftFunc(variable), rightFunc(variable));
             }
             return result;
@@ -148,13 +161,19 @@ namespace System.Linq.More {
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Bimap")]
         public static Bimap<TLeft, TRight> ToBimap<TElement, TLeft, TRight>(this IEnumerable<TElement> enumerable, Func<TElement, int, TLeft> leftFunc, Func<TElement, int, TRight> rightFunc) {
-            if (enumerable == null) throw new ArgumentNullException("enumerable");
-            if (leftFunc == null) throw new ArgumentNullException("leftFunc");
-            if (rightFunc == null) throw new ArgumentNullException("rightFunc");
+            if (enumerable == null) {
+                throw new ArgumentNullException("enumerable");
+            }
+            if (leftFunc == null) {
+                throw new ArgumentNullException("leftFunc");
+            }
+            if (rightFunc == null) {
+                throw new ArgumentNullException("rightFunc");
+            }
 
             var result = new Bimap<TLeft, TRight>();
-            var indexCounter = 0;
-            foreach (var variable in enumerable) {
+            int indexCounter = 0;
+            foreach (TElement variable in enumerable) {
                 result.Left.Add(leftFunc(variable, indexCounter), rightFunc(variable, indexCounter));
                 indexCounter++;
             }

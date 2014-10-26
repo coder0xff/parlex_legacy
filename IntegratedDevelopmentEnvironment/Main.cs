@@ -1,12 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Parlex;
 using WeifenLuo.WinFormsUI.Docking;
@@ -15,7 +8,7 @@ namespace IntegratedDevelopmentEnvironment {
     public partial class Main : Form {
         public Main() {
             InitializeComponent();
-            var grammarEditor = GrammarEditor.ForFile("C:\\Users\\coder_000\\Dropbox\\Plange\\grammar.wsn",
+            GrammarEditor grammarEditor = GrammarEditor.ForFile("C:\\Users\\coder_000\\Dropbox\\Plange\\grammar.wsn",
                 new WirthSyntaxNotation.Formatter());
             grammarEditor.Show(dockPanel1, DockState.Document);
         }
@@ -28,7 +21,7 @@ namespace IntegratedDevelopmentEnvironment {
         private void openToolStripMenuItem_Click(object sender, EventArgs e) {
             if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
                 if (openFileDialog.FilterIndex == 1 || openFileDialog.FilterIndex == 2) {
-                    var grammarEditor = GrammarEditor.ForFile(openFileDialog.FileName, new WirthSyntaxNotation.Formatter());
+                    GrammarEditor grammarEditor = GrammarEditor.ForFile(openFileDialog.FileName, new WirthSyntaxNotation.Formatter());
                     grammarEditor.Show(dockPanel1, DockState.Document);
                 }
             }
@@ -39,8 +32,7 @@ namespace IntegratedDevelopmentEnvironment {
             Debug.Assert(editor != null, "editor != null");
             if (String.IsNullOrEmpty(editor.FilePathName)) {
                 saveAsToolStripMenuItem_Click(sender, e);
-            }
-            else {
+            } else {
                 editor.SaveToDisk();
             }
         }

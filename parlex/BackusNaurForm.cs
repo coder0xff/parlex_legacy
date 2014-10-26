@@ -1,7 +1,3 @@
 ﻿namespace Parlex {
-    public class BackusNaurForm {
-        public BackusNaurForm() {
-        }
-    }
+    public class BackusNaurForm {}
 }
-

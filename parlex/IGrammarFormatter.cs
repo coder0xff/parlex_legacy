@@ -1,8 +1,8 @@
-using System;
+using System.IO;
 
 namespace Parlex {
-    public interface IGrammarFormatter{
-        void Serialize(System.IO.Stream s, Grammar grammar);
-        Grammar Deserialize(System.IO.Stream s);
+    public interface IGrammarFormatter {
+        void Serialize(Stream s, Grammar grammar);
+        Grammar Deserialize(Stream s);
     }
 }

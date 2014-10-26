@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using NUnit.Framework;
 using Parlex;
 
@@ -8,7 +9,7 @@ namespace NUnitTests {
         [Test]
         public void TestSerialization() {
             String s = WirthSyntaxNotation.GrammarToString(WirthSyntaxNotation.WorthSyntaxNotationParserGrammar);
-            System.Diagnostics.Debug.WriteLine(s);
+            Debug.WriteLine(s);
         }
     }
 }

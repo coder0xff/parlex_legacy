@@ -3,46 +3,21 @@ using System.Linq;
 
 namespace System.Collections.Generic.More {
     /// <summary>
-    /// An immutable set of States that can be quickly tested for set inequality.
-    /// Note that returning 'true' from equals is still O(n) as it requires comparing every element.
+    ///     An immutable set of States that can be quickly tested for set inequality.
+    ///     Note that returning 'true' from equals is still O(n) as it requires comparing every element.
     /// </summary>
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public class ReadOnlyHashSet<T> : ISet<T> {
-        public bool Equals(ReadOnlyHashSet<T> other) {
-            if (ReferenceEquals(null, other)) return false;
-            return _hashCode == other._hashCode && _items.SetEquals(other._items);
-        }
-
-        public override bool Equals(object obj) {
-            if (ReferenceEquals(null, obj)) {
-                return false;
-            }
-            var castObj = obj as ReadOnlyHashSet<T>;
-            return castObj != null && Equals(castObj);
-        }
-
-        public override int GetHashCode() {
-            return _hashCode;
-        }
-
-        public static bool operator ==(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
-            return left != null && left.Equals(right);
-        }
-
-        public static bool operator !=(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
-            return (Object)left != null && !left.Equals(right);
-        }
-
-        readonly HashSet<T> _items;
-        readonly int _hashCode;
+        private readonly int _hashCode;
+        private readonly HashSet<T> _items;
 
         public ReadOnlyHashSet(IEnumerable<T> items) {
             _items = new HashSet<T>(items);
             _hashCode = 0;
-            var hashes = items.Select(state => state.GetHashCode()).ToList();
+            List<int> hashes = items.Select(state => state.GetHashCode()).ToList();
             hashes.Sort();
-            foreach (var hash in hashes) {
-                _hashCode = _hashCode * 397 ^ hash;
+            foreach (int hash in hashes) {
+                _hashCode = _hashCode*397 ^ hash;
             }
         }
 
@@ -126,9 +101,36 @@ namespace System.Collections.Generic.More {
             get { return true; }
         }
 
+        public bool Equals(ReadOnlyHashSet<T> other) {
+            if (ReferenceEquals(null, other)) {
+                return false;
+            }
+            return _hashCode == other._hashCode && _items.SetEquals(other._items);
+        }
+
+        public override bool Equals(object obj) {
+            if (ReferenceEquals(null, obj)) {
+                return false;
+            }
+            var castObj = obj as ReadOnlyHashSet<T>;
+            return castObj != null && Equals(castObj);
+        }
+
+        public override int GetHashCode() {
+            return _hashCode;
+        }
+
+        public static bool operator ==(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
+            return left != null && left.Equals(right);
+        }
+
+        public static bool operator !=(ReadOnlyHashSet<T> left, ReadOnlyHashSet<T> right) {
+            return (Object)left != null && !left.Equals(right);
+        }
+
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes"), SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public static ReadOnlyHashSet<T> IntersectMany(IEnumerable<IEnumerable<T>> sets) {
-            var firstSet = sets.FirstOrDefault();
+            IEnumerable<T> firstSet = sets.FirstOrDefault();
             var temp = new HashSet<T>();
             if (firstSet != null) {
                 temp.UnionWith(firstSet);

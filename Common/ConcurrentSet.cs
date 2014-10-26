@@ -5,7 +5,7 @@ using System.Linq;
 namespace System.Collections.Concurrent.More {
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public class ConcurrentSet<T> : ICollection<T> {
-        readonly ConcurrentDictionary<T, byte> _storage;
+        private readonly ConcurrentDictionary<T, byte> _storage;
 
         public ConcurrentSet() {
             _storage = new ConcurrentDictionary<T, byte>();
@@ -35,9 +35,13 @@ namespace System.Collections.Concurrent.More {
             _storage = new ConcurrentDictionary<T, byte>(concurrencyLevel, capacity, comparer);
         }
 
-        public int Count { get { return _storage.Count; } }
+        public bool IsEmpty {
+            get { return _storage.IsEmpty; }
+        }
 
-        public bool IsEmpty { get { return _storage.IsEmpty; } }
+        public int Count {
+            get { return _storage.Count; }
+        }
 
         public void Clear() {
             _storage.Clear();
@@ -47,23 +51,17 @@ namespace System.Collections.Concurrent.More {
             return _storage.ContainsKey(item);
         }
 
-        public bool TryAdd(T item) {
-            return _storage.TryAdd(item, 0);
-        }
-
-        public bool TryRemove(T item) {
-            byte dontCare;
-            return _storage.TryRemove(item, out dontCare);
-        }
-
         public void Add(T item) {
             ((ICollection<KeyValuePair<T, byte>>)_storage).Add(new KeyValuePair<T, byte>(item, 0));
         }
 
         public void CopyTo(T[] array, int arrayIndex) {
-            if (array == null) throw new ArgumentNullException("array");
-            foreach (var pair in _storage)
+            if (array == null) {
+                throw new ArgumentNullException("array");
+            }
+            foreach (var pair in _storage) {
                 array[arrayIndex++] = pair.Key;
+            }
         }
 
         public bool IsReadOnly {
@@ -80,6 +78,15 @@ namespace System.Collections.Concurrent.More {
 
         IEnumerator IEnumerable.GetEnumerator() {
             return _storage.Keys.GetEnumerator();
+        }
+
+        public bool TryAdd(T item) {
+            return _storage.TryAdd(item, 0);
+        }
+
+        public bool TryRemove(T item) {
+            byte dontCare;
+            return _storage.TryRemove(item, out dontCare);
         }
     }
 }

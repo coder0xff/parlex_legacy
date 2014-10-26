@@ -37,9 +37,9 @@ namespace NUnitTests {
             g.Productions.Add(identifier);
             g.MainProduction = syntax;
 
-            var j = Parser.Parse("A=B", 0, g.MainProduction);
+            Parser.Job j = Parser.Parse("A=B", 0, g.MainProduction);
             j.Wait();
-            var asf = j.AbstractSyntaxForest;
+            Parser.AbstractSyntaxForest asf = j.AbstractSyntaxForest;
         }
     }
 }

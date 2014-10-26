@@ -8,30 +8,29 @@ using Automata;
 
 namespace Parlex {
     public static class WirthSyntaxNotation {
-        public static readonly Grammar WorthSyntaxNotationParserGrammar;
-        static readonly Grammar.ITerminal EqualsTerminal = new Grammar.StringTerminal("=");
-        static readonly Grammar.ITerminal PeriodTerminal = new Grammar.StringTerminal(".");
-        static readonly Grammar.ITerminal PipeTerminal = new Grammar.StringTerminal("|");
-        static readonly Grammar.ITerminal OpenParenthesisTerminal = new Grammar.StringTerminal("(");
-        static readonly Grammar.ITerminal CloseParenthesisTerminal = new Grammar.StringTerminal(")");
-        static readonly Grammar.ITerminal OpenSquareTerminal = new Grammar.StringTerminal("[");
-        static readonly Grammar.ITerminal CloseSquareTerminal = new Grammar.StringTerminal("]");
-        static readonly Grammar.ITerminal OpenCurlyTerminal = new Grammar.StringTerminal("{");
-        static readonly Grammar.ITerminal CloseCurlyTerminal = new Grammar.StringTerminal("}");
-        static readonly Grammar.ITerminal DoubleQuoteTerminal = new Grammar.StringTerminal("\"");
-        static readonly Grammar.ITerminal UnderscoreTerminal = new Grammar.StringTerminal("_");
-        static readonly Grammar.CharacterSet NotDoubleQuoteCharacterSet = new Grammar.CharacterSet("notDoubleQuotes", Unicode.All.Except(new[] { Char.ConvertToUtf32("\"", 0) }));
-        static readonly Grammar.Recognizer Syntax = new Grammar.Recognizer("syntax", true, true);
-        static readonly Grammar.Recognizer Production = new Grammar.Recognizer("production", true, false);
-        static readonly Grammar.Recognizer Expression = new Grammar.Recognizer("expression", true, true);
-        static readonly Grammar.Recognizer Term = new Grammar.Recognizer("term", true, true);
-        static readonly Grammar.Recognizer Factor = new Grammar.Recognizer("factor", true, true);
-        static readonly Grammar.Recognizer Identifier = new Grammar.Recognizer("identifier", true, true);
-        static readonly Grammar.Recognizer Literal = new Grammar.Recognizer("literal", false, true);
         private const String PlaceHolderMarker = "6CC3C4B8-33EC-4093-ADB4-418C2BA0E97B ";
+        public static readonly Grammar WorthSyntaxNotationParserGrammar;
+        private static readonly Grammar.ITerminal EqualsTerminal = new Grammar.StringTerminal("=");
+        private static readonly Grammar.ITerminal PeriodTerminal = new Grammar.StringTerminal(".");
+        private static readonly Grammar.ITerminal PipeTerminal = new Grammar.StringTerminal("|");
+        private static readonly Grammar.ITerminal OpenParenthesisTerminal = new Grammar.StringTerminal("(");
+        private static readonly Grammar.ITerminal CloseParenthesisTerminal = new Grammar.StringTerminal(")");
+        private static readonly Grammar.ITerminal OpenSquareTerminal = new Grammar.StringTerminal("[");
+        private static readonly Grammar.ITerminal CloseSquareTerminal = new Grammar.StringTerminal("]");
+        private static readonly Grammar.ITerminal OpenCurlyTerminal = new Grammar.StringTerminal("{");
+        private static readonly Grammar.ITerminal CloseCurlyTerminal = new Grammar.StringTerminal("}");
+        private static readonly Grammar.ITerminal DoubleQuoteTerminal = new Grammar.StringTerminal("\"");
+        private static readonly Grammar.ITerminal UnderscoreTerminal = new Grammar.StringTerminal("_");
+        private static readonly Grammar.CharacterSet NotDoubleQuoteCharacterSet = new Grammar.CharacterSet("notDoubleQuotes", Unicode.All.Except(new[] {Char.ConvertToUtf32("\"", 0)}));
+        private static readonly Grammar.Recognizer Syntax = new Grammar.Recognizer("syntax", true, true);
+        private static readonly Grammar.Recognizer Production = new Grammar.Recognizer("production", true, false);
+        private static readonly Grammar.Recognizer Expression = new Grammar.Recognizer("expression", true, true);
+        private static readonly Grammar.Recognizer Term = new Grammar.Recognizer("term", true, true);
+        private static readonly Grammar.Recognizer Factor = new Grammar.Recognizer("factor", true, true);
+        private static readonly Grammar.Recognizer Identifier = new Grammar.Recognizer("identifier", true, true);
+        private static readonly Grammar.Recognizer Literal = new Grammar.Recognizer("literal", false, true);
 
         static WirthSyntaxNotation() {
-
             var syntaxState0 = new Nfa<Grammar.ISymbol>.State();
             Syntax.States.Add(syntaxState0);
             Syntax.StartStates.Add(syntaxState0);
@@ -140,20 +139,21 @@ namespace Parlex {
             WorthSyntaxNotationParserGrammar.Productions.Add(Identifier);
             WorthSyntaxNotationParserGrammar.Productions.Add(Literal);
             WorthSyntaxNotationParserGrammar.MainProduction = Syntax;
-            
         }
 
-        static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {
+        private static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {
             return job.Text.Substring(identifier.Position, identifier.Length);
         }
 
-        static string ProcessLiteralClause(Parser.Job job, Parser.Match literal) {
+        private static string ProcessLiteralClause(Parser.Job job, Parser.Match literal) {
             return job.Text.Substring(literal.Position + 1, literal.Length - 2).Replace("'"[0], '"'); //remove quotes and change single quotes to double
         }
 
-        static Grammar.Recognizer GetRecognizerByIdentifierString(Grammar result, String identifierString) {
-            foreach (var recognizer in result.Productions) {
-                if (recognizer.Name == identifierString.Trim()) return recognizer;
+        private static Grammar.Recognizer GetRecognizerByIdentifierString(Grammar result, String identifierString) {
+            foreach (Grammar.Recognizer recognizer in result.Productions) {
+                if (recognizer.Name == identifierString.Trim()) {
+                    return recognizer;
+                }
             }
             var newRecognizer = new Grammar.Recognizer(identifierString.Trim(), false, false);
             result.Productions.Add(newRecognizer);
@@ -161,8 +161,8 @@ namespace Parlex {
         }
 
 
-        static Nfa<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Parser.Match factor) {
-            var firstChild = job.AbstractSyntaxForest.NodeTable[factor.Children[0]].First();
+        private static Nfa<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Parser.Match factor) {
+            Parser.Match firstChild = job.AbstractSyntaxForest.NodeTable[factor.Children[0]].First();
 
             if (firstChild.Symbol == Identifier) {
                 Grammar.ISymbol transition = new Grammar.Recognizer(PlaceHolderMarker + ProcessIdentifierClause(job, firstChild), false, false);
@@ -191,31 +191,30 @@ namespace Parlex {
             }
 
             if (firstChild.Symbol == OpenSquareTerminal) {
-                var expression = job.AbstractSyntaxForest.NodeTable[factor.Children[1]].First();
-                var result = ProcessExpressionClause(job, expression);
-                foreach (var state in result.StartStates) {
+                Parser.Match expression = job.AbstractSyntaxForest.NodeTable[factor.Children[1]].First();
+                Nfa<Grammar.ISymbol> result = ProcessExpressionClause(job, expression);
+                foreach (Nfa<Grammar.ISymbol>.State state in result.StartStates) {
                     result.AcceptStates.Add(state); //to make it optional
                 }
                 return result;
             }
 
             if (firstChild.Symbol == OpenParenthesisTerminal) {
-                var expression = job.AbstractSyntaxForest.NodeTable[factor.Children[1]].First();
-                var result = ProcessExpressionClause(job, expression);
+                Parser.Match expression = job.AbstractSyntaxForest.NodeTable[factor.Children[1]].First();
+                Nfa<Grammar.ISymbol> result = ProcessExpressionClause(job, expression);
                 return result;
             }
 
             if (firstChild.Symbol == OpenCurlyTerminal) {
-                var expression = job.AbstractSyntaxForest.NodeTable[factor.Children[1]].First();
-                var result = ProcessExpressionClause(job, expression);
-                var acceptNothingState = new Grammar.Recognizer.State();
+                Parser.Match expression = job.AbstractSyntaxForest.NodeTable[factor.Children[1]].First();
+                Nfa<Grammar.ISymbol> result = ProcessExpressionClause(job, expression);
+                var acceptNothingState = new Nfa<Grammar.ISymbol>.State();
                 result.StartStates.Add(acceptNothingState);
                 result.AcceptStates.Add(acceptNothingState);
-                foreach (var startState in result.StartStates)
-                {
-                    foreach (var symbol in result.TransitionFunction[startState].Keys) {
-                        foreach (var toState in result.TransitionFunction[startState][symbol]) {
-                            foreach (var acceptState in result.AcceptStates) {
+                foreach (Nfa<Grammar.ISymbol>.State startState in result.StartStates) {
+                    foreach (Grammar.ISymbol symbol in result.TransitionFunction[startState].Keys) {
+                        foreach (Nfa<Grammar.ISymbol>.State toState in result.TransitionFunction[startState][symbol]) {
+                            foreach (Nfa<Grammar.ISymbol>.State acceptState in result.AcceptStates) {
                                 result.TransitionFunction[acceptState][symbol].Add(toState); //to make it repeatable
                             }
                         }
@@ -228,75 +227,79 @@ namespace Parlex {
             throw new InvalidOperationException();
         }
 
-        static Nfa<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Parser.Match term) {
+        private static Nfa<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Parser.Match term) {
             var result = new Nfa<Grammar.ISymbol>();
             var state = new Nfa<Grammar.ISymbol>.State();
             result.StartStates.Add(state);
             result.States.Add(state);
             result.AcceptStates.Add(state);
-            foreach (var matchClass in term.Children) {
-                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) continue;
-                var factor = job.AbstractSyntaxForest.NodeTable[matchClass].First();
-                var factorNfa = ProcessFactorClause(job, factor);
+            foreach (Parser.MatchClass matchClass in term.Children) {
+                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) {
+                    continue;
+                }
+                Parser.Match factor = job.AbstractSyntaxForest.NodeTable[matchClass].First();
+                Nfa<Grammar.ISymbol> factorNfa = ProcessFactorClause(job, factor);
                 result.Insert(result.AcceptStates.First(), factorNfa);
                 result = result.Minimized();
             }
             return result;
         }
 
-        static Nfa<Grammar.ISymbol> ProcessExpressionClause(Parser.Job job, Parser.Match expression) {
+        private static Nfa<Grammar.ISymbol> ProcessExpressionClause(Parser.Job job, Parser.Match expression) {
             var result = new Nfa<Grammar.ISymbol>();
 
-            for (var index = 0; index < expression.Children.Length; index += 2) {
-                var termNfa = ProcessTermClause(job, job.AbstractSyntaxForest.NodeTable[expression.Children[index]].First());
-                result = Nfa<Grammar.ISymbol>.Union(new[] { result, termNfa });
+            for (int index = 0; index < expression.Children.Length; index += 2) {
+                Nfa<Grammar.ISymbol> termNfa = ProcessTermClause(job, job.AbstractSyntaxForest.NodeTable[expression.Children[index]].First());
+                result = Nfa<Grammar.ISymbol>.Union(new[] {result, termNfa});
             }
 
             return result.Minimized();
         }
 
-        static Grammar.Recognizer ProcessProductionClause(Parser.Job job, Parser.Match production) {
-            var name = ProcessIdentifierClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[0]].First());
-            var nfa = ProcessExpressionClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[2]].First());
+        private static Grammar.Recognizer ProcessProductionClause(Parser.Job job, Parser.Match production) {
+            string name = ProcessIdentifierClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[0]].First());
+            Nfa<Grammar.ISymbol> nfa = ProcessExpressionClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[2]].First());
             return new Grammar.Recognizer(name, true, nfa);
         }
 
-        static void ProcessSyntaxClause(Parser.Job job, Parser.Match syntax, Grammar result) {
-            foreach (var matchClass in syntax.Children) {
-                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) continue;
-                var recognizer = ProcessProductionClause(job, job.AbstractSyntaxForest.NodeTable[matchClass].First());
+        private static void ProcessSyntaxClause(Parser.Job job, Parser.Match syntax, Grammar result) {
+            foreach (Parser.MatchClass matchClass in syntax.Children) {
+                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) {
+                    continue;
+                }
+                Grammar.Recognizer recognizer = ProcessProductionClause(job, job.AbstractSyntaxForest.NodeTable[matchClass].First());
                 result.Productions.Add(recognizer);
             }
         }
 
-        static void ResolveIdentifiers(Grammar grammar) {
-            foreach (var recognizer in grammar.Productions) {
-                foreach (var fromState in recognizer.States) {
+        private static void ResolveIdentifiers(Grammar grammar) {
+            foreach (Grammar.Recognizer recognizer in grammar.Productions) {
+                foreach (Nfa<Grammar.ISymbol>.State fromState in recognizer.States) {
                     var toRemoves = new List<Grammar.ISymbol>();
                     var toAdds = new AutoDictionary<Grammar.ISymbol, List<Nfa<Grammar.ISymbol>.State>>(_ => new List<Nfa<Grammar.ISymbol>.State>());
-                    foreach (var symbol in recognizer.TransitionFunction[fromState].Keys) {
+                    foreach (Grammar.ISymbol symbol in recognizer.TransitionFunction[fromState].Keys) {
                         var symbolAsRecognizer = symbol as Grammar.Recognizer;
                         if (symbolAsRecognizer != null) {
                             if (symbolAsRecognizer.Name.StartsWith(PlaceHolderMarker)) {
                                 toRemoves.Add(symbol);
-                                var deMarkedName = symbolAsRecognizer.Name.Substring(PlaceHolderMarker.Length);
+                                string deMarkedName = symbolAsRecognizer.Name.Substring(PlaceHolderMarker.Length);
                                 Grammar.ISymbol resolved;
                                 if (!Grammar.TryGetBuiltinISymbolByName(deMarkedName, out resolved)) {
                                     resolved =
                                         grammar.GetRecognizerByName(deMarkedName) ??
                                         new Grammar.Recognizer(deMarkedName, false, false);
                                 }
-                                foreach (var toState in recognizer.TransitionFunction[fromState][symbol]) {
+                                foreach (Nfa<Grammar.ISymbol>.State toState in recognizer.TransitionFunction[fromState][symbol]) {
                                     toAdds[resolved].Add(toState);
                                 }
                             }
                         }
                     }
-                    foreach (var toRemove in toRemoves) {
+                    foreach (Grammar.ISymbol toRemove in toRemoves) {
                         recognizer.TransitionFunction[fromState].TryRemove(toRemove);
                     }
-                    foreach (var symbol in toAdds.Keys) {
-                        foreach (var toState in toAdds[symbol]) {
+                    foreach (Grammar.ISymbol symbol in toAdds.Keys) {
+                        foreach (Nfa<Grammar.ISymbol>.State toState in toAdds[symbol]) {
                             recognizer.TransitionFunction[fromState][symbol].Add(toState);
                         }
                     }
@@ -305,9 +308,9 @@ namespace Parlex {
         }
 
         public static Grammar GrammarFromString(String text) {
-            var j = Parser.Parse(text, 0, WorthSyntaxNotationParserGrammar.MainProduction);
+            Parser.Job j = Parser.Parse(text, 0, WorthSyntaxNotationParserGrammar.MainProduction);
             j.Wait();
-            var asg = j.AbstractSyntaxForest;
+            Parser.AbstractSyntaxForest asg = j.AbstractSyntaxForest;
             if (asg.IsAmbiguous) {
                 throw new InvalidOperationException("The given metagrammar resulted in an ambiguous parse tree");
             }
@@ -317,14 +320,18 @@ namespace Parlex {
             return result;
         }
 
-        static String BehaviorTreeSequenceToString(BehaviorTree.Sequence sequence) {
-            StringBuilder sb = new StringBuilder();
-            var temp = sequence.Children.ToArray();
+        private static String BehaviorTreeSequenceToString(BehaviorTree.Sequence sequence) {
+            var sb = new StringBuilder();
+            BehaviorTree.Node[] temp = sequence.Children.ToArray();
             for (int i = 0; i < temp.Length; ++i) {
-                var parenthesetize = !(temp[i] is BehaviorTree.Leaf || temp[i] is BehaviorTree.Repetition);
-                if (parenthesetize) sb.Append("(");
+                bool parenthesetize = !(temp[i] is BehaviorTree.Leaf || temp[i] is BehaviorTree.Repetition);
+                if (parenthesetize) {
+                    sb.Append("(");
+                }
                 sb.Append(BehaviorTreeNodeToString(temp[i]));
-                if (parenthesetize) sb.Append(")");
+                if (parenthesetize) {
+                    sb.Append(")");
+                }
                 if (i != temp.Length - 1) {
                     sb.Append(" ");
                 }
@@ -332,29 +339,35 @@ namespace Parlex {
             return sb.ToString();
         }
 
-        static String BehaviorTreeChoiceToString(BehaviorTree.Choice choice) {
-            StringBuilder sb = new StringBuilder();
-            var temp = choice.Children.ToArray();
+        private static String BehaviorTreeChoiceToString(BehaviorTree.Choice choice) {
+            var sb = new StringBuilder();
+            BehaviorTree.Node[] temp = choice.Children.ToArray();
             for (int i = 0; i < temp.Length; ++i) {
-                var parenthesetize = !(temp[i] is BehaviorTree.Leaf || temp[i] is BehaviorTree.Repetition);
-                if (parenthesetize) sb.Append("(");
+                bool parenthesetize = !(temp[i] is BehaviorTree.Leaf || temp[i] is BehaviorTree.Repetition);
+                if (parenthesetize) {
+                    sb.Append("(");
+                }
                 sb.Append(BehaviorTreeNodeToString(temp[i]));
-                if (parenthesetize) sb.Append(")");
-                if (i < temp.Length - 1) sb.Append("|");
+                if (parenthesetize) {
+                    sb.Append(")");
+                }
+                if (i < temp.Length - 1) {
+                    sb.Append("|");
+                }
             }
             return sb.ToString();
         }
 
-        static String BehaviorTreeRepetitionToString(BehaviorTree.Repetition repetition) {
-            StringBuilder sb = new StringBuilder();
+        private static String BehaviorTreeRepetitionToString(BehaviorTree.Repetition repetition) {
+            var sb = new StringBuilder();
             sb.Append("{");
             sb.Append(BehaviorTreeNodeToString(repetition.Child));
             sb.Append("}");
             return sb.ToString();
         }
 
-        static String BehaviorTreeTerminalToString(BehaviorTree.Leaf leaf) {
-            var temp = leaf.Symbol.ToString();
+        private static String BehaviorTreeTerminalToString(BehaviorTree.Leaf leaf) {
+            string temp = leaf.Symbol.ToString();
             if (leaf.Symbol is Grammar.StringTerminal) {
                 if (temp == "\"") {
                     temp = "doubleQuote";
@@ -368,10 +381,10 @@ namespace Parlex {
             return temp;
         }
 
-        static String BehaviorTreeNodeToString(BehaviorTree.Node node) {
+        private static String BehaviorTreeNodeToString(BehaviorTree.Node node) {
             if (node is BehaviorTree.Sequence) {
                 return BehaviorTreeSequenceToString(node as BehaviorTree.Sequence);
-            } 
+            }
             if (node is BehaviorTree.Choice) {
                 return BehaviorTreeChoiceToString(node as BehaviorTree.Choice);
             }
@@ -384,8 +397,7 @@ namespace Parlex {
             throw new InvalidOperationException();
         }
 
-        static void AppendRecognizer(StringBuilder builder, Grammar.Recognizer recognizer)
-        {
+        private static void AppendRecognizer(StringBuilder builder, Grammar.Recognizer recognizer) {
             builder.Append(recognizer.Name);
             builder.Append("=");
             var bht = new BehaviorTree(recognizer);
@@ -393,28 +405,26 @@ namespace Parlex {
             builder.AppendLine(".");
         }
 
-        public static String GrammarToString(Grammar grammar)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (Grammar.Recognizer recognizer in grammar.Productions)
-            {
+        public static String GrammarToString(Grammar grammar) {
+            var builder = new StringBuilder();
+            foreach (Grammar.Recognizer recognizer in grammar.Productions) {
                 AppendRecognizer(builder, recognizer);
             }
             return builder.ToString();
         }
 
         public class Formatter : IGrammarFormatter {
-            public void Serialize(System.IO.Stream s, Grammar grammar) {
-                var text = WirthSyntaxNotation.GrammarToString(grammar);
+            public void Serialize(Stream s, Grammar grammar) {
+                string text = GrammarToString(grammar);
                 var sw = new StreamWriter(s, Encoding.UTF8, 65536, true);
                 sw.Write(text);
             }
 
-            public Grammar Deserialize(System.IO.Stream s) {
+            public Grammar Deserialize(Stream s) {
                 var sr = new StreamReader(s, Encoding.UTF8, false, 65536, true);
-                var text = sr.ReadToEnd();
+                string text = sr.ReadToEnd();
                 sr.Dispose();
-                return WirthSyntaxNotation.GrammarFromString(text);
+                return GrammarFromString(text);
             }
         }
     }

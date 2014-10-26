@@ -2,23 +2,17 @@
 
 namespace System.Threading.More {
     public class ConditionVariable {
-        sealed class ThreadSync : IDisposable {
-            internal readonly ManualResetEventSlim Sync = new ManualResetEventSlim();
-
-            public void Dispose() {
-                Sync.Dispose();
-            }
-        }
-
-        readonly ConcurrentQueue<ThreadSync> _waitingThreads = new ConcurrentQueue<ThreadSync>();
+        private readonly ConcurrentQueue<ThreadSync> _waitingThreads = new ConcurrentQueue<ThreadSync>();
 
         /// <summary>
-        /// Atomically unlocks and waits for a signal.
-        /// Then relocks the mutex before returning
+        ///     Atomically unlocks and waits for a signal.
+        ///     Then relocks the mutex before returning
         /// </summary>
         /// <param name="mutex"></param>
         public void Wait(Mutex mutex) {
-            if (mutex == null) throw new ArgumentNullException("mutex");
+            if (mutex == null) {
+                throw new ArgumentNullException("mutex");
+            }
             var ts = new ThreadSync();
             try {
                 _waitingThreads.Enqueue(ts);
@@ -31,7 +25,9 @@ namespace System.Threading.More {
         }
 
         public void WaitRead(ReaderWriterLockSlim readerWriterLock) {
-            if (readerWriterLock == null) throw new ArgumentNullException("readerWriterLock");
+            if (readerWriterLock == null) {
+                throw new ArgumentNullException("readerWriterLock");
+            }
             var ts = new ThreadSync();
             try {
                 _waitingThreads.Enqueue(ts);
@@ -54,6 +50,14 @@ namespace System.Threading.More {
             ThreadSync ts;
             while (_waitingThreads.TryDequeue(out ts)) {
                 ts.Sync.Set();
+            }
+        }
+
+        private sealed class ThreadSync : IDisposable {
+            internal readonly ManualResetEventSlim Sync = new ManualResetEventSlim();
+
+            public void Dispose() {
+                Sync.Dispose();
             }
         }
     }
