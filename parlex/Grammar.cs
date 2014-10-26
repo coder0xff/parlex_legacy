@@ -101,6 +101,7 @@ namespace Parlex {
 
         public static readonly WhiteSpaceTerminalT WhiteSpaceTerminal = new WhiteSpaceTerminalT();
 
+        public static readonly Recognizer WhiteSpacesEater = new Recognizer("whitespaces", true, false);
         public class NonDoubleQuoteCharacterTerminalT : ITerminal
         {
 
@@ -130,6 +131,12 @@ namespace Parlex {
         private static readonly Dictionary<String, ISymbol> NameToBuiltInSymbol = new Dictionary<string, ISymbol>();
 
         static Grammar() {
+            var whiteSpacesState0 = new Recognizer.State();
+            WhiteSpacesEater.States.Add(whiteSpacesState0);
+            WhiteSpacesEater.StartStates.Add(whiteSpacesState0);
+            WhiteSpacesEater.AcceptStates.Add(whiteSpacesState0);
+            WhiteSpacesEater.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState0);
+
             NameToBuiltInSymbol["letter"] = LetterTerminal;
             NameToBuiltInSymbol["character"] = CharacterTerminal;
             NameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
@@ -140,10 +147,12 @@ namespace Parlex {
         public class Recognizer : Nfa<ISymbol>, ISymbol {
             readonly String _name;
             readonly bool _greedy;
+            readonly bool _eatTrailingWhitespace;
 
-            public Recognizer(String name, bool greedy) {
+            public Recognizer(String name, bool greedy, bool eatTrailingWhitespace) {
                 _name = name;
                 _greedy = greedy;
+                _eatTrailingWhitespace = eatTrailingWhitespace;
             }
 
             public Recognizer(String name, bool greedy, Nfa<ISymbol> source)
@@ -159,6 +168,7 @@ namespace Parlex {
             }
 
             public bool Greedy { get { return _greedy; } }
+            public bool EatWhiteSpace { get { return _eatTrailingWhitespace; } }
         }
 
         public class CharacterSet : ITerminal {

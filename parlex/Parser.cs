@@ -199,8 +199,13 @@ namespace Parlex {
                             }
                         }
                         nextStates = nextStates.Distinct().ToList();
+                        var nextPosition = _position + match.Length;
+                        if (match.Symbol is Recognizer && (match.Symbol as Recognizer).EatWhiteSpace) {
+                            while (Grammar.WhiteSpaceTerminal.Matches(_subJob.Job.UnicodeCodePoints, nextPosition))
+                                ++nextPosition;
+                        }
                         // ReSharper disable once ObjectCreationAsStatement
-                        new RecognizerState(_subJob, _position + match.Length, nextStates.ToArray(), this, match);
+                        new RecognizerState(_subJob, nextPosition, nextStates.ToArray(), this, match);
                     }
 
                     void Evaluate() {
@@ -313,7 +318,7 @@ namespace Parlex {
             }
 
             public readonly String Text;
-            private readonly Int32[] _unicodeCodePoints;
+            internal readonly Int32[] UnicodeCodePoints;
             private readonly JaggedAutoDictionary<MatchCategory, SubJob> _subJobs;
             private readonly JaggedAutoDictionary<MatchCategory, List<Match>> _terminalMatches;
             int _unterminatedSubJobAndConstructorCount = 1;
@@ -324,8 +329,8 @@ namespace Parlex {
 
             public Job(string text, int startPosition, Recognizer rootProduction) {
                 Text = text;
-                _unicodeCodePoints = text.GetUtf32CodePoints();
-                _root = new MatchClass(startPosition, rootProduction, _unicodeCodePoints.Length - startPosition, this);
+                UnicodeCodePoints = text.GetUtf32CodePoints();
+                _root = new MatchClass(startPosition, rootProduction, UnicodeCodePoints.Length - startPosition, this);
                 _subJobs = new JaggedAutoDictionary<MatchCategory, SubJob>(matchCategory => {
                     System.Diagnostics.Debug.WriteLine("BeginMatching(" + matchCategory + ")");
                     return new SubJob(matchCategory);
@@ -361,7 +366,7 @@ namespace Parlex {
                 } else {
                     var asTerminal = (Grammar.ITerminal)search.Symbol;
                     if (_terminalMatches.EnsureCreated(search)) {
-                        if (asTerminal.Matches(_unicodeCodePoints, search.Position)) {
+                        if (asTerminal.Matches(UnicodeCodePoints, search.Position)) {
                             _terminalMatches[search].Add(new Match(new MatchClass(search, asTerminal.Length), new MatchClass[] { }));
                         }
                     }
