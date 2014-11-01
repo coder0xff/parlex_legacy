@@ -27,6 +27,14 @@ namespace Parlex {
             public bool IsAmbiguous {
                 get { return NodeTable.Keys.Any(matchClass => NodeTable[matchClass].Count > 1); }
             }
+
+            public void StripWhiteSpaceEaters() {
+                foreach (var matches in NodeTable.Values) {
+                    foreach (var match in matches) {
+                        match.StripWhiteSpaceEaters();
+                    }
+                }
+            }
         }
 
         public class Job {
@@ -319,11 +327,6 @@ namespace Parlex {
                         }
                         nextStates = nextStates.Distinct().ToList();
                         int nextPosition = _position + match.Length;
-                        if (match.Symbol is Grammar.Recognizer && (match.Symbol as Grammar.Recognizer).EatWhiteSpace) {
-                            while (Grammar.WhiteSpaceTerminal.Matches(_subJob.Job.UnicodeCodePoints, nextPosition)) {
-                                ++nextPosition;
-                            }
-                        }
                         // ReSharper disable once ObjectCreationAsStatement
                         new RecognizerState(_subJob, nextPosition, nextStates.ToArray(), this, match);
                     }
@@ -375,7 +378,7 @@ namespace Parlex {
         }
 
         public class Match : MatchClass {
-            public readonly MatchClass[] Children;
+            public MatchClass[] Children;
 
             public Match(MatchClass matchClass, MatchClass[] children)
                 : base(matchClass) {
@@ -388,6 +391,10 @@ namespace Parlex {
                     sb.Append(Char.ConvertFromUtf32(Job.UnicodeCodePoints[Position + i]));
                 }
                 return Symbol.Name + ": \"" + sb + "\"";
+            }
+
+            internal void StripWhiteSpaceEaters() {
+                Children = Children.Where(x => x.Symbol != Grammar.WhiteSpacesEater).ToArray();
             }
         }
 

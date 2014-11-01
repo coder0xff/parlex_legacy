@@ -22,11 +22,14 @@ namespace Parlex {
         public Recognizer MainProduction;
 
         static Grammar() {
-            var whiteSpacesState0 = new Nfa<ISymbol>.State();
+            var whiteSpacesState0 = new Recognizer.State();
+            var whiteSpacesState1 = new Recognizer.State();
             WhiteSpacesEater.States.Add(whiteSpacesState0);
+            WhiteSpacesEater.States.Add(whiteSpacesState1);
             WhiteSpacesEater.StartStates.Add(whiteSpacesState0);
-            WhiteSpacesEater.AcceptStates.Add(whiteSpacesState0);
-            WhiteSpacesEater.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState0);
+            WhiteSpacesEater.AcceptStates.Add(whiteSpacesState1);
+            WhiteSpacesEater.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState1);
+            WhiteSpacesEater.TransitionFunction[whiteSpacesState1][WhiteSpaceTerminal].Add(whiteSpacesState1);
 
             NameToBuiltInSymbol["letter"] = LetterTerminal;
             NameToBuiltInSymbol["character"] = CharacterTerminal;
