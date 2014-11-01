@@ -32,11 +32,14 @@ namespace Parlex {
 
         static WirthSyntaxNotation() {
             var syntaxState0 = new Nfa<Grammar.ISymbol>.State();
+            var syntaxState1 = new Nfa<Grammar.ISymbol>.State();
             Syntax.States.Add(syntaxState0);
+            Syntax.States.Add(syntaxState1);
             Syntax.StartStates.Add(syntaxState0);
             Syntax.AcceptStates.Add(syntaxState0);
+            Syntax.AcceptStates.Add(syntaxState1);
             Syntax.TransitionFunction[syntaxState0][Production].Add(syntaxState0);
-            Syntax.TransitionFunction[syntaxState0][Grammar.WhiteSpaceTerminal].Add(syntaxState0);
+            Syntax.TransitionFunction[syntaxState0][Grammar.WhiteSpacesEater].Add(syntaxState1);
 
             var productionState0 = new Nfa<Grammar.ISymbol>.State();
             var productionState1 = new Nfa<Grammar.ISymbol>.State();
@@ -51,8 +54,10 @@ namespace Parlex {
             Production.StartStates.Add(productionState0);
             Production.AcceptStates.Add(productionState4);
             Production.TransitionFunction[productionState0][Identifier].Add(productionState1);
+            Production.TransitionFunction[productionState1][Grammar.WhiteSpacesEater].Add(productionState1);
             Production.TransitionFunction[productionState1][EqualsTerminal].Add(productionState2);
             Production.TransitionFunction[productionState2][Expression].Add(productionState3);
+            Production.TransitionFunction[productionState3][Grammar.WhiteSpacesEater].Add(productionState3);
             Production.TransitionFunction[productionState3][PeriodTerminal].Add(productionState4);
 
             var expressionState0 = new Nfa<Grammar.ISymbol>.State();
@@ -62,6 +67,7 @@ namespace Parlex {
             Expression.StartStates.Add(expressionState0);
             Expression.AcceptStates.Add(expressionState1);
             Expression.TransitionFunction[expressionState0][Term].Add(expressionState1);
+            Expression.TransitionFunction[expressionState1][Grammar.WhiteSpacesEater].Add(expressionState1);
             Expression.TransitionFunction[expressionState1][PipeTerminal].Add(expressionState0);
 
             var termState0 = new Nfa<Grammar.ISymbol>.State();
@@ -81,6 +87,7 @@ namespace Parlex {
             var factorState5 = new Nfa<Grammar.ISymbol>.State();
             var factorState6 = new Nfa<Grammar.ISymbol>.State();
             var factorState7 = new Nfa<Grammar.ISymbol>.State();
+            var factorState8 = new Grammar.Recognizer.State();
             Factor.States.Add(factorState0);
             Factor.States.Add(factorState1);
             Factor.States.Add(factorState2);
@@ -89,13 +96,18 @@ namespace Parlex {
             Factor.States.Add(factorState5);
             Factor.States.Add(factorState6);
             Factor.States.Add(factorState7);
+            Factor.States.Add(factorState8);
             Factor.StartStates.Add(factorState0);
             Factor.AcceptStates.Add(factorState1);
+            Factor.TransitionFunction[factorState0][Grammar.WhiteSpacesEater].Add(factorState8);
             Factor.TransitionFunction[factorState0][Identifier].Add(factorState1);
             Factor.TransitionFunction[factorState0][Literal].Add(factorState1);
             Factor.TransitionFunction[factorState0][OpenSquareTerminal].Add(factorState2);
             Factor.TransitionFunction[factorState0][OpenParenthesisTerminal].Add(factorState3);
             Factor.TransitionFunction[factorState0][OpenCurlyTerminal].Add(factorState4);
+            Factor.TransitionFunction[factorState8][OpenSquareTerminal].Add(factorState2);
+            Factor.TransitionFunction[factorState8][OpenParenthesisTerminal].Add(factorState3);
+            Factor.TransitionFunction[factorState8][OpenCurlyTerminal].Add(factorState4);
             Factor.TransitionFunction[factorState2][Expression].Add(factorState5);
             Factor.TransitionFunction[factorState3][Expression].Add(factorState6);
             Factor.TransitionFunction[factorState4][Expression].Add(factorState7);
@@ -109,6 +121,7 @@ namespace Parlex {
             Identifier.States.Add(identifierState1);
             Identifier.StartStates.Add(identifierState0);
             Identifier.AcceptStates.Add(identifierState1);
+            Identifier.TransitionFunction[identifierState0][Grammar.WhiteSpacesEater].Add(identifierState0);
             Identifier.TransitionFunction[identifierState0][Grammar.LetterTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState0][UnderscoreTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState1][Grammar.LetterTerminal].Add(identifierState1);
@@ -124,7 +137,7 @@ namespace Parlex {
             Literal.States.Add(literalState3);
             Literal.StartStates.Add(literalState0);
             Literal.AcceptStates.Add(literalState3);
-
+            Literal.TransitionFunction[literalState0][Grammar.WhiteSpacesEater].Add(literalState0);
             Literal.TransitionFunction[literalState0][DoubleQuoteTerminal].Add(literalState1);
             Literal.TransitionFunction[literalState1][NotDoubleQuoteCharacterSet].Add(literalState2);
             Literal.TransitionFunction[literalState2][NotDoubleQuoteCharacterSet].Add(literalState2);
@@ -141,12 +154,12 @@ namespace Parlex {
             WorthSyntaxNotationParserGrammar.MainProduction = Syntax;
         }
 
-        private static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {
-            return job.Text.Substring(identifier.Position, identifier.Length);
+        private static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {            
+            return job.Text.Utf32Substring(identifier.Position, identifier.Length);
         }
 
         private static string ProcessLiteralClause(Parser.Job job, Parser.Match literal) {
-            return job.Text.Substring(literal.Position + 1, literal.Length - 2).Replace("'"[0], '"'); //remove quotes and change single quotes to double
+            return job.Text.Utf32Substring(literal.Position + 1, literal.Length - 2).Replace("'"[0], '"'); //remove quotes and change single quotes to double
         }
 
         private static Grammar.Recognizer GetRecognizerByIdentifierString(Grammar result, String identifierString) {
@@ -311,6 +324,7 @@ namespace Parlex {
             Parser.Job j = Parser.Parse(text, 0, WorthSyntaxNotationParserGrammar.MainProduction);
             j.Wait();
             Parser.AbstractSyntaxForest asg = j.AbstractSyntaxForest;
+            asg.StripWhiteSpaceEaters();
             if (asg.IsAmbiguous) {
                 throw new InvalidOperationException("The given metagrammar resulted in an ambiguous parse tree");
             }
