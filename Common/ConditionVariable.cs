@@ -2,7 +2,7 @@
 
 namespace System.Threading.More {
     public class ConditionVariable {
-        private readonly ConcurrentQueue<ThreadSync> _waitingThreads = new ConcurrentQueue<ThreadSync>();
+        private readonly ConcurrentQueue<ManualResetEventSlim> _waitingThreads = new ConcurrentQueue<ManualResetEventSlim>();
 
         /// <summary>
         ///     Atomically unlocks and waits for a signal.
@@ -13,13 +13,13 @@ namespace System.Threading.More {
             if (mutex == null) {
                 throw new ArgumentNullException("mutex");
             }
-            var ts = new ThreadSync();
+            var waitHandle = new ManualResetEventSlim();
             try {
-                _waitingThreads.Enqueue(ts);
+                _waitingThreads.Enqueue(waitHandle);
                 mutex.ReleaseMutex();
-                ts.Sync.Wait();
+                waitHandle.Wait();
             } finally {
-                ts.Dispose();
+                waitHandle.Dispose();
             }
             mutex.WaitOne();
         }
@@ -28,36 +28,28 @@ namespace System.Threading.More {
             if (readerWriterLock == null) {
                 throw new ArgumentNullException("readerWriterLock");
             }
-            var ts = new ThreadSync();
+            var waitHandle = new ManualResetEventSlim();
             try {
-                _waitingThreads.Enqueue(ts);
+                _waitingThreads.Enqueue(waitHandle);
                 readerWriterLock.ExitReadLock();
-                ts.Sync.Wait();
+                waitHandle.Wait();
             } finally {
-                ts.Dispose();
+                waitHandle.Dispose();
             }
             readerWriterLock.EnterReadLock();
         }
 
         public void Signal() {
-            ThreadSync ts;
-            if (_waitingThreads.TryDequeue(out ts)) {
-                ts.Sync.Set();
+            ManualResetEventSlim waitHandle;
+            if (_waitingThreads.TryDequeue(out waitHandle)) {
+                waitHandle.Set();
             }
         }
 
         public void Broadcast() {
-            ThreadSync ts;
-            while (_waitingThreads.TryDequeue(out ts)) {
-                ts.Sync.Set();
-            }
-        }
-
-        private sealed class ThreadSync : IDisposable {
-            internal readonly ManualResetEventSlim Sync = new ManualResetEventSlim();
-
-            public void Dispose() {
-                Sync.Dispose();
+            ManualResetEventSlim waitHandle;
+            while (_waitingThreads.TryDequeue(out waitHandle)) {
+                waitHandle.Set();
             }
         }
     }
