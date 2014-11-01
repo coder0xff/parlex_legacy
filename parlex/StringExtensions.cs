@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 
 namespace Parlex {
     public static class StringExtensions {
@@ -17,6 +18,15 @@ namespace Parlex {
             return chars.ToArray();
         }
 
+        public static String Utf32Substring(this String s, int startIndex, int length = -1) {
+            Int32[] codePoints = s.GetUtf32CodePoints();
+            if (length == -1) length = codePoints.Length - startIndex;
+            var sb = new StringBuilder();
+            for (int i = startIndex; i < startIndex + length; ++i) {
+                sb.Append(Char.ConvertFromUtf32(codePoints[i]));
+            }
+            return sb.ToString();
+        }
         public static string Truncate(this string value, int maxChars) {
             return value.Length <= maxChars ? value : value.Substring(0, maxChars) + " ..";
         }

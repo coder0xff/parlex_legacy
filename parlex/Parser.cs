@@ -5,6 +5,7 @@ using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Automata;
 
@@ -382,7 +383,11 @@ namespace Parlex {
             }
 
             public override string ToString() {
-                return Symbol.Name + ": \"" + Job.Text.Substring(Position, Length) + "\"";
+                var sb = new StringBuilder();
+                for (int i = 0; i < Length; ++i) {
+                    sb.Append(Char.ConvertFromUtf32(Job.UnicodeCodePoints[Position + i]));
+                }
+                return Symbol.Name + ": \"" + sb + "\"";
             }
         }
 
@@ -430,8 +435,12 @@ namespace Parlex {
                 if (ReferenceEquals(Job, null)) {
                     return temp;
                 }
-                string docText = Job.Text;
-                temp += " " + docText.Substring(Position, Math.Min(docText.Length - Position, 8)).Truncate(7);
+                var sb = new StringBuilder();
+                int characterCount = Math.Min(Job.UnicodeCodePoints.Length - Position, 17);
+                for (int i = 0; i < characterCount; ++i) {
+                    sb.Append(Char.ConvertFromUtf32(Job.UnicodeCodePoints[Position + i]));
+                }
+                temp += " " + sb.ToString().Truncate(16);
                 return temp;
             }
         }
@@ -479,8 +488,12 @@ namespace Parlex {
                 if (ReferenceEquals(Job, null)) {
                     return temp;
                 }
-                string docText = Job.Text;
-                temp += " " + docText.Substring(Position, Math.Min(docText.Length - Position, 8)).Truncate(7);
+                var sb = new StringBuilder();
+                int characterCount = Math.Min(Job.UnicodeCodePoints.Length - Position, 17);
+                for (int i = 0; i < characterCount; ++i) {
+                    sb.Append(Char.ConvertFromUtf32(Job.UnicodeCodePoints[Position + i]));
+                }
+                temp += " " + sb.ToString().Truncate(16);
                 return temp;
             }
         }
