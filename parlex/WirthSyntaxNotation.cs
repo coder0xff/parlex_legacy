@@ -19,16 +19,14 @@ namespace Parlex {
         private static readonly Grammar.ITerminal CloseSquareTerminal = new Grammar.StringTerminal("]");
         private static readonly Grammar.ITerminal OpenCurlyTerminal = new Grammar.StringTerminal("{");
         private static readonly Grammar.ITerminal CloseCurlyTerminal = new Grammar.StringTerminal("}");
-        private static readonly Grammar.ITerminal DoubleQuoteTerminal = new Grammar.StringTerminal("\"");
         private static readonly Grammar.ITerminal UnderscoreTerminal = new Grammar.StringTerminal("_");
-        private static readonly Grammar.CharacterSet NotDoubleQuoteCharacterSet = new Grammar.CharacterSet("notDoubleQuotes", Unicode.All.Except(new[] {Char.ConvertToUtf32("\"", 0)}));
-        private static readonly Grammar.Recognizer Syntax = new Grammar.Recognizer("syntax", true, true);
-        private static readonly Grammar.Recognizer Production = new Grammar.Recognizer("production", true, false);
-        private static readonly Grammar.Recognizer Expression = new Grammar.Recognizer("expression", true, true);
-        private static readonly Grammar.Recognizer Term = new Grammar.Recognizer("term", true, true);
-        private static readonly Grammar.Recognizer Factor = new Grammar.Recognizer("factor", true, true);
-        private static readonly Grammar.Recognizer Identifier = new Grammar.Recognizer("identifier", true, true);
-        private static readonly Grammar.Recognizer Literal = new Grammar.Recognizer("literal", false, true);
+        private static readonly Grammar.Production Syntax = new Grammar.Production("syntax", true, true);
+        private static readonly Grammar.Production Production = new Grammar.Production("production", true, false);
+        private static readonly Grammar.Production Expression = new Grammar.Production("expression", true, true);
+        private static readonly Grammar.Production Term = new Grammar.Production("term", true, true);
+        private static readonly Grammar.Production Factor = new Grammar.Production("factor", true, true);
+        private static readonly Grammar.Production Identifier = new Grammar.Production("identifier", true, true);
+        private static readonly Grammar.Production Literal = new Grammar.Production("literal", false, true);
 
         static WirthSyntaxNotation() {
             var syntaxState0 = new Nfa<Grammar.ISymbol>.State();
@@ -87,7 +85,7 @@ namespace Parlex {
             var factorState5 = new Nfa<Grammar.ISymbol>.State();
             var factorState6 = new Nfa<Grammar.ISymbol>.State();
             var factorState7 = new Nfa<Grammar.ISymbol>.State();
-            var factorState8 = new Grammar.Recognizer.State();
+            var factorState8 = new Grammar.Production.State();
             Factor.States.Add(factorState0);
             Factor.States.Add(factorState1);
             Factor.States.Add(factorState2);
@@ -144,7 +142,7 @@ namespace Parlex {
             WorthSyntaxNotationParserGrammar.Productions.Add(Factor);
             WorthSyntaxNotationParserGrammar.Productions.Add(Identifier);
             WorthSyntaxNotationParserGrammar.Productions.Add(Literal);
-            WorthSyntaxNotationParserGrammar.MainSymbol = Syntax;
+            WorthSyntaxNotationParserGrammar.MainProduction = Syntax;
         }
 
         private static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {            
@@ -152,16 +150,18 @@ namespace Parlex {
         }
 
         private static string ProcessLiteralClause(Parser.Job job, Parser.Match literal) {
-            return job.Text.Utf32Substring(literal.Position + 1, literal.Length - 2).Replace("'"[0], '"'); //remove quotes and change single quotes to double
+            var result = Grammar.ProcessStringLiteral(job.UnicodeCodePoints, literal.Position, literal.Length);
+            if (result == null) throw new ApplicationException();
+            return result;
         }
 
-        private static Grammar.Recognizer GetRecognizerByIdentifierString(Grammar result, String identifierString) {
-            foreach (Grammar.Recognizer recognizer in result.Productions) {
+        private static Grammar.Production GetRecognizerByIdentifierString(Grammar result, String identifierString) {
+            foreach (Grammar.Production recognizer in result.Productions) {
                 if (recognizer.Name == identifierString.Trim()) {
                     return recognizer;
                 }
             }
-            var newRecognizer = new Grammar.Recognizer(identifierString.Trim(), false, false);
+            var newRecognizer = new Grammar.Production(identifierString.Trim(), false, false);
             result.Productions.Add(newRecognizer);
             return newRecognizer;
         }
@@ -171,7 +171,7 @@ namespace Parlex {
             Parser.Match firstChild = job.AbstractSyntaxForest.NodeTable[factor.Children[0]].First();
 
             if (firstChild.Symbol == Identifier) {
-                Grammar.ISymbol transition = new Grammar.Recognizer(PlaceHolderMarker + ProcessIdentifierClause(job, firstChild), false, false);
+                Grammar.ISymbol transition = new Grammar.Production(PlaceHolderMarker + ProcessIdentifierClause(job, firstChild), false, false);
                 var result = new Nfa<Grammar.ISymbol>();
                 var state0 = new Nfa<Grammar.ISymbol>.State();
                 result.StartStates.Add(state0);
@@ -262,10 +262,10 @@ namespace Parlex {
             return result.Minimized();
         }
 
-        private static Grammar.Recognizer ProcessProductionClause(Parser.Job job, Parser.Match production) {
-            string name = ProcessIdentifierClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[0]].First());
+        private static Grammar.Production ProcessProductionClause(Parser.Job job, Parser.Match production) {
+            string name = ProcessIdentifierClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[0]].First()).Trim();
             Nfa<Grammar.ISymbol> nfa = ProcessExpressionClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[2]].First());
-            return new Grammar.Recognizer(name, true, nfa);
+            return new Grammar.Production(name, true, nfa);
         }
 
         private static void ProcessSyntaxClause(Parser.Job job, Parser.Match syntax, Grammar result) {
@@ -273,18 +273,18 @@ namespace Parlex {
                 if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) {
                     continue;
                 }
-                Grammar.Recognizer recognizer = ProcessProductionClause(job, job.AbstractSyntaxForest.NodeTable[matchClass].First());
-                result.Productions.Add(recognizer);
+                Grammar.Production production = ProcessProductionClause(job, job.AbstractSyntaxForest.NodeTable[matchClass].First());
+                result.Productions.Add(production);
             }
         }
 
         private static void ResolveIdentifiers(Grammar grammar) {
-            foreach (Grammar.Recognizer recognizer in grammar.Productions) {
+            foreach (Grammar.Production recognizer in grammar.Productions) {
                 foreach (Nfa<Grammar.ISymbol>.State fromState in recognizer.States) {
                     var toRemoves = new List<Grammar.ISymbol>();
                     var toAdds = new AutoDictionary<Grammar.ISymbol, List<Nfa<Grammar.ISymbol>.State>>(_ => new List<Nfa<Grammar.ISymbol>.State>());
                     foreach (Grammar.ISymbol symbol in recognizer.TransitionFunction[fromState].Keys) {
-                        var symbolAsRecognizer = symbol as Grammar.Recognizer;
+                        var symbolAsRecognizer = symbol as Grammar.Production;
                         if (symbolAsRecognizer != null) {
                             if (symbolAsRecognizer.Name.StartsWith(PlaceHolderMarker)) {
                                 toRemoves.Add(symbol);
@@ -293,7 +293,7 @@ namespace Parlex {
                                 if (!Grammar.TryGetBuiltinISymbolByName(deMarkedName, out resolved)) {
                                     resolved =
                                         grammar.GetRecognizerByName(deMarkedName) ??
-                                        new Grammar.Recognizer(deMarkedName, false, false);
+                                        new Grammar.Production(deMarkedName, false, false);
                                 }
                                 foreach (Nfa<Grammar.ISymbol>.State toState in recognizer.TransitionFunction[fromState][symbol]) {
                                     toAdds[resolved].Add(toState);
@@ -405,17 +405,17 @@ namespace Parlex {
             throw new InvalidOperationException();
         }
 
-        private static void AppendRecognizer(StringBuilder builder, Grammar.Recognizer recognizer) {
-            builder.Append(recognizer.Name);
+        private static void AppendRecognizer(StringBuilder builder, Grammar.Production production) {
+            builder.Append(production.Name);
             builder.Append("=");
-            var bht = new BehaviorTree(recognizer);
+            var bht = new BehaviorTree(production);
             builder.Append(BehaviorTreeNodeToString(bht.Root));
             builder.AppendLine(".");
         }
 
         public static String GrammarToString(Grammar grammar) {
             var builder = new StringBuilder();
-            foreach (Grammar.Recognizer recognizer in grammar.Productions) {
+            foreach (Grammar.Production recognizer in grammar.Productions) {
                 AppendRecognizer(builder, recognizer);
             }
             return builder.ToString();
@@ -424,8 +424,9 @@ namespace Parlex {
         public class Formatter : IGrammarFormatter {
             public void Serialize(Stream s, Grammar grammar) {
                 string text = GrammarToString(grammar);
-                var sw = new StreamWriter(s, Encoding.UTF8, 65536, true);
-                sw.Write(text);
+                using (var sw = new StreamWriter(s, new UTF8Encoding(true))) {
+                    sw.Write(text);
+                }
             }
 
             public Grammar Deserialize(Stream s) {
