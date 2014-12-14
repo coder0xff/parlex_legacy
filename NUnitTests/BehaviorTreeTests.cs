@@ -47,7 +47,6 @@ namespace NUnitTests {
                     }
                 }
             }
-            return nfa;
         }
 
         [Test]

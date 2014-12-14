@@ -41,14 +41,34 @@ namespace System.Collections.Concurrent.More {
 
         public void Add(T item) {
             _sync.EnterWriteLock();
-            if (_closed) {
-                throw new InvalidOperationException("The set has been closed.");
+            try {
+                if (_closed) {
+                    throw new InvalidOperationException("The set has been closed.");
+                }
+                if (_tester.Add(item)) {
+                    _storage.Add(item);
+                    _cv.Broadcast();
+                }
+            } finally {
+                _sync.ExitWriteLock();
             }
-            if (_tester.Add(item)) {
+        }
+
+        public bool TryAdd(T item) {
+            _sync.EnterWriteLock();
+            try {
+                if (_closed) {
+                    throw new InvalidOperationException("The set has been closed.");
+                }
+                if (!_tester.Add(item)) {
+                    return false;
+                }
                 _storage.Add(item);
                 _cv.Broadcast();
+                return true;
+            } finally {
+                _sync.ExitWriteLock();
             }
-            _sync.ExitWriteLock();
         }
 
         public void Close() {

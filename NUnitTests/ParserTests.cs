@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Automata;
 using NUnit.Framework;
 using Parlex;
@@ -35,11 +36,15 @@ namespace NUnitTests {
 
             g.Productions.Add(syntax);
             g.Productions.Add(identifier);
-            g.MainProduction = syntax;
+            g.MainSymbol = syntax;
 
-            Parser.Job j = Parser.Parse("A=B", 0, g.MainProduction);
-            j.Wait();
-            Parser.AbstractSyntaxForest asf = j.AbstractSyntaxForest;
+            Parser parser = new Parser(g);
+            for (int i = 0; i < 100; i++) {
+                Debug.WriteLine("Iteration: " + i);
+                Parser.Job j = parser.Parse("ABCD=EFGH");
+                j.Join();
+                Parser.AbstractSyntaxForest asf = j.AbstractSyntaxForest;
+            }
         }
     }
 }

@@ -151,7 +151,7 @@ namespace Parlex {
             WorthSyntaxNotationParserGrammar.Productions.Add(Factor);
             WorthSyntaxNotationParserGrammar.Productions.Add(Identifier);
             WorthSyntaxNotationParserGrammar.Productions.Add(Literal);
-            WorthSyntaxNotationParserGrammar.MainProduction = Syntax;
+            WorthSyntaxNotationParserGrammar.MainSymbol = Syntax;
         }
 
         private static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {            
@@ -321,8 +321,9 @@ namespace Parlex {
         }
 
         public static Grammar GrammarFromString(String text) {
-            Parser.Job j = Parser.Parse(text, 0, WorthSyntaxNotationParserGrammar.MainProduction);
-            j.Wait();
+            Parser parser = new Parser(WorthSyntaxNotationParserGrammar);
+            Parser.Job j = parser.Parse(text);
+            j.Join();
             Parser.AbstractSyntaxForest asg = j.AbstractSyntaxForest;
             asg.StripWhiteSpaceEaters();
             if (asg.IsAmbiguous) {

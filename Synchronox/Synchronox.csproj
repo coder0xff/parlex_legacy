@@ -1,18 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}</ProjectGuid>
+    <ProjectGuid>{86945759-8058-4377-834F-693EE5B8F787}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Parlex</RootNamespace>
-    <AssemblyName>Parlex</AssemblyName>
+    <RootNamespace>Synchronox</RootNamespace>
+    <AssemblyName>Synchronox</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -20,15 +21,18 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -40,36 +44,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BackusNaurForm.cs" />
-    <Compile Include="ExtendedBackusNaurForm.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
-    <Compile Include="Grammar.cs" />
-    <Compile Include="IGrammarFormatter.cs" />
-    <Compile Include="InvalidNfaOperationException.cs" />
-    <Compile Include="NfaExtensions.cs" />
-    <Compile Include="BehaviorTree.cs" />
-    <Compile Include="Parser.cs" />
+    <Compile Include="CallProtector.cs" />
+    <Compile Include="Collective.cs" />
+    <Compile Include="ConditionVariable.cs" />
+    <Compile Include="Node.cs" />
+    <Compile Include="NodeConstructionNotCompletedException.cs" />
+    <Compile Include="HaltException.cs" />
+    <Compile Include="IInput.cs" />
+    <Compile Include="Input.cs" />
+    <Compile Include="IOutput.cs" />
+    <Compile Include="Output.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="StringExtensions.cs" />
-    <Compile Include="Unicode.cs" />
-    <Compile Include="WirthSyntaxNotation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Automata\Automata.csproj">
-      <Project>{7862b8a9-eebd-49b4-b604-edc03cf90ef1}</Project>
-      <Name>Automata</Name>
-    </ProjectReference>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{225EE06C-3EC1-4D0C-919A-338DB9D77548}</Project>
       <Name>Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Synchronox\Synchronox.csproj">
-      <Project>{86945759-8058-4377-834f-693ee5b8f787}</Project>
-      <Name>Synchronox</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <CodeAnalysisDictionary Include="CustomDictionary.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

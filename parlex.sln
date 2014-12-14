@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegratedDevelopmentEnviro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastDelegate", "..\FastDelegate\FastDelegate.csproj", "{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Synchronox", "Synchronox\Synchronox.csproj", "{86945759-8058-4377-834F-693EE5B8F787}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,12 @@ Global
 		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
 		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86945759-8058-4377-834F-693EE5B8F787}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86945759-8058-4377-834F-693EE5B8F787}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86945759-8058-4377-834F-693EE5B8F787}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
+		{86945759-8058-4377-834F-693EE5B8F787}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
+		{86945759-8058-4377-834F-693EE5B8F787}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86945759-8058-4377-834F-693EE5B8F787}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

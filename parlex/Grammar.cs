@@ -19,7 +19,7 @@ namespace Parlex {
         private static readonly Dictionary<String, ISymbol> NameToBuiltInSymbol = new Dictionary<string, ISymbol>();
 
         public readonly List<Recognizer> Productions = new List<Recognizer>();
-        public Recognizer MainProduction;
+        public Recognizer MainSymbol;
 
         static Grammar() {
             var whiteSpacesState0 = new Recognizer.State();
