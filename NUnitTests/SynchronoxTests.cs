@@ -31,7 +31,11 @@ namespace NUnitTests {
             private readonly List<int> _results;
             protected override void Computer() {
                 while (true) {
-                    _results.Add(Left.Dequeue() + Right.Dequeue());
+                    int l;
+                    if (!Left.Dequeue(out l)) return;
+                    int r;
+                    if (!Right.Dequeue(out r)) return;
+                    _results.Add(l + r);
                 }
             }
 

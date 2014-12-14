@@ -19,6 +19,9 @@ namespace Synchronox {
         private int _haltedNodeCount;
 
         internal void Add(Node node) {
+            if (node == null) {
+                throw new ArgumentNullException();
+            }
             _nodes.Add(node);
         }
 

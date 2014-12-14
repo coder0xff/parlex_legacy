@@ -18,6 +18,14 @@ namespace Synchronox {
         private readonly ConcurrentSet<Output<T>> _connectedOutputs = new ConcurrentSet<Output<T>>();
 
         internal void DidConnect(Output<T> output) {
+            _sync.WaitOne();
+            try {
+                if (_causedHalt) {
+                    throw new ApplicationException("The input previously detected that it would not receive any additional input. Check the logic of your program to make sure that connections are not created at times that may occur after all existing connections have been halted.");
+                }
+            } finally {
+                _sync.ReleaseMutex();
+            }
             _connectedOutputs.TryAdd(output);
         }
 
@@ -31,22 +39,27 @@ namespace Synchronox {
             _sync.ReleaseMutex();
         }
 
-        private void ThrowIfHalting() {
-            if (_queue.Count > 0) return;
+        private bool ComputeIsHalting() {
+            if (_queue.Count > 0) return false;
             if (_connectedOutputs.Count == 0 || _connectedOutputs.All(connectedOutput => connectedOutput.Owner.IsHalted)) {
                 _causedHalt = true;
-                throw new HaltException();
+                return true;
             }
+            return false;
         }
 
-        public T Dequeue() {
+        public bool Dequeue(out T datum) {
+            datum = default(T);
             _sync.WaitOne();
             try {
                 while (_queue.Count == 0) {
-                    ThrowIfHalting();
+                    if (ComputeIsHalting()) {
+                        return false;
+                    }
                     _cv.Wait(_sync);
                 }
-                return _queue.Dequeue();
+                datum = _queue.Dequeue();
+                return true;
             } finally {
                 try {
                     _sync.ReleaseMutex();

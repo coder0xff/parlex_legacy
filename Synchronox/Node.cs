@@ -23,8 +23,7 @@ namespace Synchronox {
                     property.SetValue(this, output);
                 }
             }
-            _computerThread = new Thread(ComputerRunner);
-            _computerThread.Start();
+            _computerThread = ThreadProvider.Default.Start(ComputerRunner);
         }
 
         internal bool IsHalted = false;
@@ -76,17 +75,12 @@ namespace Synchronox {
                 _constructionBlocker.Wait();
                 Initializer();
                 Computer();
-                IsHalted = true;
                 Terminator();
+                IsHalted = true;
                 Collective.PropagateHalt(this);
                 Collective.NodeHalted();
             } catch (ThreadAbortException) {
                 ;
-            } catch (HaltException) {
-                IsHalted = true;
-                Terminator();
-                Collective.PropagateHalt(this);
-                Collective.NodeHalted();
             }
         }
 
@@ -100,6 +94,6 @@ namespace Synchronox {
             _computerThread.Join();
         }
 
-        private readonly Thread _computerThread;
+        private readonly ThreadProvider.Task _computerThread;
     }
 }

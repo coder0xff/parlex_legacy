@@ -186,7 +186,7 @@ namespace Parlex {
                 }
                 _root = new MatchClass(startPosition, mainSymbol, length, this);
                 _subJobs = new JaggedAutoDictionary<MatchCategory, SubJob>(matchCategory => {
-                    Debug.WriteLine("BeginMatching(" + matchCategory + ")");
+                    ////Debug.WriteLine("BeginMatching(" + matchCategory + ")");
                     return new SubJob(matchCategory);
                 });
 
@@ -214,7 +214,7 @@ namespace Parlex {
                 public SubJob(MatchCategory matchCategory)
                     : base(matchCategory.Job) {
                     _matchCategory = matchCategory;
-                    Debug.WriteLine("Created SubJob " + this);
+                    ////Debug.WriteLine("Created SubJob " + this);
                     ConstructionCompleted();
                 }
 
@@ -251,7 +251,7 @@ namespace Parlex {
                         _antecedent = antecedent;
                         if (_antecedent != null) _antecedent.SubsequentCreated();
                         _entranceMatchClass = entranceMatchClass;
-                        Debug.WriteLine("Created RecognizerState " + this);
+                        ////Debug.WriteLine("Created RecognizerState " + this);
                         ConstructionCompleted();
                         Job.Connect(_subJob.MatchInput, MatchOutput);
                     }
@@ -259,6 +259,11 @@ namespace Parlex {
                     private void SubsequentCreated() {
                         Interlocked.Increment(ref _subsequentRecognizerStateCount);
                         _subsequentRecognizersCompleted.Reset();
+                    }
+
+                    private void SetSubsequentMadeMatch() {
+                        _subsequentMadeMatch = true;
+                        if (_antecedent != null) _antecedent.SetSubsequentMadeMatch();
                     }
 
                     private IEnumerable<Grammar.ISymbol> GetCandidateSymbols() {
@@ -282,9 +287,10 @@ namespace Parlex {
 
                     protected override void Computer() {
                         while (true) {
-                            Debug.WriteLine("RecognizerState (" + this + ") entering Dequeue");
-                            var matchClass = MatchClassInput.Dequeue();
-                            Debug.WriteLine("RecognizerState (" + this + ") got matchClass " + matchClass);
+                            //Debug.WriteLine("RecognizerState (" + this + ") entering Dequeue");
+                            MatchClass matchClass;
+                            if (!MatchClassInput.Dequeue(out matchClass)) return;
+                            //Debug.WriteLine("RecognizerState (" + this + ") got matchClass " + matchClass);
                             var nextStates = new List<Nfa<Grammar.ISymbol>.State>();
                             foreach (Nfa<Grammar.ISymbol>.State currentState in _configuration) {
                                 if (Recognizer.TransitionFunction[currentState].Keys.Contains(matchClass.Symbol)) {
@@ -312,19 +318,19 @@ namespace Parlex {
                     private void OutputResults() {
                         if (IsAcceptConfiguration &&
                             (!Recognizer.Greedy || !_subsequentMadeMatch)) {
-                            if (_antecedent != null) _antecedent._subsequentMadeMatch = true;
+                            if (_antecedent != null) _antecedent.SetSubsequentMadeMatch();
                             MatchOutput.Enqueue(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position, _subJob.Job), GetChildren().ToArray()));
                         }
                     }
 
                     protected override void Terminator() {
-                        Debug.WriteLine("Terminating RecognizerState " + this);
+                        //Debug.WriteLine("Terminating RecognizerState " + this);
                         if (Recognizer.Greedy) {
                             _subsequentRecognizersCompleted.Wait();
                             OutputResults();
                         }
                         if (_antecedent != null) _antecedent.TerminatedSubsequent();
-                        Debug.WriteLine("Terminated RecognizerState " + this);
+                        //Debug.WriteLine("Terminated RecognizerState " + this);
                     }
 
                     private void TerminatedSubsequent() {
@@ -340,8 +346,9 @@ namespace Parlex {
 
                 protected override void Computer() {
                     while (true) {
-                        var match = MatchInput.Dequeue();
-                        Debug.WriteLine("SubJob (" + this + ") got match " + match);
+                        Match match;
+                        if (!MatchInput.Dequeue(out match)) return;
+                        //Debug.WriteLine("SubJob (" + this + ") got match " + match);
                         _matches[match.MatchClass].TryAdd(match);
                         if (_matchClasses.TryAdd(match.MatchClass)) {
                             MatchClassOutput.Enqueue(match.MatchClass);
@@ -421,6 +428,10 @@ namespace Parlex {
                                     toAdds.Add(child);
                                 }
                             }
+                        } else if (matchClass == AbstractSyntaxForest.Root) {
+                            var temp = AbstractSyntaxForest.NodeTable.Where(x => x.Key.Symbol == matchClass.Symbol);
+                            var length = temp.Select(x => x.Key.Length).Max();
+                            var followingText = Text.Utf32Substring(length);
                         }
                     }
                     priorAdditions.Clear();

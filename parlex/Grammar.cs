@@ -11,10 +11,19 @@ namespace Parlex {
 
         public static readonly WhiteSpaceTerminalT WhiteSpaceTerminal = new WhiteSpaceTerminalT();
 
-        public static readonly Recognizer WhiteSpacesEater = new Recognizer("whitespaces", true, false);
+        public static readonly Recognizer WhiteSpacesEater = new Recognizer("whiteSpaces", true, false);
 
         public static readonly NonDoubleQuoteCharacterTerminalT NonDoubleQuoteCharacterTerminal = new NonDoubleQuoteCharacterTerminalT();
+
         public static readonly StringTerminal DoubleQuoteTerminal = new StringTerminal("\"");
+
+        public static readonly NonDoubleQuoteNonBackSlashCharacterTerminalT NonDoubleQuoteNonBackSlashCharacterTerminal = new NonDoubleQuoteNonBackSlashCharacterTerminalT();
+
+        public static readonly SimpleEscapeSequenceTerminalT SimpleEscapeSequenceTerminal = new SimpleEscapeSequenceTerminalT();
+
+        public static readonly UnicodeEscapeSequnceTerminalT UnicodeEscapeSequnceTerminal = new UnicodeEscapeSequnceTerminalT();
+
+        public static readonly Recognizer StringLiteral = new Recognizer("stringLiteral", false, true);
 
         private static readonly Dictionary<String, ISymbol> NameToBuiltInSymbol = new Dictionary<string, ISymbol>();
 
@@ -31,11 +40,29 @@ namespace Parlex {
             WhiteSpacesEater.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState1);
             WhiteSpacesEater.TransitionFunction[whiteSpacesState1][WhiteSpaceTerminal].Add(whiteSpacesState1);
 
+            var stringLiteralState0 = new Recognizer.State();
+            var stringLiteralState1 = new Recognizer.State();
+            var stringLiteralState2 = new Recognizer.State();
+            StringLiteral.States.Add(stringLiteralState0);
+            StringLiteral.States.Add(stringLiteralState1);
+            StringLiteral.States.Add(stringLiteralState2);
+            StringLiteral.StartStates.Add(stringLiteralState0);
+            StringLiteral.AcceptStates.Add(stringLiteralState2);
+            StringLiteral.TransitionFunction[stringLiteralState0][DoubleQuoteTerminal].Add(stringLiteralState1);
+            StringLiteral.TransitionFunction[stringLiteralState1][NonDoubleQuoteNonBackSlashCharacterTerminal].Add(stringLiteralState1);
+            StringLiteral.TransitionFunction[stringLiteralState1][SimpleEscapeSequenceTerminal].Add(stringLiteralState1);
+            StringLiteral.TransitionFunction[stringLiteralState1][UnicodeEscapeSequnceTerminal].Add(stringLiteralState1);
+            StringLiteral.TransitionFunction[stringLiteralState1][DoubleQuoteTerminal].Add(stringLiteralState2);
+
             NameToBuiltInSymbol["letter"] = LetterTerminal;
             NameToBuiltInSymbol["character"] = CharacterTerminal;
-            NameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
+            NameToBuiltInSymbol["whiteSpaces"] = WhiteSpaceTerminal;
             NameToBuiltInSymbol["doubleQuote"] = DoubleQuoteTerminal;
             NameToBuiltInSymbol["nonDoubleQuote"] = NonDoubleQuoteCharacterTerminal;
+            NameToBuiltInSymbol["nonDoubleQuoteNonBackSlash"] = NonDoubleQuoteNonBackSlashCharacterTerminal;
+            NameToBuiltInSymbol["simpleEscapeSequence"] = SimpleEscapeSequenceTerminal;
+            NameToBuiltInSymbol["unicodeEscapeSequence"] = UnicodeEscapeSequnceTerminal;
+            NameToBuiltInSymbol["stringLiteral"] = StringLiteral;
         }
 
         public Recognizer GetRecognizerByName(String name) {
@@ -96,6 +123,37 @@ namespace Parlex {
             }
         }
 
+        public class SimpleEscapeSequenceTerminalT : ITerminal {
+            public string Name { get { return "Escape sequence"; } }
+            public int Length { get { return 2; } }
+            public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
+                if (documentIndex + 1 < documentUtf32CodePoints.Length) {
+                    if (documentUtf32CodePoints[documentIndex] == Char.ConvertToUtf32("\\", 0)) {
+                        if (!Unicode.DecimalDigitNumbers.Contains(documentUtf32CodePoints[documentIndex + 1])) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
+        public class UnicodeEscapeSequnceTerminalT : ITerminal {
+            public string Name { get { return "Unicode escape sequence"; } }
+            public int Length { get { return 9; } }
+            public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
+                if (documentIndex + 8 < documentUtf32CodePoints.Length) {
+                    if (documentUtf32CodePoints[documentIndex] == Char.ConvertToUtf32("\\", 0)) {
+                        if (Enumerable.Range(1, 8).Select(i => documentUtf32CodePoints[documentIndex + i]).All(c => Unicode.DecimalDigitNumbers.Contains(c))) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+        }
+
         public interface ISymbol {
             String Name { get; }
         }
@@ -144,6 +202,14 @@ namespace Parlex {
             }
         }
 
+        public class NonDoubleQuoteNonBackSlashCharacterTerminalT : ITerminal {
+            public string Name { get { return "Non-double quote character, non-back slash character"; } }
+            public int Length { get { return 1; }}
+            public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
+                return documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\"", 0) &&
+                       documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\\", 0);
+            }
+        }
         public class Recognizer : Nfa<ISymbol>, ISymbol {
             private readonly bool _eatTrailingWhitespace;
             private readonly bool _greedy;

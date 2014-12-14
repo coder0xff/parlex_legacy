@@ -129,19 +129,12 @@ namespace Parlex {
 
             var literalState0 = new Nfa<Grammar.ISymbol>.State();
             var literalState1 = new Nfa<Grammar.ISymbol>.State();
-            var literalState2 = new Nfa<Grammar.ISymbol>.State();
-            var literalState3 = new Nfa<Grammar.ISymbol>.State();
             Literal.States.Add(literalState0);
             Literal.States.Add(literalState1);
-            Literal.States.Add(literalState2);
-            Literal.States.Add(literalState3);
             Literal.StartStates.Add(literalState0);
-            Literal.AcceptStates.Add(literalState3);
+            Literal.AcceptStates.Add(literalState1);
             Literal.TransitionFunction[literalState0][Grammar.WhiteSpacesEater].Add(literalState0);
-            Literal.TransitionFunction[literalState0][DoubleQuoteTerminal].Add(literalState1);
-            Literal.TransitionFunction[literalState1][NotDoubleQuoteCharacterSet].Add(literalState2);
-            Literal.TransitionFunction[literalState2][NotDoubleQuoteCharacterSet].Add(literalState2);
-            Literal.TransitionFunction[literalState2][DoubleQuoteTerminal].Add(literalState3);
+            Literal.TransitionFunction[literalState0][Grammar.StringLiteral].Add(literalState1);
 
             WorthSyntaxNotationParserGrammar = new Grammar();
             WorthSyntaxNotationParserGrammar.Productions.Add(Syntax);
@@ -436,7 +429,7 @@ namespace Parlex {
             }
 
             public Grammar Deserialize(Stream s) {
-                var sr = new StreamReader(s, Encoding.UTF8, false, 65536, true);
+                var sr = new StreamReader(s, Encoding.UTF8, false, 65536, false);
                 string text = sr.ReadToEnd();
                 sr.Dispose();
                 return GrammarFromString(text);

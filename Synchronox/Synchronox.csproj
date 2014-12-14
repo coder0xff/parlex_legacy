@@ -47,6 +47,7 @@
     <Compile Include="CallProtector.cs" />
     <Compile Include="Collective.cs" />
     <Compile Include="ConditionVariable.cs" />
+    <Compile Include="ThreadProvider.cs" />
     <Compile Include="Node.cs" />
     <Compile Include="NodeConstructionNotCompletedException.cs" />
     <Compile Include="HaltException.cs" />
