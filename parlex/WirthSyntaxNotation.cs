@@ -379,7 +379,7 @@ namespace Parlex {
             if (leaf.Symbol is Grammar.StringTerminal) {
                 if (temp == "\"") {
                     temp = "doubleQuote";
-                } else if (temp.Any(x => !Char.IsLetterOrDigit(x))) {
+                } else if (true /*temp.Any(x => !Char.IsLetterOrDigit(x))*/) {
                     if (temp.Any(x => x == '"')) {
                         temp = temp.Replace("\"", "\\\"");
                     }
