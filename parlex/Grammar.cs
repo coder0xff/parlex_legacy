@@ -401,5 +401,19 @@ namespace Parlex {
             if (i != start + length) return null;
             return builder.ToString();
         }
+
+        public static String QuoteStringLiteral(String text) {
+            text = text.Replace("\\", "\\\\");
+            text = text.Replace("\a", "\\a");
+            text = text.Replace("\b", "\\a");
+            text = text.Replace("\f", "\\a");
+            text = text.Replace("\n", "\\a");
+            text = text.Replace("\r", "\\a");
+            text = text.Replace("\t", "\\a");
+            text = text.Replace("'", "\'");
+            text = text.Replace("\"", "\\\"");
+            text = text.Replace("?", "\\?");
+            return "\"" + text + "\"";
+        }
     }
 }
