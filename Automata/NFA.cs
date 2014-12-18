@@ -576,7 +576,7 @@ namespace Automata {
             foreach (State state in States.ToArray()) {
                 if (StartStates.Select(x => GetRoutes(x, state).Any()).All(x => x != true) &&
                     AcceptStates.Select(x => GetRoutes(state, x).Any()).All(x => x != true)) {
-                    StartStates.Remove(state);
+                    States.Remove(state);
                     AcceptStates.Remove(state);
                     StartStates.Remove(state);
                     _transitionFunction.TryRemove(state);
@@ -920,6 +920,11 @@ namespace Automata {
                     result.Append(nodeNames[startState]);
                     result.AppendLine(";");
                 }
+                foreach (State state in States) {
+                    result.Append("\t");
+                    result.Append(nodeNames[state]);
+                    result.AppendLine(";");
+                }
                 foreach (Transition transition in GetTransitions()) {
                     result.Append("\t");
                     result.Append(nodeNames[transition.FromState]);
@@ -936,11 +941,11 @@ namespace Automata {
         }
 
         public IEnumerable<Transition> GetTransitions() {
-            return from fromStateKeyValuePair in TransitionFunction from transitionKeyValuePair in fromStateKeyValuePair.Value from toState in transitionKeyValuePair.Value select new Transition {
+            return (from fromStateKeyValuePair in TransitionFunction from transitionKeyValuePair in fromStateKeyValuePair.Value from toState in transitionKeyValuePair.Value select new Transition {
                 FromState = fromStateKeyValuePair.Key,
                 Symbol = transitionKeyValuePair.Key,
                 ToState = toState
-            };
+            }).ToArray();
         }
 
         public HashSet<State> TransitionFunctionEx(IEnumerable<State> states, TAlphabet input) {
@@ -1644,6 +1649,31 @@ namespace Automata {
                 //unless one or more of 'require's start states is an accept state
                 if (require.AcceptStates.Intersect(require.StartStates).Count() == 0) {
                     AcceptStates.Remove(at);
+                }
+            }
+        }
+
+        public void Append(Nfa<TAlphabet> require) {
+            foreach (var state in require.States) {
+                States.Add(state);
+            }
+            var beforeAcceptTransitions = GetTransitions().Where(t => AcceptStates.Contains(t.ToState)).ToArray();
+            bool anyAcceptIsStart = AcceptStates.Any(state => StartStates.Contains(state));
+            AcceptStates.Clear();
+            foreach (var acceptState in require.AcceptStates) {
+                AcceptStates.Add(acceptState);
+            }
+            foreach (var beforeAcceptTransition in beforeAcceptTransitions) {
+                foreach (var startState in require.StartStates) {
+                    TransitionFunction[beforeAcceptTransition.FromState][beforeAcceptTransition.Symbol].Add(startState);
+                }
+            }
+            foreach (var transition in require.GetTransitions()) {
+                TransitionFunction[transition.FromState][transition.Symbol].Add(transition.ToState);
+            }
+            if (anyAcceptIsStart) {
+                foreach (var startState in require.StartStates) {
+                    StartStates.Add(startState);
                 }
             }
         }

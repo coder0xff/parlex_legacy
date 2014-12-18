@@ -25,6 +25,7 @@ namespace Common {
             if (!parameterTypes.Any()) {
                 node.DelegateFunc = delegateFunc;
             } else {
+                var actualType = parameterTypes.First();
                 BuildTree(node.Children[parameterTypes.First()], delegateFunc, parameterTypes.Skip(1));
             }
         }
@@ -32,7 +33,28 @@ namespace Common {
         public TReturn Dispatch<TReturn>(Object instance, params Object[] parameters) {
             Node currentNode = _rootNode;
             foreach (object parameter in parameters) {
-                currentNode = currentNode.Children[parameter.GetType()];
+                var selectedType = parameter.GetType();
+                if (!currentNode.Children.Keys.Contains(selectedType)) {
+                    var interfaces = selectedType.GetInterfaces();
+                    bool foundInterface = false;
+                    foreach (var @interface in interfaces) {
+                        if (currentNode.Children.Keys.Contains(@interface)) {
+                            selectedType = @interface;
+                            foundInterface = true;
+                            break;
+                        }
+                    }
+                    if (!foundInterface) {
+                        while (selectedType != null) {
+                            if (currentNode.Children.Keys.Contains(selectedType)) {
+                                break;
+                            }
+                            selectedType = selectedType.BaseType;
+                        }
+                    }
+                }
+                if (selectedType == null) throw new CompatibleOverloadNotFoundException();
+                currentNode = currentNode.Children[selectedType];
             }
             return (TReturn)currentNode.DelegateFunc(instance, parameters);
         }
@@ -42,4 +64,6 @@ namespace Common {
             public Func<Object, Object[], Object> DelegateFunc;
         }
     }
+
+    public class CompatibleOverloadNotFoundException : Exception {}
 }

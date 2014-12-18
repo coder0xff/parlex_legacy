@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -22,7 +23,10 @@ namespace Synchronox {
             if (node == null) {
                 throw new ArgumentNullException();
             }
-            _nodes.Add(node);
+            lock (_nodes) {
+                _nodes.Add(node);
+                _toJoin.Enqueue(node);
+            }
         }
 
         public void Connect<T>(Input<T> input, Output<T> output) {
@@ -40,7 +44,8 @@ namespace Synchronox {
 
         public void Join() {
             _blocker.Wait();
-            foreach (var node in _nodes) {
+            Node node;
+            while (_toJoin.TryDequeue(out node)) {
                 node.Join();
             }
         }
@@ -64,6 +69,7 @@ namespace Synchronox {
 
         private readonly ManualResetEventSlim _blocker = new ManualResetEventSlim(false);
         private readonly List<Node> _nodes = new List<Node>();
+        private readonly ConcurrentQueue<Node> _toJoin = new ConcurrentQueue<Node>(); 
 
         public void NodeHalted() {
             if (Interlocked.Increment(ref _haltedNodeCount) == _nodes.Count) {

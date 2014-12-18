@@ -8,7 +8,7 @@ namespace IntegratedDevelopmentEnvironment {
     public partial class Main : Form {
         public Main() {
             InitializeComponent();
-            GrammarEditor grammarEditor = GrammarEditor.ForFile("C:\\Users\\coder_000\\Dropbox\\Plange\\grammar.wsn",
+            GrammarEditor grammarEditor = GrammarEditor.ForFile("C:\\Users\\coder_000\\Dropbox\\Plange\\small.wsn",
                 new WirthSyntaxNotation.Formatter());
             grammarEditor.Show(dockPanel1, DockState.Document);
         }

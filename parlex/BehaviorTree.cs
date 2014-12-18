@@ -254,7 +254,8 @@ namespace Parlex {
             internal override void Optimize() {}
 
             internal override GNfa ToNfa() {
-                var result = new GNfa();
+                if (Child == null) throw new InvalidBehaviorTreeException();
+                var result = Child.ToNfa();
                 foreach (GState startState in result.StartStates) {
                     result.AcceptStates.Add(startState);
                 }
@@ -268,6 +269,7 @@ namespace Parlex {
             internal override void Optimize() {}
 
             internal override GNfa ToNfa() {
+                if (Child == null) throw new InvalidBehaviorTreeException();
                 GNfa result = Child.ToNfa();
                 foreach (GNfa.Transition transition in result.GetTransitions()) {
                     if (result.AcceptStates.Contains(transition.ToState)) {
@@ -281,7 +283,7 @@ namespace Parlex {
                         }
                     }
                 }
-                foreach (GState acceptState in result.AcceptStates) {
+                foreach (GState acceptState in result.AcceptStates.ToArray()) {
                     result.States.Remove(acceptState);
                     result.AcceptStates.Remove(acceptState);
                     result.TransitionFunction.TryRemove(acceptState);
@@ -340,4 +342,6 @@ namespace Parlex {
             }
         }
     }
+
+    public class InvalidBehaviorTreeException : Exception {}
 }

@@ -203,7 +203,7 @@ namespace Parlex {
 
                 private Position Position { get { return _matchCategory.Position; } }
                 private Grammar.ISymbol Symbol { get { return _matchCategory.Symbol; } }
-                private Grammar.Recognizer Recognizer { get { return (Grammar.Recognizer)Symbol; } }
+                private Grammar.Production Production { get { return (Grammar.Production)Symbol; } }
                 private Job Job { get { return _matchCategory.Job; } }
 
                 // ReSharper disable MemberCanBePrivate.Global
@@ -219,12 +219,12 @@ namespace Parlex {
                 }
 
                 protected override void Initializer() {
-                    var firstConfiguration = new RecognizerState(this, Position, ((Grammar.Recognizer)Symbol).StartStates, null, null);
+                    var firstConfiguration = new RecognizerState(this, Position, ((Grammar.Production)Symbol).StartStates, null, null);
                 }
 
                 internal class RecognizerState : Node {
                     private readonly SubJob _subJob;
-                    private Grammar.Recognizer Recognizer { get { return _subJob.Recognizer; } }
+                    private Grammar.Production Production { get { return _subJob.Production; } }
                     private Job Job { get { return _subJob.Job; } }
                     private readonly Position _position;
                     private readonly Nfa<Grammar.ISymbol>.State[] _configuration;
@@ -235,7 +235,7 @@ namespace Parlex {
                     private bool _subsequentMadeMatch;
 
                     private bool IsAcceptConfiguration {
-                        get { return _configuration.Any(x => Recognizer.AcceptStates.Contains(x)); }
+                        get { return _configuration.Any(x => Production.AcceptStates.Contains(x)); }
                     }
 
                     // ReSharper disable MemberCanBePrivate.Global
@@ -269,14 +269,14 @@ namespace Parlex {
                     private IEnumerable<Grammar.ISymbol> GetCandidateSymbols() {
                         var results = new List<Grammar.ISymbol>();
                         foreach (Nfa<Grammar.ISymbol>.State state in _configuration) {
-                            results.AddRange(Recognizer.TransitionFunction[state].Keys);
+                            results.AddRange(Production.TransitionFunction[state].Keys);
                         }
                         results = results.Distinct().ToList();
                         return results;
                     }
 
                     protected override void Initializer() {
-                        if (!Recognizer.Greedy) {
+                        if (!Production.Greedy) {
                             OutputResults();
                         }
                         foreach (var candidateSymbol in GetCandidateSymbols()) {
@@ -293,8 +293,8 @@ namespace Parlex {
                             //Debug.WriteLine("RecognizerState (" + this + ") got matchClass " + matchClass);
                             var nextStates = new List<Nfa<Grammar.ISymbol>.State>();
                             foreach (Nfa<Grammar.ISymbol>.State currentState in _configuration) {
-                                if (Recognizer.TransitionFunction[currentState].Keys.Contains(matchClass.Symbol)) {
-                                    nextStates.AddRange(Recognizer.TransitionFunction[currentState][matchClass.Symbol]);
+                                if (Production.TransitionFunction[currentState].Keys.Contains(matchClass.Symbol)) {
+                                    nextStates.AddRange(Production.TransitionFunction[currentState][matchClass.Symbol]);
                                 }
                             }
                             nextStates = nextStates.Distinct().ToList();
@@ -317,7 +317,7 @@ namespace Parlex {
 
                     private void OutputResults() {
                         if (IsAcceptConfiguration &&
-                            (!Recognizer.Greedy || !_subsequentMadeMatch)) {
+                            (!Production.Greedy || !_subsequentMadeMatch)) {
                             if (_antecedent != null) _antecedent.SetSubsequentMadeMatch();
                             MatchOutput.Enqueue(new Match(new MatchClass(_subJob.Position, _subJob.Symbol, _position - _subJob.Position, _subJob.Job), GetChildren().ToArray()));
                         }
@@ -325,7 +325,7 @@ namespace Parlex {
 
                     protected override void Terminator() {
                         //Debug.WriteLine("Terminating RecognizerState " + this);
-                        if (Recognizer.Greedy) {
+                        if (Production.Greedy) {
                             _subsequentRecognizersCompleted.Wait();
                             OutputResults();
                         }
@@ -351,6 +351,7 @@ namespace Parlex {
                         //Debug.WriteLine("SubJob (" + this + ") got match " + match);
                         _matches[match.MatchClass].TryAdd(match);
                         if (_matchClasses.TryAdd(match.MatchClass)) {
+                            if (match.MatchClass == null) throw new ApplicationException();
                             MatchClassOutput.Enqueue(match.MatchClass);
                         }
                     }
@@ -373,7 +374,7 @@ namespace Parlex {
             }
 
             private Output<MatchClass> GetMatchClassOutput(MatchCategory search) {
-                if (search.Symbol is Grammar.Recognizer) {
+                if (search.Symbol is Grammar.Production) {
                     return _subJobs[search].MatchClassOutput;
                 } else {
                     return _terminalMatches[search].MatchClassOutput;
@@ -428,11 +429,11 @@ namespace Parlex {
                                     toAdds.Add(child);
                                 }
                             }
-                        } else if (matchClass == AbstractSyntaxForest.Root) {
+                        } /*else if (matchClass == AbstractSyntaxForest.Root) {
                             var temp = AbstractSyntaxForest.NodeTable.Where(x => x.Key.Symbol == matchClass.Symbol);
                             var length = temp.Select(x => x.Key.Length).Max();
                             var followingText = Text.Utf32Substring(length);
-                        }
+                        }*/
                     }
                     priorAdditions.Clear();
                     foreach (MatchClass toAdd in toAdds) {
@@ -499,7 +500,7 @@ namespace Parlex {
 
         public Job Parse(String document, Position startPosition = 0, Length length = -1, Grammar.ISymbol mainSymbol = null) {
             if (mainSymbol == null) {
-                mainSymbol = _grammar.MainSymbol;
+                mainSymbol = _grammar.MainProduction;
             }
             return new Job(_grammar, document, mainSymbol, startPosition, length);
         }

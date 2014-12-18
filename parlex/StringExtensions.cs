@@ -18,8 +18,7 @@ namespace Parlex {
             return chars.ToArray();
         }
 
-        public static String Utf32Substring(this String s, int startIndex, int length = -1) {
-            Int32[] codePoints = s.GetUtf32CodePoints();
+        public static String Utf32ToString(this Int32[] codePoints, int startIndex = 0, int length = -1) {
             if (length == -1) length = codePoints.Length - startIndex;
             var sb = new StringBuilder();
             for (int i = startIndex; i < startIndex + length; ++i) {
@@ -27,6 +26,13 @@ namespace Parlex {
             }
             return sb.ToString();
         }
+
+        public static String Utf32Substring(this String s, int startIndex, int length = -1) {
+            Int32[] codePoints = s.GetUtf32CodePoints();
+            if (length == -1) length = codePoints.Length - startIndex;
+            return codePoints.Utf32ToString(startIndex, length);
+        }
+
         public static string Truncate(this string value, int maxChars) {
             return value.Length <= maxChars ? value : value.Substring(0, maxChars) + " ..";
         }

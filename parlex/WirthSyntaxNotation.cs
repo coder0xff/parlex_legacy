@@ -245,7 +245,7 @@ namespace Parlex {
                 }
                 Parser.Match factor = job.AbstractSyntaxForest.NodeTable[matchClass].First();
                 Nfa<Grammar.ISymbol> factorNfa = ProcessFactorClause(job, factor);
-                result.Insert(result.AcceptStates.First(), factorNfa);
+                result.Append(factorNfa);
                 result = result.Minimized();
             }
             return result;

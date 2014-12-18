@@ -21,6 +21,9 @@ namespace Synchronox {
             public PoolThread(ThreadProvider pool) {
                 _pool = pool;
                 _thread = new Thread(Loop);
+                if (pool == Default) {
+                    _thread.IsBackground = true;
+                }
                 _thread.Start();
             }
 
@@ -73,7 +76,6 @@ namespace Synchronox {
             _disposedLock.ExitReadLock();
             return result;
         }
-
 
         public void Dispose() {
             _disposedLock.EnterWriteLock();

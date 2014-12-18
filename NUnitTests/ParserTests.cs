@@ -9,7 +9,7 @@ namespace NUnitTests {
         [Test]
         public void TestMethod1() {
             var g = new Grammar();
-            var identifier = new Grammar.Recognizer("identifier", true, false);
+            var identifier = new Grammar.Production("identifier", true, false);
             var identifier0 = new Nfa<Grammar.ISymbol>.State();
             var identifier1 = new Nfa<Grammar.ISymbol>.State();
             identifier.States.Add(identifier0);
@@ -19,7 +19,7 @@ namespace NUnitTests {
             identifier.TransitionFunction[identifier0][Grammar.LetterTerminal].Add(identifier1);
             identifier.TransitionFunction[identifier1][Grammar.LetterTerminal].Add(identifier1);
 
-            var syntax = new Grammar.Recognizer("syntax", false, false);
+            var syntax = new Grammar.Production("syntax", false, false);
             var syntax0 = new Nfa<Grammar.ISymbol>.State();
             var syntax1 = new Nfa<Grammar.ISymbol>.State();
             var syntax2 = new Nfa<Grammar.ISymbol>.State();
@@ -36,7 +36,7 @@ namespace NUnitTests {
 
             g.Productions.Add(syntax);
             g.Productions.Add(identifier);
-            g.MainSymbol = syntax;
+            g.MainProduction = syntax;
 
             Parser parser = new Parser(g);
             for (int i = 0; i < 100; i++) {
