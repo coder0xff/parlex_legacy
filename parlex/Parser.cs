@@ -177,6 +177,11 @@ namespace Parlex {
             private readonly JaggedAutoDictionary<MatchCategory, SubJob> _subJobs;
             private readonly JaggedAutoDictionary<MatchCategory, TerminalMatcher> _terminalMatches;
             public AbstractSyntaxForest AbstractSyntaxForest { get; private set; }
+
+            public MatchCategory[] PossibleErrors {
+                get { return _possibleErrors; }
+            }
+
             internal Job(Grammar grammar, String document, Grammar.ISymbol mainSymbol, Position startPosition, Length length) {
                 _grammar = grammar;
                 Text = document;
@@ -281,7 +286,7 @@ namespace Parlex {
                         }
                         foreach (var candidateSymbol in GetCandidateSymbols()) {
                             var matchCategory = new MatchCategory(_position, candidateSymbol, Job);
-                            Job.Connect(MatchClassInput, Job.GetMatchClassOutput(matchCategory));
+                            Job.Connect(MatchClassInput, Job.GetMatchClassOutput(matchCategory, _subJob._matchCategory));
                         }
                     }
 
@@ -373,7 +378,10 @@ namespace Parlex {
                 }
             }
 
-            private Output<MatchClass> GetMatchClassOutput(MatchCategory search) {
+            JaggedAutoDictionary<MatchCategory, List<MatchCategory>> matchCategoryDependencies = new JaggedAutoDictionary<MatchCategory, List<MatchCategory>>(_ => new List<MatchCategory>()); 
+
+            private Output<MatchClass> GetMatchClassOutput(MatchCategory search, MatchCategory requester) {
+                matchCategoryDependencies[search].Add(requester);
                 if (search.Symbol is Grammar.Production) {
                     return _subJobs[search].MatchClassOutput;
                 } else {
@@ -412,7 +420,7 @@ namespace Parlex {
 
             private void MakeFirstSubJob(Grammar.ISymbol mainSymbol, int startPosition) {
                 var documentMatchCategory = new MatchCategory(startPosition, mainSymbol, this);
-                GetMatchClassOutput(documentMatchCategory);
+                GetMatchClassOutput(documentMatchCategory, null);
             }
 
             private void PruneAbstractSyntaxForest() {
@@ -477,6 +485,15 @@ namespace Parlex {
                 }
             }
 
+            private MatchCategory[] _possibleErrors;
+
+            private void ComputeErrorInformation() {
+                var unmatched = _subJobs.Keys.Union(_terminalMatches.Keys).Except(AbstractSyntaxForest.NodeTable.Keys.Select(x => x.Category)).ToList();
+                var unmatchedButBypassed = unmatched.Where(x => matchCategoryDependencies[x].Any(y => !unmatched.Contains(y)));
+                var unmatchedAndNotBypassed = unmatched.Except(unmatchedButBypassed);
+                _possibleErrors = unmatchedAndNotBypassed.OrderByDescending(x => x.Position).Concat(unmatchedButBypassed.OrderByDescending(x => x.Position)).ToArray();
+            }
+
             private void ConstructAbstractSyntaxForest() {
                 AbstractSyntaxForest = new AbstractSyntaxForest {
                     Root = _root,
@@ -484,6 +501,7 @@ namespace Parlex {
                 };
                 AddProductionMatchesToAbstractSyntaxForest();
                 AddTerminalMatchesToAbstractSyntaxGraph();
+                ComputeErrorInformation();
                 PruneAbstractSyntaxForest();
             }
 
