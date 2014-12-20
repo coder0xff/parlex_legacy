@@ -53,6 +53,12 @@
     <Compile Include="GrammarEditor.Designer.cs">
       <DependentUpon>GrammarEditor.cs</DependentUpon>
     </Compile>
+    <Compile Include="GrammarTester.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GrammarTester.Designer.cs">
+      <DependentUpon>GrammarTester.cs</DependentUpon>
+    </Compile>
     <Compile Include="IDocumentView.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
@@ -64,6 +70,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="GrammarEditor.resx">
       <DependentUpon>GrammarEditor.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GrammarTester.resx">
+      <DependentUpon>GrammarTester.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Main.resx">
       <DependentUpon>Main.cs</DependentUpon>
