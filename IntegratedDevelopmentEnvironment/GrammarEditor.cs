@@ -205,7 +205,7 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         static void SetTagValue(TreeNode node, String key, Object value) {
-            var table = (Dictionary<String, Object>)node.Tag;
+            var table = node.Tag as Dictionary<String, Object>;
             if (table == null) {
                 node.Tag = table = new Dictionary<string, object>();
             }
@@ -214,7 +214,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         static bool TryGetTagValue<T>(TreeNode node, String key, out T value) {
             value = default(T);
-            var table = (Dictionary<String, Object>)node.Tag;
+            var table = node.Tag as Dictionary<String, Object>;
             if (table == null) {
                 node.Tag = table = new Dictionary<string, object>();
             }
@@ -276,14 +276,19 @@ namespace IntegratedDevelopmentEnvironment {
             if (treeView.SelectedNode == null) {
                 String unnamedName = "Unnamed";
                 int nameCounter = 2;
-                while (_grammar.GetRecognizerByName(unnamedName) != null) {
+                var currentNames = treeView.Nodes.Cast<TreeNode>().Select(rootNode => GetTagValue<String>(rootNode, "name")).ToArray();
+                while (currentNames.Contains(unnamedName)) {
                     unnamedName = "Unnamed (" + (nameCounter++) + ")";
                 }
                 var treeNode = new TreeNode(unnamedName + ": Sequence");
                 var sequence = new BehaviorTree.Sequence();
+                var behaviorTree = new BehaviorTree { Root = sequence };
+                SetTagValue(treeNode, "tree", behaviorTree);
                 SetTagValue(treeNode, "behavior", sequence);
+                SetTagValue(treeNode, "name", "Unnamed");
+                SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
-                AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), sequence);
+                AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeNode, "behavior"), sequence);
             } else {
                 var treeNode = new TreeNode("Sequence");
                 SetTagValue(treeNode, "behavior", new BehaviorTree.Sequence());
@@ -301,7 +306,11 @@ namespace IntegratedDevelopmentEnvironment {
                 }
                 var treeNode = new TreeNode(unnamedName + ": Repetition");
                 var repetition = new BehaviorTree.Repetition();
+                var behaviorTree = new BehaviorTree { Root = repetition };
+                SetTagValue(treeNode, "tree", behaviorTree);
                 SetTagValue(treeNode, "behavior", repetition);
+                SetTagValue(treeNode, "name", "Unnamed");
+                SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
                 AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), repetition);
             } else {
@@ -321,7 +330,11 @@ namespace IntegratedDevelopmentEnvironment {
                 }
                 var treeNode = new TreeNode(unnamedName + ": Choice");
                 var choice = new BehaviorTree.Choice();
+                var behaviorTree = new BehaviorTree { Root = choice };
+                SetTagValue(treeNode, "tree", behaviorTree);
                 SetTagValue(treeNode, "behavior", choice);
+                SetTagValue(treeNode, "name", "Unnamed");
+                SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
                 AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), choice);
             } else {
@@ -341,7 +354,11 @@ namespace IntegratedDevelopmentEnvironment {
                 }
                 var treeNode = new TreeNode(unnamedName + ": Optional");
                 var optional = new BehaviorTree.Optional();
+                var behaviorTree = new BehaviorTree { Root = optional };
+                SetTagValue(treeNode, "tree", behaviorTree);
                 SetTagValue(treeNode, "behavior", optional);
+                SetTagValue(treeNode, "name", "Unnamed");
+                SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
                 AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), optional);
             } else {
