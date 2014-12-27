@@ -8,7 +8,6 @@ namespace Synchronox {
     public abstract class Node {
         protected Node(Collective collective) {
             _collective = collective;
-            _collective.Add(this);
             foreach (var property in GetType().GetFields().Where(p => p.FieldType.IsGenericType)) {
                 Type genericBase = property.FieldType.GetGenericTypeDefinition();
                 if (genericBase == typeof(Input<>)) {
@@ -23,6 +22,7 @@ namespace Synchronox {
                     property.SetValue(this, output);
                 }
             }
+            _collective.Add(this);
             _computerThread = ThreadProvider.Default.Start(ComputerRunner);
         }
 
