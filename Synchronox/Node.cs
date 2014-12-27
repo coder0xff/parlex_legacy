@@ -26,6 +26,29 @@ namespace Synchronox {
             _computerThread = ThreadProvider.Default.Start(ComputerRunner);
         }
 
+        internal float pressure;
+
+        internal void Lock() {
+            foreach (var input in GetInputs()) {
+                input.Lock();
+            }
+        }
+
+        internal void Unlock() {
+            foreach (var input in GetInputs()) {
+                input.Unlock();
+            }
+        }
+
+        internal bool IsBlocked {
+            get {
+                Lock();
+                bool result = GetInputs().Any(input => input.IsBlocked());
+                Unlock();
+                return result;
+            }
+        }
+
         internal bool IsHalted = false;
 
         private readonly ManualResetEventSlim _constructionBlocker = new ManualResetEventSlim();

@@ -40,6 +40,9 @@ namespace Synchronox {
         }
 
         private bool ComputeIsHalting() {
+            if (_causedHalt) {
+                return true;
+            }
             if (_queue.Count > 0) return false;
             if (_connectedOutputs.Count == 0 || _connectedOutputs.All(connectedOutput => connectedOutput.Owner.IsHalted)) {
                 _causedHalt = true;
@@ -72,6 +75,23 @@ namespace Synchronox {
         void IInput.CheckWillHalt() {
             _sync.WaitOne();
             _cv.Signal();
+            _sync.ReleaseMutex();
+        }
+
+        public bool IsBlocked() {
+            return _cv.WaitingThreadCount > 0;
+        }
+
+        public void SignalHalt() {
+            _causedHalt = true;
+            _cv.Signal();
+        }
+
+        public void Lock() {
+            _sync.WaitOne();
+        }
+
+        public void Unlock() {
             _sync.ReleaseMutex();
         }
 
