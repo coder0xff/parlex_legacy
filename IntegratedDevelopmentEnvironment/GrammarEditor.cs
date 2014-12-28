@@ -64,8 +64,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         private Grammar BehaviorsToGrammar(out bool errors) {
             errors = false;
-            Grammar grammar;
-            grammar = new Grammar();
+            var grammar = new Grammar();
             foreach (var node in treeView.Nodes) {
                 var tree = GetTagValue<BehaviorTree>((TreeNode)node, "tree");
                 var name = GetTagValue<String>((TreeNode)node, "name");
@@ -88,8 +87,17 @@ namespace IntegratedDevelopmentEnvironment {
             bool errors = false;
             if (_grammar == null) {
                 _grammar = BehaviorsToGrammar(out errors);
+                if (errors) _grammar = null;
             }
             return !errors;
+        }
+
+        public Grammar GetGrammar(out bool errors) {
+            errors = false;
+            if (_grammar == null) {
+                errors = TrySyncBehaviorsToGrammar();
+            }
+            return _grammar;
         }
 
         public void SaveCopy(string filePathName) {
@@ -488,6 +496,11 @@ namespace IntegratedDevelopmentEnvironment {
                 treeView.SelectedNode = null;
                 treeView_AfterSelect(null, null);
             }
+        }
+
+        private void toolStripButtonTester_Click(object sender, EventArgs e) {
+            var tester = new GrammarTester(this);
+            tester.Show();
         }
     }
 }

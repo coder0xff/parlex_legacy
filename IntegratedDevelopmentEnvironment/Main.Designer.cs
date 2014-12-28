@@ -186,7 +186,7 @@
 
         #endregion
 
-        private WeifenLuo.WinFormsUI.Docking.DockPanel dockPanel1;
+        internal WeifenLuo.WinFormsUI.Docking.DockPanel dockPanel1;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem newToolStripMenuItem;

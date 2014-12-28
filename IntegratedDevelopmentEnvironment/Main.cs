@@ -1,15 +1,23 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows.Forms;
 using Parlex;
 using WeifenLuo.WinFormsUI.Docking;
 
 namespace IntegratedDevelopmentEnvironment {
     public partial class Main : Form {
+        public static Main Instance { get; private set; }
         public Main() {
             InitializeComponent();
+            Instance = this;
             GrammarEditor grammarEditor = GrammarEditor.ForFile("C:\\Users\\coder_000\\Dropbox\\Plange\\small.wsn",
                 new WirthSyntaxNotation.Formatter());
+            bool dontCare;
+            var grammar = grammarEditor.GetGrammar(out dontCare);
+            var formatter = new CSharpFormatter();
+            var f = new FileStream("C:\\Users\\coder_000\\Desktop\\small.cs", FileMode.Create);
+            formatter.Serialize(f, grammar);
             grammarEditor.Show(dockPanel1, DockState.Document);
         }
 
