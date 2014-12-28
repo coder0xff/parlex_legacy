@@ -522,9 +522,14 @@ namespace Parlex {
 
         public Job Parse(String document, Position startPosition = 0, Length length = -1, Grammar.ISymbol mainSymbol = null) {
             if (mainSymbol == null) {
+                if (_grammar.MainProduction == null) {
+                    throw new NoMainProductionException();
+                }
                 mainSymbol = _grammar.MainProduction;
             }
             return new Job(_grammar, document, mainSymbol, startPosition, length);
         }
     }
+
+    public class NoMainProductionException : Exception {}
 }
