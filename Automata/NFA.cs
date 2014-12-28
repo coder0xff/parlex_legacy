@@ -166,6 +166,21 @@ namespace Automata {
             return result;
         }
 
+        public Nfa() { }
+
+        /// <summary>
+        /// Create a deep copy of the specified NFA (the state objects are shallow copied)
+        /// </summary>
+        /// <param name="other"></param>
+        public Nfa(Nfa<TAlphabet, TAssignment> other) {
+            States.UnionWith(other.States);
+            StartStates.UnionWith(other.StartStates);
+            AcceptStates.UnionWith(other.AcceptStates);
+            foreach (var transition in other.GetTransitions()) {
+                TransitionFunction[transition.FromState][transition.Symbol].Add(transition.ToState);
+            }
+        }
+       
         /// <summary>
         ///     Creates a state map (SM) as described in [1]
         /// </summary>
@@ -568,8 +583,8 @@ namespace Automata {
         }
 
         /// <summary>
-        ///     If there are any nodes that cannot be reached
-        ///     or cannot reach an accept state then remove them
+        ///     If there are any nodes that cannot be reached or cannot reach an accept state then remove them
+        ///     iff a transition can be removed without changing the behavior, remove it
         /// </summary>
         public void RemoveRedundancies() {
             start:
@@ -590,6 +605,33 @@ namespace Automata {
                     goto start;
                 }
             }
+            TrimTransitions();
+            TrimStartAccepts();
+        }
+
+        private void TrimTransitions() {
+            var copy = new Nfa<TAlphabet, TAssignment>(this);
+            var thatMinDfa = copy.MinimizedDfa();
+            var allTransitions = GetTransitions().ToArray();
+            foreach (var transition in allTransitions) {
+                TransitionFunction[transition.FromState][transition.Symbol].Remove(transition.ToState);
+                if (!ProprocessedIsEquivalent(thatMinDfa)) {
+                    TransitionFunction[transition.FromState][transition.Symbol].Add(transition.ToState);
+                } else {
+                    System.Diagnostics.Debug.WriteLine("Trimmed transition");
+                }
+            }
+        }
+
+        private void TrimStartAccepts() {
+            var startAccepts = StartStates.Where(startState => AcceptStates.Contains(startState)).ToArray();
+            var withFromTransitions = startAccepts.Where(state => TransitionFunction[state].Any(symbolListPair => symbolListPair.Value.Count > 0)).ToArray();
+            var withoutFromTransitions = startAccepts.Except(withFromTransitions);
+            if (withFromTransitions.Any()) {
+                foreach (var withoutFromTransition in withoutFromTransitions) {
+                    StartStates.Remove(withoutFromTransition);
+                }
+            }
         }
 
         /// <summary>
@@ -605,7 +647,7 @@ namespace Automata {
             Grid[] primeGrids = ComputePrimeGrids(ram);
             IEnumerable<Cover> covers = EnumerateCovers(ram, primeGrids);
             foreach (Cover cover in covers) {
-                if (cover.Count == _states.Count) {
+                if (cover.Count >= _states.Count || cover.Count >= determinized.States.Count) {
                     break;
                 }
                 Bimap<int, Grid> orderedGrids;
@@ -617,7 +659,11 @@ namespace Automata {
                 }
             }
             int stateCount = 0;
-            return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller Nfa. Return this;
+            if (determinized.States.Count <= _states.Count) {
+                return determinized.Reassign(x => Interlocked.Increment(ref stateCount));
+            } else {
+                return Reassign(x => Interlocked.Increment(ref stateCount)); //did not find a smaller Nfa. Return this;
+            }
         }
 
         public static Nfa<TAlphabet, TAssignment> Union(IEnumerable<Nfa<TAlphabet, TAssignment>> nfas) {
@@ -645,8 +691,12 @@ namespace Automata {
         }
 
         public bool IsEquivalent<TAssignment2>(Nfa<TAlphabet, TAssignment2> that) {
-            Nfa<TAlphabet, int> thisMinDfa = MinimizedDfa();
             Nfa<TAlphabet, int> thatMinDfa = that.MinimizedDfa();
+            return ProprocessedIsEquivalent(thatMinDfa);
+        }
+
+        public bool ProprocessedIsEquivalent(Nfa<TAlphabet, int> thatMinDfa) {
+            Nfa<TAlphabet, int> thisMinDfa = MinimizedDfa();
             bool equivalent = true;
             var stateMap = new ConcurrentDictionary<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>();
             var processor = new DistinctRecursiveAlgorithmProcessor<KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>>();
@@ -655,19 +705,20 @@ namespace Automata {
                 if (!equivalent) {
                     return;
                 }
-                foreach (var inputSymbolAndStates in thisMinDfa._transitionFunction[pair.Key]) {
-                    TAlphabet thisMinDfaInputSymbol = inputSymbolAndStates.Key;
-                    Nfa<TAlphabet, int>.State thisMinDfaNextState = inputSymbolAndStates.Value.First(); //deterministic, so only one state
-                    HashSet<Nfa<TAlphabet, int>.State> thatMinDfaNextStates = thatMinDfa._transitionFunction[pair.Value][thisMinDfaInputSymbol];
-                    if (thatMinDfaNextStates.Count != 1) { //it will always be either 0 or 1
+                foreach (var inputSymbol in thisMinDfa._transitionFunction[pair.Key].Keys.Union(thatMinDfa._transitionFunction[pair.Value].Keys)) {
+                    Nfa<TAlphabet, int>.State thisMinDfaNextState = thisMinDfa._transitionFunction[pair.Key][inputSymbol].FirstOrDefault(); //deterministic, so only one state
+                    Nfa<TAlphabet, int>.State thatMinDfaNextState = thatMinDfa._transitionFunction[pair.Value][inputSymbol].FirstOrDefault();
+                    if (thatMinDfaNextState == null || thisMinDfaNextState == null) {
                         equivalent = false;
                     } else {
-                        Nfa<TAlphabet, int>.State thatMinDfaNextState = thatMinDfaNextStates.First();
                         Nfa<TAlphabet, int>.State mappedThisMinDfaNextState = stateMap.GetOrAdd(thisMinDfaNextState, thisMinDfaNextStateProxy => {
                             processor.Add(new KeyValuePair<Nfa<TAlphabet, int>.State, Nfa<TAlphabet, int>.State>(thisMinDfaNextState, thatMinDfaNextState));
                             return thatMinDfaNextState;
                         });
                         if (thatMinDfaNextState != mappedThisMinDfaNextState) {
+                            equivalent = false;
+                        }
+                        if (thatMinDfa.AcceptStates.Contains(thatMinDfaNextState) != thisMinDfa.AcceptStates.Contains(thisMinDfaNextState)) {
                             equivalent = false;
                         }
                     }
