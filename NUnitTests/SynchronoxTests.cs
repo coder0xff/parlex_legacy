@@ -9,7 +9,7 @@ using NUnit.Framework;
 
 namespace NUnitTests {
     [TestFixture]
-    class SynchronoxTests {
+    class SynchronoxTests1 {
         class MyNumberNode : Node {
             public MyNumberNode(Collective collective) : base(collective) {
                 ConstructionCompleted();
@@ -27,6 +27,7 @@ namespace NUnitTests {
         class MySumNode : Node, IEnumerable<int> {
             public MySumNode(Test1Collective collective) : base(collective) {
                 _results = collective.results;
+                ConstructionCompleted();
             }
             private readonly List<int> _results;
             protected override void Computer() {
@@ -72,14 +73,66 @@ namespace NUnitTests {
         }
         [Test]
         public void Test1() {
-            var testCollective = new Test1Collective();
-            testCollective.Join();
-            var expected = 0;
-            foreach (var i in testCollective) {
-                Debug.Assert(i == expected);
-                expected += 2;
+            for (var j = 0; j < 100; j++) {
+                var testCollective = new Test1Collective();
+                testCollective.Join();
+                var expected = 0;
+                foreach (var i in testCollective) {
+                    Debug.Assert(i == expected);
+                    expected += 2;
+                }
+                Debug.Assert(expected == 22);
             }
-            Debug.Assert(expected == 22);
+        }
+    }
+
+    [TestFixture]
+    class SynchronoxTests2 {
+        class DeadlockNode : Node {
+            public DeadlockNode(Collective collective) : base(collective) {
+                ConstructionCompleted();
+            }
+            protected override void Computer() {
+                int datum;
+                i.Dequeue(out datum);
+            }
+
+            public readonly Input<int> i;
+            public readonly Output<int> o;
+        }
+
+        class DeadlockCollective1 : Collective {
+            public DeadlockCollective1() {
+                var node = new DeadlockNode(this);
+                Connect(node.i, node.o);
+                ConstructionCompleted();
+            }
+        }
+
+        [Test]
+        public void Test1() {
+            for (var i = 0; i < 100; i++) {
+                var testCollective = new DeadlockCollective1();
+                testCollective.Join();
+            }
+        }
+
+        class DeadlockCollective2 : Collective {
+            public DeadlockCollective2() {
+                var node1 = new DeadlockNode(this);
+                var node2 = new DeadlockNode(this);
+                Connect(node1.i, node2.o);
+                Connect(node2.i, node1.o);
+                ConstructionCompleted();
+            }
+        }
+
+        [Test]
+        public void Test2() {
+            for (var i = 0; i < 100; i++) {
+                var testCollective = new DeadlockCollective2();
+                testCollective.Join();
+            }
         }
     }
 }
