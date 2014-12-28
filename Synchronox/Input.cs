@@ -78,8 +78,8 @@ namespace Synchronox {
             _sync.ReleaseMutex();
         }
 
-        public bool IsBlocked() {
-            return _cv.WaitingThreadCount > 0;
+        public bool IsBlocked{
+            get { return _cv.WaitingThreadCount > 0; }
         }
 
         public void SignalHalt() {

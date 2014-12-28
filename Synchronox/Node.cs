@@ -43,7 +43,7 @@ namespace Synchronox {
         internal bool IsBlocked {
             get {
                 Lock();
-                bool result = GetInputs().Any(input => input.IsBlocked());
+                bool result = GetInputs().Any(input => input.IsBlocked);
                 Unlock();
                 return result;
             }
@@ -51,7 +51,7 @@ namespace Synchronox {
 
         internal bool IsHalted = false;
 
-        private readonly ManualResetEventSlim _constructionBlocker = new ManualResetEventSlim();
+        internal readonly ManualResetEventSlim _constructionBlocker = new ManualResetEventSlim();
 
         private readonly List<IInput> _inputs = new List<IInput>();
         private readonly List<IOutput> _outputs = new List<IOutput>(); 

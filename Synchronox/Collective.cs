@@ -83,72 +83,68 @@ namespace Synchronox {
             }
         }
 
-        private void DeadlockDetector() {
-            StartBlocker.Wait();
-            Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
-            while (!IsDone()) {
-                Node[] nodesCopy;
-                lock (_nodes) {
-                    nodesCopy = _nodes.ToArray();
-                }
-                var nodeToInput = new Dictionary<Node, IInput>();
-                foreach (var node in nodesCopy.Where(n => !n.IsHalted)) {
-                    var clear = true;
-                    foreach (var input in node.GetInputs()) {
-                        if (input.IsBlocked()) {
-                            nodeToInput[node] = input;
-                            node.pressure += 1.0f / nodesCopy.Length;
-                            if (node.pressure > 2) {
-                                DeadlockBreaker();
-                            }
-                            clear = false;
-                            break;
-                        }
-                    }
-                    if (clear) {
-                        node.pressure = 0;
-                    }
-                }
-                foreach (var node in nodeToInput.Keys) {
-                    var input = nodeToInput[node];
-                    var dependencies = input.GetConnectedOutputs().Select(output => output.Owner).Distinct().Where(dependency => !dependency.IsHalted).ToArray();
-                    var flowTo = dependencies.Where(d => d.pressure > node.pressure).ToArray();
-                    foreach (var node1 in flowTo) {
-                        node1.pressure += node.pressure / flowTo.Length;
-                    }
-                    if (flowTo.Length > 0) {
-                        node.pressure = 0;
+        private static bool DeadlockBreaker(HashSet<Node> blockedSet, Dictionary<Node, Node[]> dependenciesTable, bool doHalt) {
+            var anyChanged = true;
+            while (anyChanged) {
+                anyChanged = false;
+                foreach (var blocked in blockedSet) {
+                    var dependencies = dependenciesTable[blocked];
+                    if (dependencies.Length == 0 || dependencies.Any(node => !blockedSet.Contains(node))) {
+                        blockedSet.Remove(blocked);
+                        blocked.pressure = 0;
+                        anyChanged = true;
+                        break;
                     }
                 }
             }
-        }
-
-        public void DeadlockBreaker() {
-            lock (_nodes) {
-                foreach (var node in _nodes) {
-                    node.Lock();
-                }
-                var blockedSet = new HashSet<Node>(_nodes.Where(node => node.GetInputs().Any(i => i.IsBlocked())));
-                var dependenciesTable = blockedSet.ToDictionary(k => k, k => k.GetInputs().First(i => i.IsBlocked()).GetConnectedOutputs().Select(o => o.Owner).Distinct().ToArray());
-                var anyChanged = true;
-                while (anyChanged) {
-                    anyChanged = false;
-                    foreach (var blocked in blockedSet) {
-                        if (dependenciesTable[blocked].Any(node => !blockedSet.Contains(node))) {
-                            blockedSet.Remove(blocked);
-                            blocked.pressure = 0;
-                            anyChanged = true;
-                            break;
-                        }
-                    }
-                }
-                if (blockedSet.Count > 0) {
+            if (blockedSet.Count > 0) {
+                if (doHalt) {
                     var node = blockedSet.First();
-                    var input = node.GetInputs().First(i => i.IsBlocked());
+                    var input = node.GetInputs().First(i => i.IsBlocked);
                     input.SignalHalt();
                 }
-                foreach (var node in _nodes) {
-                    node.Unlock();
+                return true;
+            }
+            if (doHalt) {
+                Console.WriteLine("A collective detected that a deadlock might be occurring, but it was a false positive.");
+            }
+            return false;
+        }
+
+        private void DeadlockDetector() {
+            var needFullTest = false;
+            while (!IsDone()) {
+                Node[] nodesCopy;
+                if (needFullTest) {
+                    lock (_nodes) {
+                        nodesCopy = _nodes.ToArray();
+                    }
+                    Thread.CurrentThread.Priority = ThreadPriority.Normal;
+                    foreach (var node in nodesCopy) {
+                        node.Lock();
+                    }
+                    //This branch does require locking
+                    //It does not generate false positives
+                    //and will take action (halt a node) when
+                    //it finds a dead lock
+                    var blockedSet = new HashSet<Node>(nodesCopy.Where(node => node.GetInputs().Any(i => i.IsBlocked)));
+                    var dependenciesTable = blockedSet.ToDictionary(k => k, k => k.GetInputs().First(i => i.IsBlocked).GetConnectedOutputs().Select(o => o.Owner).Where(d => !d.IsHalted).Distinct().ToArray());
+                    DeadlockBreaker(blockedSet, dependenciesTable, true);
+                    needFullTest = false;
+                    foreach (var node in nodesCopy) {
+                        node.Unlock();
+                    }
+                } else {
+                    //this branch doesn't require any locking
+                    //it could produce false positives though
+                    lock (_nodes) {
+                        nodesCopy = _nodes.ToArray();
+                    }
+                    Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
+                    var blockedNodeToInput = nodesCopy.ToDictionary(node => node, node => node.GetInputs().FirstOrDefault(input => input.IsBlocked));
+                    var blockedSet = new HashSet<Node>(blockedNodeToInput.Where(kvp => kvp.Value != null).Select(kvp => kvp.Key));
+                    var dependenciesTable = blockedSet.ToDictionary(k => k, k => blockedNodeToInput[k].GetConnectedOutputs().Select(o => o.Owner).Distinct().Where(d => !d.IsHalted).ToArray());
+                    needFullTest = DeadlockBreaker(blockedSet, dependenciesTable, false);
                 }
             }
         }

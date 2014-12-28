@@ -6,7 +6,7 @@ namespace Synchronox {
         IEnumerable<IOutput> GetConnectedOutputs();
         Node Owner { get; }
         void CheckWillHalt();
-        bool IsBlocked();
+        bool IsBlocked { get; }
         void SignalHalt();
         void Lock();
         void Unlock();
