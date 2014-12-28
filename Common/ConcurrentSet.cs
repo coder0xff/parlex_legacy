@@ -60,6 +60,8 @@ namespace System.Collections.Concurrent.More {
                 throw new ArgumentNullException("array");
             }
             foreach (var pair in _storage) {
+                if (arrayIndex >= array.Length)
+                    break;
                 array[arrayIndex++] = pair.Key;
             }
         }
@@ -87,6 +89,10 @@ namespace System.Collections.Concurrent.More {
         public bool TryRemove(T item) {
             byte dontCare;
             return _storage.TryRemove(item, out dontCare);
+        }
+
+        public T[] ToArray() {
+            return _storage.Keys.ToArray();
         }
     }
 }
