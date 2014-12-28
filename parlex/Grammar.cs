@@ -111,6 +111,10 @@ namespace Parlex {
             return result;
         }
 
+        public static String TryGetBuiltInNameBySymbol(ISymbol symbol) {
+            return NameToBuiltInSymbol.FirstOrDefault(kvp => kvp.Value == symbol).Key;
+        }
+
         public class CharacterSetTerminal : ITerminal {
             private readonly String _name;
             private readonly HashSet<Int32> _unicodeCodePoints;
@@ -264,6 +268,7 @@ namespace Parlex {
             public string Name { get { return "Non-double quote character, non-back slash character"; } }
             public int Length { get { return 1; }}
             public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
+                if (documentIndex >= documentUtf32CodePoints.Length) return false;
                 return documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\"", 0) &&
                        documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\\", 0);
             }

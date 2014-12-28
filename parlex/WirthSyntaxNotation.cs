@@ -120,9 +120,9 @@ namespace Parlex {
             Identifier.StartStates.Add(identifierState0);
             Identifier.AcceptStates.Add(identifierState1);
             Identifier.TransitionFunction[identifierState0][Grammar.WhiteSpacesEater].Add(identifierState0);
-            Identifier.TransitionFunction[identifierState0][Grammar.LetterTerminal].Add(identifierState1);
+            Identifier.TransitionFunction[identifierState0][Grammar.AlphaNumericTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState0][UnderscoreTerminal].Add(identifierState1);
-            Identifier.TransitionFunction[identifierState1][Grammar.LetterTerminal].Add(identifierState1);
+            Identifier.TransitionFunction[identifierState1][Grammar.AlphaNumericTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState1][UnderscoreTerminal].Add(identifierState1);
 
             var literalState0 = new Nfa<Grammar.ISymbol>.State();
@@ -246,7 +246,8 @@ namespace Parlex {
                 Parser.Match factor = job.AbstractSyntaxForest.NodeTable[matchClass].First();
                 Nfa<Grammar.ISymbol> factorNfa = ProcessFactorClause(job, factor);
                 result.Append(factorNfa);
-                result = result.Minimized();
+                var temp = result.Minimized();
+                result = temp;
             }
             return result;
         }
@@ -384,6 +385,8 @@ namespace Parlex {
                     temp = Grammar.QuoteStringLiteral(temp);
                 }
             }
+            String temp2 = Grammar.TryGetBuiltInNameBySymbol(leaf.Symbol);
+            if (temp2 != null) temp = temp2;
             return temp;
         }
 
@@ -428,7 +431,7 @@ namespace Parlex {
             }
 
             public Grammar Deserialize(Stream s) {
-                var sr = new StreamReader(s, Encoding.UTF8, false, 65536, false);
+                var sr = new StreamReader(s, Encoding.UTF8);
                 string text = sr.ReadToEnd();
                 sr.Dispose();
                 return GrammarFromString(text);
