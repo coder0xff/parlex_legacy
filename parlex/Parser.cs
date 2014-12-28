@@ -156,6 +156,8 @@ namespace Parlex {
             public Dictionary<MatchClass, List<Match>> NodeTable;
             public MatchClass Root;
 
+            public bool IsEmpty { get { return NodeTable.Keys.Count == 0; } }
+
             public bool IsAmbiguous {
                 get { return NodeTable.Keys.Any(matchClass => NodeTable[matchClass].Count > 1); }
             }
@@ -191,7 +193,7 @@ namespace Parlex {
                 }
                 _root = new MatchClass(startPosition, mainSymbol, length, this);
                 _subJobs = new JaggedAutoDictionary<MatchCategory, SubJob>(matchCategory => {
-                    ////Debug.WriteLine("BeginMatching(" + matchCategory + ")");
+                    //Debug.WriteLine("BeginMatching(" + matchCategory + ")");
                     return new SubJob(matchCategory);
                 });
 
@@ -219,7 +221,7 @@ namespace Parlex {
                 public SubJob(MatchCategory matchCategory)
                     : base(matchCategory.Job) {
                     _matchCategory = matchCategory;
-                    ////Debug.WriteLine("Created SubJob " + this);
+                    //Debug.WriteLine("Created SubJob " + this);
                     ConstructionCompleted();
                 }
 
@@ -256,7 +258,7 @@ namespace Parlex {
                         _antecedent = antecedent;
                         if (_antecedent != null) _antecedent.SubsequentCreated();
                         _entranceMatchClass = entranceMatchClass;
-                        ////Debug.WriteLine("Created RecognizerState " + this);
+                        //Debug.WriteLine("Created RecognizerState " + this);
                         ConstructionCompleted();
                         Job.Connect(_subJob.MatchInput, MatchOutput);
                     }
@@ -465,6 +467,7 @@ namespace Parlex {
                         if (classMatches.Count == 0) {
                             continue;
                         }
+                        Debug.Assert(classMatches.All(cm => cm != null));
                         if (!AbstractSyntaxForest.NodeTable.Keys.Contains(matchClass)) {
                             AbstractSyntaxForest.NodeTable[matchClass] = new List<Match>();
                         }
@@ -477,6 +480,7 @@ namespace Parlex {
             private void AddTerminalMatchesToAbstractSyntaxGraph() {
                 foreach (var matcher in _terminalMatches.Values) {
                     foreach (Match match in matcher.GetMatches()) {
+                        Debug.Assert(match != null);
                         if (!AbstractSyntaxForest.NodeTable.Keys.Contains(match.MatchClass)) {
                             AbstractSyntaxForest.NodeTable[match.MatchClass] = new List<Match>();
                         }

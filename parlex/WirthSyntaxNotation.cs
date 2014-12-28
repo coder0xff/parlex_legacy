@@ -146,7 +146,7 @@ namespace Parlex {
         }
 
         private static string ProcessIdentifierClause(Parser.Job job, Parser.Match identifier) {            
-            return job.Text.Utf32Substring(identifier.Position, identifier.Length);
+            return job.Text.Utf32Substring(identifier.Position, identifier.Length).Trim();
         }
 
         private static string ProcessLiteralClause(Parser.Job job, Parser.Match literal) {
@@ -265,7 +265,7 @@ namespace Parlex {
         private static Grammar.Production ProcessProductionClause(Parser.Job job, Parser.Match production) {
             string name = ProcessIdentifierClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[0]].First()).Trim();
             Nfa<Grammar.ISymbol> nfa = ProcessExpressionClause(job, job.AbstractSyntaxForest.NodeTable[production.Children[2]].First());
-            return new Grammar.Production(name, true, nfa);
+            return new Grammar.Production(name, false, nfa);
         }
 
         private static void ProcessSyntaxClause(Parser.Job job, Parser.Match syntax, Grammar result) {
@@ -325,6 +325,7 @@ namespace Parlex {
             var result = new Grammar();
             ProcessSyntaxClause(j, j.AbstractSyntaxForest.NodeTable[j.AbstractSyntaxForest.Root].First(), result);
             ResolveIdentifiers(result);
+            result.MainProduction = result.GetRecognizerByName("SYNTAX");
             return result;
         }
 

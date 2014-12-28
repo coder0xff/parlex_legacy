@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Generic.More;
 using System.Linq;
 using System.Linq.More;
+using System.Reflection;
 using System.Text;
 using Automata;
 
@@ -33,8 +34,6 @@ namespace Parlex {
         public static readonly SimpleEscapeSequenceTerminalT SimpleEscapeSequenceTerminal = new SimpleEscapeSequenceTerminalT();
 
         public static readonly UnicodeEscapeSequnceTerminalT UnicodeEscapeSequnceTerminal = new UnicodeEscapeSequnceTerminalT();
-
-
 
         public static readonly Production StringLiteral = new Production("stringLiteral", false, true);
 
@@ -89,6 +88,19 @@ namespace Parlex {
 
         public static bool TryGetBuiltinISymbolByName(String name, out ISymbol symbol) {
             return NameToBuiltInSymbol.TryGetValue(name, out symbol);
+        }
+
+        public static bool TryGetBuiltinFieldByName(String name, out FieldInfo field) {
+            field = null;
+            foreach (var fieldInfo in typeof(Grammar).GetFields(BindingFlags.Static)) {
+                if (fieldInfo.FieldType.IsSubclassOf(typeof(ISymbol))) {
+                    if (((ISymbol)fieldInfo.GetValue(null)).Name == name) {
+                        field = fieldInfo;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public ISymbol GetSymbol(String name) {
