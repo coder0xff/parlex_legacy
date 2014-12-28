@@ -50,17 +50,20 @@
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(118, 17);
-            this.toolStripStatusLabel1.Text = "toolStripStatusLabel1";
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(91, 17);
+            this.toolStripStatusLabel1.Text = "Parse pending...";
             // 
             // textBoxDocument
             // 
             this.textBoxDocument.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textBoxDocument.HideSelection = false;
             this.textBoxDocument.Location = new System.Drawing.Point(0, 0);
             this.textBoxDocument.Multiline = true;
             this.textBoxDocument.Name = "textBoxDocument";
+            this.textBoxDocument.ScrollBars = System.Windows.Forms.ScrollBars.Both;
             this.textBoxDocument.Size = new System.Drawing.Size(347, 279);
             this.textBoxDocument.TabIndex = 2;
+            this.textBoxDocument.WordWrap = false;
             this.textBoxDocument.TextChanged += new System.EventHandler(this.textBoxDocument_TextChanged);
             // 
             // timer1
@@ -94,6 +97,7 @@
             this.listBoxErrors.Name = "listBoxErrors";
             this.listBoxErrors.Size = new System.Drawing.Size(181, 279);
             this.listBoxErrors.TabIndex = 0;
+            this.listBoxErrors.SelectedIndexChanged += new System.EventHandler(this.listBoxErrors_SelectedIndexChanged);
             // 
             // GrammarTester
             // 

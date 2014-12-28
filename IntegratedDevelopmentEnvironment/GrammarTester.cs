@@ -21,6 +21,18 @@ namespace IntegratedDevelopmentEnvironment {
             Show(Main.Instance.dockPanel1, DockState.Document);
         }
 
+        class ErrorInfo {
+            public readonly int Position;
+            public readonly Grammar.ISymbol Symbol;
+            public ErrorInfo(Parser.MatchCategory error) {
+                Position = error.Position;
+                Symbol = error.Symbol;
+            }
+
+            public override string ToString() {
+                return "Expected " + Symbol + " at " + Position;
+            }
+        }
         private void Evaluate() {
             bool errors;
             var grammar = _grammarEditor.GetGrammar(out errors);
@@ -41,7 +53,7 @@ namespace IntegratedDevelopmentEnvironment {
                 }
             }
             listBoxErrors.Items.Clear();
-            listBoxErrors.Items.AddRange(job.PossibleErrors.Select(x => "Expected " + x.Symbol + " at " + x.Position).ToArray<Object>());
+            listBoxErrors.Items.AddRange(job.PossibleErrors.Select(x => new ErrorInfo(x)).ToArray<Object>());
         }
 
         private void timer1_Tick(object sender, EventArgs e) {
@@ -52,6 +64,16 @@ namespace IntegratedDevelopmentEnvironment {
         private void textBoxDocument_TextChanged(object sender, EventArgs e) {
             timer1.Stop();
             timer1.Start();
+            toolStripStatusLabel1.Text = "Parse pending...";
+        }
+
+        private void listBoxErrors_SelectedIndexChanged(object sender, EventArgs e) {
+            if (listBoxErrors.SelectedIndex != -1) {
+                var error = (ErrorInfo)listBoxErrors.SelectedItem;
+                textBoxDocument.SelectionStart = error.Position;
+                textBoxDocument.SelectionLength = 1;
+                textBoxDocument.ScrollToCaret();
+            }
         }
     }
 }

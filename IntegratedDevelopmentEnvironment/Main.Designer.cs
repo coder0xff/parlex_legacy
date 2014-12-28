@@ -166,6 +166,10 @@
             // 
             this.openFileDialog.Filter = "Wirth Syntax Notation|*.wsn|Wirth Syntax Notation|*.*";
             // 
+            // saveFileDialog
+            // 
+            this.saveFileDialog.Filter = "Wirth|.wsn";
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);

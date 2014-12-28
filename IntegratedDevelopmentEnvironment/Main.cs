@@ -11,14 +11,13 @@ namespace IntegratedDevelopmentEnvironment {
         public Main() {
             InitializeComponent();
             Instance = this;
-            GrammarEditor grammarEditor = GrammarEditor.ForFile("C:\\Users\\coder_000\\Dropbox\\Plange\\small.wsn",
-                new WirthSyntaxNotation.Formatter());
-            bool dontCare;
-            var grammar = grammarEditor.GetGrammar(out dontCare);
-            var formatter = new CSharpFormatter();
-            var f = new FileStream("C:\\Users\\coder_000\\Desktop\\small.cs", FileMode.Create);
-            formatter.Serialize(f, grammar);
-            grammarEditor.Show(dockPanel1, DockState.Document);
+            //GrammarEditor grammarEditor = GrammarEditor.ForFile(@"C:\Users\coder_000\Dropbox\Plange\small.wsn", new WirthSyntaxNotation.Formatter());
+            //bool dontCare;
+            //var grammar = grammarEditor.GetGrammar(out dontCare);
+            //var formatter = new CSharpFormatter();
+            //var f = new FileStream("C:\\Users\\coder_000\\Desktop\\small.cs", FileMode.Create);
+            //formatter.Serialize(f, grammar);
+            //grammarEditor.Show(dockPanel1, DockState.Document);
         }
 
         private void grammarToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -36,7 +35,7 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e) {
-            var editor = dockPanel1.ActiveDocument as IDocumentView;
+            var editor = dockPanel1.ActiveDocument as GrammarEditor;
             Debug.Assert(editor != null, "editor != null");
             if (String.IsNullOrEmpty(editor.FilePathName)) {
                 saveAsToolStripMenuItem_Click(sender, e);
@@ -45,11 +44,22 @@ namespace IntegratedDevelopmentEnvironment {
             }
         }
 
+        private IGrammarFormatter getGrammarFormatterForTypeIndex(int index) {
+            switch (index) {
+                case 1:
+                    return new WirthSyntaxNotation.Formatter();
+                default:
+                    return new WirthSyntaxNotation.Formatter();
+            }
+        }
+
         private void saveAsToolStripMenuItem_Click(object sender, EventArgs e) {
-            var editor = dockPanel1.ActiveDocument as IDocumentView;
+            var editor = dockPanel1.ActiveDocument as GrammarEditor;
+
             Debug.Assert(editor != null, "editor != null");
             saveFileDialog.FileName = editor.FilePathName;
             if (saveFileDialog.ShowDialog(this) == DialogResult.OK) {
+                editor.Formatter = getGrammarFormatterForTypeIndex(saveFileDialog.FilterIndex);
                 editor.FilePathName = saveFileDialog.FileName;
                 editor.SaveToDisk();
             }

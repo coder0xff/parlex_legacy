@@ -33,6 +33,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         public IGrammarFormatter Formatter {
             get { return _formatter; }
+            set { _formatter = value; }
         }
 
         public string FilePathName {
@@ -186,26 +187,26 @@ namespace IntegratedDevelopmentEnvironment {
             _deleteTreeNodeChildDynamicDispatcher.Dispatch<TreeNode>(null, parentNode, childNode);
         }
 
-        public static void AddTreeNodeChild(BehaviorTree.Choice parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorTreeNodeChild(BehaviorTree.Choice parentNode, BehaviorTree.Node childNode) {
             parentNode.Children.Add(childNode);
         }
 
-        public static void AddTreeNodeChild(BehaviorTree.Optional parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorTreeNodeChild(BehaviorTree.Optional parentNode, BehaviorTree.Node childNode) {
             Debug.Assert(parentNode.Child == null);
             parentNode.Child = childNode;
         }
 
-        public static void AddTreeNodeChild(BehaviorTree.Repetition parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorTreeNodeChild(BehaviorTree.Repetition parentNode, BehaviorTree.Node childNode) {
             Debug.Assert(parentNode.Child == null);
             parentNode.Child = childNode;
         }
 
-        public static void AddTreeNodeChild(BehaviorTree.Sequence parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorTreeNodeChild(BehaviorTree.Sequence parentNode, BehaviorTree.Node childNode) {
             parentNode.Children.Add(childNode);
         }
 
         private static DynamicDispatcher _addTreeNodeChildDynamicDispatcher;
-        public static void AddTreeNodeChild(BehaviorTree.Node parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorTreeNodeChild(BehaviorTree.Node parentNode, BehaviorTree.Node childNode) {
             if (_addTreeNodeChildDynamicDispatcher == null) {
                 _addTreeNodeChildDynamicDispatcher = new DynamicDispatcher();
             }
@@ -296,11 +297,14 @@ namespace IntegratedDevelopmentEnvironment {
                 SetTagValue(treeNode, "name", "Unnamed");
                 SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
-                AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeNode, "behavior"), sequence);
+                treeView.SelectedNode = treeNode;
             } else {
                 var treeNode = new TreeNode("Sequence");
-                SetTagValue(treeNode, "behavior", new BehaviorTree.Sequence());
+                var sequence = new BehaviorTree.Sequence();
+                SetTagValue(treeNode, "behavior", sequence);
                 AddTreeChild(treeNode);
+                AddBehaviorTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), sequence);
+                treeView.SelectedNode = treeNode;
             }
             BehaviorsDirtied();
         }
@@ -320,11 +324,14 @@ namespace IntegratedDevelopmentEnvironment {
                 SetTagValue(treeNode, "name", "Unnamed");
                 SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
-                AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), repetition);
+                treeView.SelectedNode = treeNode;
             } else {
                 var treeNode = new TreeNode("Repetition");
-                SetTagValue(treeNode, "behavior", new BehaviorTree.Repetition());
+                var repetition = new BehaviorTree.Repetition();
+                SetTagValue(treeNode, "behavior", repetition);
                 AddTreeChild(treeNode);
+                AddBehaviorTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), repetition);
+                treeView.SelectedNode = treeNode;
             }
             BehaviorsDirtied();
         }
@@ -333,6 +340,7 @@ namespace IntegratedDevelopmentEnvironment {
             if (treeView.SelectedNode == null) {
                 String unnamedName = "Unnamed";
                 int nameCounter = 2;
+                TrySyncBehaviorsToGrammar();
                 while (_grammar.GetRecognizerByName(unnamedName) != null) {
                     unnamedName = "Unnamed (" + (nameCounter++) + ")";
                 }
@@ -344,11 +352,14 @@ namespace IntegratedDevelopmentEnvironment {
                 SetTagValue(treeNode, "name", "Unnamed");
                 SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
-                AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), choice);
+                treeView.SelectedNode = treeNode;
             } else {
                 var treeNode = new TreeNode("Choice");
-                SetTagValue(treeNode, "behavior", new BehaviorTree.Choice());
+                var choice = new BehaviorTree.Choice();
+                SetTagValue(treeNode, "behavior", choice);
                 AddTreeChild(treeNode);
+                AddBehaviorTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), choice);
+                treeView.SelectedNode = treeNode;
             }
             BehaviorsDirtied();
         }
@@ -368,11 +379,14 @@ namespace IntegratedDevelopmentEnvironment {
                 SetTagValue(treeNode, "name", "Unnamed");
                 SetTagValue(treeNode, "greedy", false);
                 treeView.Nodes.Add(treeNode);
-                AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), optional);
+                treeView.SelectedNode = treeNode;
             } else {
                 var treeNode = new TreeNode("Optional");
-                SetTagValue(treeNode, "behavior", new BehaviorTree.Optional());
+                var optional = new BehaviorTree.Optional();
+                SetTagValue(treeNode, "behavior", optional);
                 AddTreeChild(treeNode);
+                AddBehaviorTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), optional);
+                treeView.SelectedNode = treeNode;
             }
             BehaviorsDirtied();
         }
@@ -432,7 +446,8 @@ namespace IntegratedDevelopmentEnvironment {
             var leaf = new BehaviorTree.Leaf(Grammar.CharacterTerminal);
             SetTagValue(treeNode, "behavior", leaf);
             AddTreeChild(treeNode);
-            AddTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), leaf);
+            AddBehaviorTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), leaf);
+            treeView.SelectedNode = treeNode;
             BehaviorsDirtied();
         }
 
@@ -444,7 +459,8 @@ namespace IntegratedDevelopmentEnvironment {
                 editText = leaf.Symbol.Name;
                 if (leaf.Symbol is Grammar.StringTerminal) {
                     editText = leaf.Symbol.ToString();
-                    if (_grammar.GetSymbol(editText) != null) {
+                    TrySyncBehaviorsToGrammar();
+                    if (_grammar != null && _grammar.GetSymbol(editText) != null) {
                         editText = "\"" + editText + "\"";
                     }
                 }
@@ -501,6 +517,12 @@ namespace IntegratedDevelopmentEnvironment {
         private void toolStripButtonTester_Click(object sender, EventArgs e) {
             var tester = new GrammarTester(this);
             tester.Show();
+        }
+
+        public static GrammarEditor ForGrammar(Grammar grammar, WirthSyntaxNotation.Formatter formatter) {
+            var result = new GrammarEditor(grammar) { _formatter = formatter, _filePathName = null, _hasUnsavedChanges = true };
+            result.UpdateTitle();
+            return result;
         }
     }
 }
