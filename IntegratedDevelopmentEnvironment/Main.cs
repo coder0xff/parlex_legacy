@@ -11,13 +11,8 @@ namespace IntegratedDevelopmentEnvironment {
         public Main() {
             InitializeComponent();
             Instance = this;
-            //GrammarEditor grammarEditor = GrammarEditor.ForFile(@"C:\Users\coder_000\Dropbox\Plange\small.wsn", new WirthSyntaxNotation.Formatter());
-            //bool dontCare;
-            //var grammar = grammarEditor.GetGrammar(out dontCare);
-            //var formatter = new CSharpFormatter();
-            //var f = new FileStream("C:\\Users\\coder_000\\Desktop\\small.cs", FileMode.Create);
-            //formatter.Serialize(f, grammar);
-            //grammarEditor.Show(dockPanel1, DockState.Document);
+            var grammarEditor = GrammarEditor.ForGrammar(WirthSyntaxNotation.WorthSyntaxNotationParserGrammar, new WirthSyntaxNotation.Formatter());
+            grammarEditor.Show(dockPanel1, DockState.Document);
         }
 
         private void grammarToolStripMenuItem_Click(object sender, EventArgs e) {
