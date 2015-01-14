@@ -48,8 +48,8 @@
     <Compile Include="Collective.cs" />
     <Compile Include="ConditionVariable.cs" />
     <Compile Include="ThreadProvider.cs" />
-    <Compile Include="Node.cs" />
-    <Compile Include="NodeConstructionNotCompletedException.cs" />
+    <Compile Include="Box.cs" />
+    <Compile Include="BoxConstructionNotCompletedException.cs" />
     <Compile Include="HaltException.cs" />
     <Compile Include="IInput.cs" />
     <Compile Include="Input.cs" />

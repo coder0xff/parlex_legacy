@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Synchronox {
     public class Output<T> : IOutput {
-        public Output(Node owner, CallProtector callProtector) {
+        public Output(Box owner, CallProtector callProtector) {
             if (callProtector == null) throw new ApplicationException("Output may not be constructed by user code.");
             _owner = owner;
         }
@@ -18,7 +18,7 @@ namespace Synchronox {
             DoTransmissions();
         }
 
-        private readonly Node _owner;
+        private readonly Box _owner;
         private readonly List<T> _data = new List<T>();
         private readonly ReaderWriterLockSlim _dataLock = new ReaderWriterLockSlim();
         private readonly List<Connection> _connections = new List<Connection>();
@@ -47,7 +47,7 @@ namespace Synchronox {
             foreach (var connection in temp) {
                 lock (connection) {
                     while (connection.NextTransmitDataIndex < _data.Count) {
-                        connection.Input.Enqueue(_data[connection.NextTransmitDataIndex++], this);
+                        connection.Input.Enqueue(_data[connection.NextTransmitDataIndex++]);
                     }
                 }
             }
@@ -60,6 +60,6 @@ namespace Synchronox {
             return temp.Select(x => x.Input);
         }
 
-        public Node Owner { get { return _owner; } }
+        public Box Owner { get { return _owner; } }
     }
 }

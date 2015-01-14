@@ -5,7 +5,7 @@ using System.Threading;
 namespace Synchronox {
     internal class ConditionVariable {
         private readonly ConcurrentQueue<ManualResetEventSlim> _waitingThreads = new ConcurrentQueue<ManualResetEventSlim>();
-        public int WaitingThreadCount { get { return _waitingThreads.Count; } }
+        public bool AnyWaiting { get { return _waitingThreads.Count > 0; } }
 
         /// <summary>
         ///     Atomically unlocks and waits for a signal.
@@ -19,9 +19,7 @@ namespace Synchronox {
             var waitHandle = new ManualResetEventSlim();
             try {
                 _waitingThreads.Enqueue(waitHandle);
-                Thread.MemoryBarrier();
                 mutex.ReleaseMutex();
-                Thread.MemoryBarrier();
                 waitHandle.Wait();
             } finally {
                 waitHandle.Dispose();

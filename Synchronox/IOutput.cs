@@ -3,6 +3,6 @@
 namespace Synchronox {
     interface IOutput {
         IEnumerable<IInput> GetConnectedInputs();
-        Node Owner { get; }
+        Box Owner { get; }
     }
 }

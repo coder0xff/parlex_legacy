@@ -41,12 +41,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BackusNaurForm.cs" />
+    <Compile Include="CppParserGenerator.cs" />
     <Compile Include="CSharpFormatter.cs" />
     <Compile Include="ExtendedBackusNaurForm.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="IGrammarFormatter.cs" />
     <Compile Include="InvalidNfaOperationException.cs" />
+    <Compile Include="IParserGenerator.cs" />
     <Compile Include="NfaExtensions.cs" />
     <Compile Include="BehaviorTree.cs" />
     <Compile Include="Parser.cs" />

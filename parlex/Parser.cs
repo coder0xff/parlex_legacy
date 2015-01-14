@@ -203,7 +203,7 @@ namespace Parlex {
                 ConstructionCompleted();
             }
 
-            internal class SubJob : Node {
+            internal class SubJob : Box {
                 private readonly MatchCategory _matchCategory;
                 private readonly ConcurrentSet<MatchClass> _matchClasses = new ConcurrentSet<MatchClass>();
                 private readonly JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>> _matches = new JaggedAutoDictionary<MatchClass, ConcurrentSet<Match>>(_ => new ConcurrentSet<Match>());
@@ -229,7 +229,7 @@ namespace Parlex {
                     var firstConfiguration = new RecognizerState(this, Position, ((Grammar.Production)Symbol).StartStates, null, null);
                 }
 
-                internal class RecognizerState : Node {
+                internal class RecognizerState : Box {
                     private readonly SubJob _subJob;
                     private Grammar.Production Production { get { return _subJob.Production; } }
                     private Job Job { get { return _subJob.Job; } }
@@ -391,7 +391,7 @@ namespace Parlex {
                 }
             }
 
-            private class TerminalMatcher : Node {
+            private class TerminalMatcher : Box {
                 private readonly MatchCategory _matchCategory;
                 private Match _match;
 

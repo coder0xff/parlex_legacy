@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace Synchronox {
     internal interface IInput {
         IEnumerable<IOutput> GetConnectedOutputs();
-        Node Owner { get; }
+        Box Owner { get; }
         void CheckWillHalt();
         bool IsBlocked { get; }
         void SignalHalt();

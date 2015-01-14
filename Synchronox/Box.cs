@@ -5,8 +5,8 @@ using System.Reflection;
 using System.Threading;
 
 namespace Synchronox {
-    public abstract class Node {
-        protected Node(Collective collective) {
+    public abstract class Box {
+        protected Box(Collective collective) {
             _collective = collective;
             foreach (var property in GetType().GetFields().Where(p => p.FieldType.IsGenericType)) {
                 Type genericBase = property.FieldType.GetGenericTypeDefinition();
@@ -26,8 +26,6 @@ namespace Synchronox {
             _computerThread = ThreadProvider.Default.Start(ComputerRunner);
         }
 
-        internal float pressure;
-
         internal void Lock() {
             foreach (var input in GetInputs()) {
                 input.Lock();
@@ -37,15 +35,6 @@ namespace Synchronox {
         internal void Unlock() {
             foreach (var input in GetInputs()) {
                 input.Unlock();
-            }
-        }
-
-        internal bool IsBlocked {
-            get {
-                Lock();
-                bool result = GetInputs().Any(input => input.IsBlocked);
-                Unlock();
-                return result;
             }
         }
 
@@ -65,7 +54,7 @@ namespace Synchronox {
         }
 
         /// <summary>
-        /// Set up any initial input connections that are needed to keep the node from halting immediately
+        /// Set up any initial input connections that are needed to keep the box from halting immediately
         /// </summary>
         protected virtual void Initializer() {}
 
@@ -75,14 +64,14 @@ namespace Synchronox {
         protected abstract void Computer();
 
         /// <summary>
-        /// Perform any final actions that must occur when the node halts
+        /// Perform any final actions that must occur when the box halts
         /// </summary>
         protected virtual void Terminator() {}
 
         private readonly Collective _collective;
 
         /// <summary>
-        /// Permit the node to start execution
+        /// Permit the box to start execution
         /// </summary>
         protected void ConstructionCompleted() {
             _constructionBlocker.Set();
@@ -101,7 +90,7 @@ namespace Synchronox {
                 Terminator();
                 IsHalted = true;
                 Collective.PropagateHalt(this);
-                Collective.NodeHalted();
+                Collective.BoxHalted();
             } catch (ThreadAbortException) {
                 ;
             }
@@ -109,7 +98,7 @@ namespace Synchronox {
 
         internal void VerifyConstructionCompleted() {
             if (!_constructionBlocker.IsSet) {
-                throw new NodeConstructionNotCompletedException();
+                throw new BoxConstructionNotCompletedException();
             }
         }
 

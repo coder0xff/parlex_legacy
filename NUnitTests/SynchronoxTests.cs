@@ -10,8 +10,8 @@ using NUnit.Framework;
 namespace NUnitTests {
     [TestFixture]
     class SynchronoxTests1 {
-        class MyNumberNode : Node {
-            public MyNumberNode(Collective collective) : base(collective) {
+        class MyNumberBox : Box {
+            public MyNumberBox(Collective collective) : base(collective) {
                 ConstructionCompleted();
             }
 
@@ -24,8 +24,8 @@ namespace NUnitTests {
             public readonly Output<int> Number;
         }
 
-        class MySumNode : Node, IEnumerable<int> {
-            public MySumNode(Test1Collective collective) : base(collective) {
+        class MySumBox : Box, IEnumerable<int> {
+            public MySumBox(Test1Collective collective) : base(collective) {
                 _results = collective.results;
                 ConstructionCompleted();
             }
@@ -55,9 +55,9 @@ namespace NUnitTests {
         class Test1Collective : Collective, IEnumerable<int> {
             internal List<int> results = new List<int>(); 
             public Test1Collective() {
-                var left = new MyNumberNode(this);
-                var right = new MyNumberNode(this);
-                var sum = new MySumNode(this);
+                var left = new MyNumberBox(this);
+                var right = new MyNumberBox(this);
+                var sum = new MySumBox(this);
                 Connect(sum.Left, left.Number);
                 Connect(sum.Right, right.Number);
                 ConstructionCompleted();
@@ -88,8 +88,8 @@ namespace NUnitTests {
 
     [TestFixture]
     class SynchronoxTests2 {
-        class DeadlockNode : Node {
-            public DeadlockNode(Collective collective) : base(collective) {
+        class DeadlockBox : Box {
+            public DeadlockBox(Collective collective) : base(collective) {
                 ConstructionCompleted();
             }
             protected override void Computer() {
@@ -103,7 +103,7 @@ namespace NUnitTests {
 
         class DeadlockCollective1 : Collective {
             public DeadlockCollective1() {
-                var node = new DeadlockNode(this);
+                var node = new DeadlockBox(this);
                 Connect(node.i, node.o);
                 ConstructionCompleted();
             }
@@ -119,8 +119,8 @@ namespace NUnitTests {
 
         class DeadlockCollective2 : Collective {
             public DeadlockCollective2() {
-                var node1 = new DeadlockNode(this);
-                var node2 = new DeadlockNode(this);
+                var node1 = new DeadlockBox(this);
+                var node2 = new DeadlockBox(this);
                 Connect(node1.i, node2.o);
                 Connect(node2.i, node1.o);
                 ConstructionCompleted();

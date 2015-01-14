@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace Synchronox {
     public class Input<T> : IInput {
-        public Input(Node owner, CallProtector callProtector) {
+        public Input(Box owner, CallProtector callProtector) {
             if (callProtector == null) throw new ApplicationException("Output may not be constructed by user code.");
             _owner = owner;
         }
@@ -29,10 +29,10 @@ namespace Synchronox {
             _connectedOutputs.TryAdd(output);
         }
 
-        internal void Enqueue(T datum, Output<T> sender) {
+        internal void Enqueue(T datum) {
             _sync.WaitOne();
             if (_causedHalt) {
-                throw new ApplicationException("The input previously detected that it would not receive any additional input. The owning node has been halted. No more input data may be transmitted to the node on this input.");
+                throw new ApplicationException("The input previously detected that it would not receive any additional input. The owning box has been halted. No more input data may be transmitted to the box on this input.");
             }
             _queue.Enqueue(datum);
             _cv.Signal();
@@ -78,24 +78,24 @@ namespace Synchronox {
             _sync.ReleaseMutex();
         }
 
-        public bool IsBlocked{
-            get { return _cv.WaitingThreadCount > 0; }
+        public bool IsBlocked {
+            get { return _cv.AnyWaiting; }
         }
 
-        public void SignalHalt() {
+        void IInput.SignalHalt() {
             _causedHalt = true;
             _cv.Signal();
         }
 
-        public void Lock() {
+        void IInput.Lock() {
             _sync.WaitOne();
         }
 
-        public void Unlock() {
+        void IInput.Unlock() {
             _sync.ReleaseMutex();
         }
 
-        private readonly Node _owner;
+        private readonly Box _owner;
         private readonly Mutex _sync = new Mutex();
         private readonly ConditionVariable _cv = new ConditionVariable();
         IEnumerable<IOutput> IInput.GetConnectedOutputs() {
@@ -106,6 +106,6 @@ namespace Synchronox {
         /// Temporarily block the input from either being enqueued, dequeud, or waited upon.
         /// </summary>
 
-        public Node Owner { get { return _owner; } }
+        public Box Owner { get { return _owner; } }
     }
 }
