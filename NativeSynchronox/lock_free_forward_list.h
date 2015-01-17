@@ -73,7 +73,6 @@ private:
 
 	//lock free
 	static void loseOwnership(node *&n, std::memory_order loadOrder, std::memory_order storeOrder) {
-		assert((intptr_t)n != 0xfeeefeee);
 		assert(n != deadDummy);
 		assert(n != spinDummy);
 		if (n && n->referenceCount.fetch_sub(1, combine_memory_order(loadOrder, storeOrder)) == 1) {
