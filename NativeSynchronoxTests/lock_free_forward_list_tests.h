@@ -54,8 +54,8 @@ public:
 					}
 				});
 			}
-			for (int i = 0; i < threadCount; i++) {
-				threads[i].join();
+			for (auto &thread : threads) {
+				thread.join();
 			}
 			int totalElementCount = perThreadElementCount * threadCount;
 			for (int k = 0; k < totalElementCount; k++) {
@@ -89,8 +89,8 @@ public:
 					}
 				});
 			}
-			for (int i = 0; i < 5; i++) {
-				threads[i].join();
+			for (auto &thread : threads) {
+				thread.join();
 			}
 			assert(a.empty());
 		}
@@ -110,8 +110,8 @@ public:
 					}
 				});
 			}
-			for (int i = 0; i < threadCount; i++) {
-				threads[i].join();
+			for (auto &thread : threads) {
+				thread.join();
 			}
 			std::set<int> remainingNumbers;
 			int totalElementCount = perThreadElementCount * threadCount;
@@ -164,8 +164,8 @@ public:
 					}
 				});
 			}
-			for (int i = 0; i < threadCount; i++) {
-				threads[i].join();
+			for (auto &thread : threads) {
+				thread.join();
 			}
 			assert(a.empty());
 			assert(remainingNumbers.empty());
@@ -207,8 +207,8 @@ public:
 					}
 				});
 			}
-			for (int i = 0; i < threadCount * 2; i++) {
-				threads[i].join();
+			for (auto &thread : threads) {
+				thread.join();
 			}
 			assert(a.empty());
 			assert(remainingNumbers.empty());
@@ -217,17 +217,154 @@ public:
 	}
 
 	static void test_09() {
+		{
+			lock_free_forward_list<int> a;
+			a.push_front(2);
+			a.push_front(5);
+			auto i = a.begin();
+			assert(*i == 5);
+			i++;
+			assert(*i == 2);
+			i++;
+			assert(i == a.end());
 
+		}
+		_CrtDumpMemoryLeaks();
+	}
+
+	static void test_10() {
+		{
+			lock_free_forward_list<int> a;
+			a.push_front(2);
+			auto i = a.begin();
+			assert(*i == 2);
+			a.push_front(5);
+			i++;
+			assert(i == a.end());
+		}
+		_CrtDumpMemoryLeaks();
+	}
+
+	static void test_11() {
+		{
+			lock_free_forward_list<int> a;
+			a.push_front(2);
+			auto i = a.begin();
+			int v;
+			a.pop_front(v);
+			a.push_front(5);
+			auto j = a.begin();
+			assert(*i == 2);
+			assert(*j == 5);
+			i++;
+			assert(i == a.end());
+			j++;
+			assert(j == a.end());
+		}
+		_CrtDumpMemoryLeaks();
+	}
+
+	static void test_12() {
+		{
+			lock_free_forward_list<int> a;
+			a.push_front(2);
+			a.push_front(5);
+			a.insert_after(a.begin(), 3);
+			auto i = a.begin();
+			assert(*i == 5);
+			i++;
+			assert(*i == 3);
+			i++;
+			assert(*i == 2);
+			i++;
+			assert(i == a.end());
+		}
+		_CrtDumpMemoryLeaks();
+	}
+
+	static void test_13() {
+		{
+			lock_free_forward_list<int> a;
+			a.push_front(2);
+			a.push_front(3);
+			a.push_front(5);
+			auto i = a.begin();
+			assert(*i == 5);
+			i++;
+			int v;
+			a.erase_after(a.begin(), v);
+			assert(v == 3);
+			assert(*i == 3);
+			i++;
+			assert(i == a.end());
+			assert(*(++a.begin()) == 2);
+		}
+		_CrtDumpMemoryLeaks();
+	}
+
+	static void test_() {
+		{
+			lock_free_forward_list<int> a;
+		}
+		_CrtDumpMemoryLeaks();
+	}
+
+	static void test_14() {
+		{
+			lock_free_forward_list<int> a;
+			std::vector<std::thread> threads;
+			int const threadCount = 5;
+			int const perThreadOpCount = 1000;
+			for (int i = 0; i < threadCount; i++) {
+				threads.emplace_back([&, i]() {
+					for (int j = 0; j < perThreadOpCount; j++) {
+						int op = rand() % (perThreadOpCount / 100);
+						if (op == 0) {
+							a.clear();
+						}
+						else {
+							a.push_front(rand() % 20, std::memory_order_relaxed, std::memory_order_relaxed);
+						}
+					}
+				});
+			}
+			for (int i = 0; i < threadCount; i++) {
+				threads.emplace_back([&, i]() {
+					auto iterator = a.begin();
+					for (int j = 0; j < perThreadOpCount; j++) {
+						int op = rand() % (perThreadOpCount / 20);
+						if (iterator != a.end()) {
+							std::cout << *iterator << " ";
+						}
+						if (op == 0 || iterator == a.end()) {
+							iterator = a.begin();
+						} else {
+							++iterator;
+						}
+					}
+				});
+			}
+			for (auto &thread : threads) {
+				thread.join();
+			}
+		}
+		_CrtDumpMemoryLeaks();
 	}
 
 	static void test_all() {
-//		test_01();
-// 		test_02();
-// 		test_03();
-// 		test_04();
-// 		test_05();
-//		test_06();
-// 		test_07();
- 		test_08();
+		//test_01();
+		//test_02();
+		//test_03();
+		//test_04();
+		//test_05();
+		//test_06();
+		//test_07();
+		//test_08();
+		test_09();
+		test_10();
+		test_11();
+		test_12();
+		test_13();
+		test_14();
 	}
 };
