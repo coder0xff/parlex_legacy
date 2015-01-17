@@ -73,6 +73,7 @@ private:
 
 	//lock free
 	static void loseOwnership(node *&n, std::memory_order loadOrder, std::memory_order storeOrder) {
+		assert((intptr_t)n != 0xfeeefeee);
 		assert(n != deadDummy);
 		assert(n != spinDummy);
 		if (n && n->referenceCount.fetch_sub(1, combine_memory_order(loadOrder, storeOrder)) == 1) {
@@ -164,7 +165,7 @@ private:
 		if (x != nullptr) {
 			loseOwnership(x, loadOrder, storeOrder);
 		}
-		x = gainOwnership(n, loadOrder, storeOrder);
+		x = n ? gainOwnership(n, loadOrder, storeOrder) : nullptr;
 	}
 
 	template<class T>
@@ -194,8 +195,12 @@ private:
 		T &operator->() { return current->value; }
 		ForwardIterator operator++() { 
 			assert(current != nullptr);
+			node *oldCurrent = current;
 			node *temp = lockLoadGainOwnershipUnlock(current->next2, std::memory_order_seq_cst, std::memory_order_seq_cst);
 			loseOwnershipStoreTransferOwnership(current, temp, std::memory_order_seq_cst, std::memory_order_seq_cst);
+			if (current == oldCurrent) {
+				std::cout << "hmmm\n";
+			}
 			return *this;
 		}
 
@@ -248,12 +253,23 @@ public:
 	}
 
 	//lock free
-	bool clear(std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
+	int clear(std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
 		node *oldFirst = nullptr;
 		exchange(first, oldFirst, loadOrder, storeOrder);
-		bool result = oldFirst;
-		loseOwnership(oldFirst, loadOrder, storeOrder);
-		return result;
+		//if we just delete the first node, it may cascade down all the
+		//subsequent nodes. This would be fine, if not for the possibility
+		//of blowing the stack. Instead we delete them in reverse.
+		std::vector<node*> nodes;
+		while (oldFirst) {
+			nodes.push_back(oldFirst);
+			node *temp = nullptr;
+			exchange(oldFirst->next2, temp, loadOrder, storeOrder);
+			oldFirst = temp;
+		}
+		for (auto i = nodes.rbegin(); i != nodes.rend(); ++i) {
+			loseOwnership(*i, loadOrder, storeOrder);
+		}
+		return nodes.size();
 	}
 
 	//lock free
@@ -387,9 +403,10 @@ private:
 	std::atomic<node*> first;
 
 	iterator insert_node(std::atomic<node*> &atomic_ptr, node* n, std::memory_order loadOrder, std::memory_order storeOrder) {
+		iterator result(n); //it's possible that the node is removed before we return, so do this early
 		n->next2.store(n, storeOrder);
 		exchange(n->next2, atomic_ptr, loadOrder, storeOrder);
-		return iterator(n);
+		return result;
 	}
 
 	node* seperate(std::atomic<node*> &atomic_ptr, std::memory_order loadOrder, std::memory_order storeOrder) {
