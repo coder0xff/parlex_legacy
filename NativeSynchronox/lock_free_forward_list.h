@@ -3,8 +3,8 @@
 
 // Is noexcept supported?
 #if defined(__clang__) && __has_feature(cxx_noexcept) || \
-    defined(__GXX_EXPERIMENTAL_CXX0X__) && __GNUC__ * 10 + __GNUC_MINOR__ >= 46 || \
-    defined(_MSC_FULL_VER) && _MSC_FULL_VER >= 180021114
+		defined(__GXX_EXPERIMENTAL_CXX0X__) && __GNUC__ * 10 + __GNUC_MINOR__ >= 46 || \
+		defined(_MSC_FULL_VER) && _MSC_FULL_VER >= 180021114
 #  define NOEXCEPT noexcept
 #else
 #  define NOEXCEPT
@@ -14,13 +14,13 @@
 #include <atomic>
 
 inline void* lock_free_forward_list_get_deadDummy() {
-	static std::unique_ptr<void*> deadDummy(new void* ());
-	return deadDummy.get();
+	static std::unique_ptr<void*> deadDummy_(new void* ());
+	return deadDummy_.get();
 }
 
 inline void* lock_free_forward_list_get_spinDummy() {
-	static std::unique_ptr<void*> spinDummy(new void* ());
-	return spinDummy.get();
+	static std::unique_ptr<void*> spinDummy_(new void* ());
+	return spinDummy_.get();
 }
 
 #define deadDummy ((node*)lock_free_forward_list_get_deadDummy())
@@ -54,20 +54,20 @@ private:
 	class node;
 
 	class node {
-		friend class lock_free_forward_list<T>;
-		friend class ForwardIterator<T>;
+		friend class lock_free_forward_list < T > ;
+		friend class ForwardIterator < T > ;
 		T value;
-		std::atomic<node*> next2;
+		std::atomic<node*> next;
 		std::atomic<int> referenceCount;
 
-		node(T const &value) : value(value), next2(nullptr), referenceCount(1) {}
-		node(T &&value) : value(std::move(value)), next2(nullptr), referenceCount(1) {}
+		node(T const &value) : value(value), next(nullptr), referenceCount(1) {}
+		node(T &&value) : value(std::move(value)), next(nullptr), referenceCount(1) {}
 		template<class... U>
-		node(U... params) : value(std::forward(params)...), next2(nullptr), referenceCount(1) {}
+		node(U... params) : value(std::forward(params)...), next(nullptr), referenceCount(1) {}
 		~node() {
-			node* n = lockLoadTransferOwnership(next2, std::memory_order_seq_cst, std::memory_order_seq_cst);
+			node* n = lockLoadTransferOwnership(next, std::memory_order_seq_cst, std::memory_order_seq_cst);
 			loseOwnership(n, std::memory_order_seq_cst, std::memory_order_seq_cst);
-			next2.store(deadDummy);
+			next.store(deadDummy);
 		}
 	};
 
@@ -92,7 +92,6 @@ private:
 
 	//lock free
 	static void exchange(std::atomic<node*> &left, node* &right, std::memory_order loadOrder, std::memory_order storeOrder) {
-		assert(right != deadDummy);
 		assert(right != spinDummy);
 		node *n = left.load(loadOrder);
 		do {
@@ -120,7 +119,10 @@ private:
 				n = atomic_ptr.load(loadOrder);
 			}
 		} while (!atomic_ptr.compare_exchange_weak(n, spinDummy, std::memory_order_relaxed));
-		assert(n != deadDummy);
+		if (n == deadDummy) {
+			atomic_ptr.store(deadDummy, std::memory_order_relaxed);
+			return nullptr;
+		}
 		if (n == nullptr) return nullptr;
 		return n;
 	}
@@ -135,6 +137,7 @@ private:
 	//NOT lock free
 	static node* lockLoadGainOwnershipUnlock(std::atomic<node*> &atomic_ptr, std::memory_order loadOrder, std::memory_order storeOrder) {
 		node *temp = lockLoadTransferOwnership(atomic_ptr, loadOrder, storeOrder);
+		if (temp == nullptr && atomic_ptr.load(loadOrder) == deadDummy) return nullptr;
 		node* result = temp ? gainOwnership(temp, loadOrder, storeOrder) : nullptr;
 		storeTransferOwnershipUnlock(atomic_ptr, temp, loadOrder, storeOrder);
 		return result;
@@ -168,7 +171,7 @@ private:
 	}
 
 	template<class T>
-	//construction is lock free
+	//construction is lock free (though begin() is not)
 	//incrementing is NOT lock free
 	class ForwardIterator {
 		friend class lock_free_forward_list;
@@ -192,14 +195,10 @@ private:
 
 		T &operator*() { return current->value; }
 		T &operator->() { return current->value; }
-		ForwardIterator operator++() { 
+		ForwardIterator operator++() {
 			assert(current != nullptr);
-			node *oldCurrent = current;
-			node *temp = lockLoadGainOwnershipUnlock(current->next2, std::memory_order_seq_cst, std::memory_order_seq_cst);
+			node *temp = lockLoadGainOwnershipUnlock(current->next, std::memory_order_seq_cst, std::memory_order_seq_cst);
 			loseOwnershipStoreTransferOwnership(current, temp, std::memory_order_seq_cst, std::memory_order_seq_cst);
-			if (current == oldCurrent) {
-				std::cout << "hmmm\n";
-			}
 			return *this;
 		}
 
@@ -216,7 +215,7 @@ private:
 			std::swap(a.current, b.current);
 		}
 
-		operator ForwardIterator<const T>() const
+			operator ForwardIterator<const T>() const
 		{
 			return ForwardIterator<const T>(current);
 		}
@@ -252,6 +251,8 @@ public:
 	}
 
 	//lock free
+	//iterators will still contain correct values,
+	//but incrementing them or inserting after them will result in a default constructed iterator
 	int clear(std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
 		node *oldFirst = nullptr;
 		exchange(first, oldFirst, loadOrder, storeOrder);
@@ -261,8 +262,8 @@ public:
 		std::vector<node*> nodes;
 		while (oldFirst) {
 			nodes.push_back(oldFirst);
-			node *temp = nullptr;
-			exchange(oldFirst->next2, temp, loadOrder, storeOrder);
+			node *temp = deadDummy;
+			exchange(oldFirst->next, temp, loadOrder, storeOrder);
 			oldFirst = temp;
 		}
 		for (auto i = nodes.rbegin(); i != nodes.rend(); ++i) {
@@ -271,7 +272,29 @@ public:
 		return nodes.size();
 	}
 
-	//lock free
+	//NOT lock free - iterators and inserts will block, and then end or fail respectively
+	//elements inserted during this algorithm will be removed as well
+	//use locked_clear to have inserts fail instead
+	int locked_clear(std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
+		node *oldFirst = nullptr;
+		exchange(first, oldFirst, loadOrder, storeOrder);
+		//if we just delete the first node, it may cascade down all the
+		//subsequent nodes. This would be fine, if not for the possibility
+		//of blowing the stack. Instead we delete them in reverse.
+		std::vector<node*> nodes;
+		while (oldFirst) {
+			nodes.push_back(oldFirst);
+			node *temp = spinDummy;
+			exchange(oldFirst->next, temp, loadOrder, storeOrder);
+			oldFirst = temp;
+		}
+		for (auto i = nodes.rbegin(); i != nodes.rend(); ++i) {
+			loseOwnership(*i, loadOrder, storeOrder);
+		}
+		return nodes.size();
+	}
+
+	//NOT lock free
 	T& front(std::memory_order loadOrder = std::memory_order_seq_cst) {
 		return *begin(loadOrder);
 	}
@@ -304,7 +327,7 @@ public:
 		return remove_node(first, value, loadOrder, storeOrder);
 	}
 
-	//lock free
+	//NOT lock free
 	iterator begin(std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
 		node *n = lockLoadGainOwnershipUnlock(first, loadOrder, storeOrder);
 		iterator result(n);
@@ -317,7 +340,7 @@ public:
 		return iterator();
 	}
 
-	//lock free
+	//NOT lock free
 	const_iterator cbegin(std::memory_order loadOrder = std::memory_order_seq_cst) {
 		return begin();
 	}
@@ -327,14 +350,15 @@ public:
 		return const_iterator();
 	}
 
-	//lock free
+	//lock free - except construction of iterator
+	//returns a default constructed iterator if position is no longer valid
 	iterator insert_after(const_iterator position, T const &value, std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
-		return insert_node(position.current->next2, new node(value), loadOrder, storeOrder);
+		return insert_node(position.current->next, new node(value), loadOrder, storeOrder);
 	}
 
-	//lock free
+	//lock free - except construction of iterator
 	iterator insert_after(const_iterator position, T&& value, std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
-		return insert_node(position.current->next2, new node(value), loadOrder, storeOrder);
+		return insert_node(position.current->next, new node(value), loadOrder, storeOrder);
 	}
 
 	//lock free
@@ -380,16 +404,21 @@ public:
 	//lock free
 	//all the elements after position are moved to a new lock_free_forward_list
 	bool separate_after(const_iterator position, lock_free_forward_list<T> *&result, std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
-		node *n = seperate(position.current->next2, loadOrder, storeOrder);
+		node *n = seperate(position.current->next, loadOrder, storeOrder);
 		if (!n) return false;
 		result = new lock_free_forward_list<T>();
 		result->first = n;
 		return true;
 	}
 
+	void concat(lock_free_forward_list &other, std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
+		node *n = seperate(other.first, loadOrder, storeOrder);
+		concat(other.first)
+	}
+
 	//NOT lock free
 	bool erase_after(const_iterator position, T &value, std::memory_order loadOrder = std::memory_order_seq_cst, std::memory_order storeOrder = std::memory_order_seq_cst) {
-		return remove_node(position.current->next2, value, loadOrder, storeOrder);
+		return remove_node(position.current->next, value, loadOrder, storeOrder);
 	}
 
 	//NOT lock free on a, lock free on b
@@ -401,20 +430,20 @@ public:
 private:
 	std::atomic<node*> first;
 
-	iterator insert_node(std::atomic<node*> &atomic_ptr, node* n, std::memory_order loadOrder, std::memory_order storeOrder) {
+	static iterator insert_node(std::atomic<node*> &atomic_ptr, node* n, std::memory_order loadOrder, std::memory_order storeOrder) {
 		iterator result(n); //it's possible that the node is removed before we return, so do this early
-		n->next2.store(n, storeOrder);
-		exchange(n->next2, atomic_ptr, loadOrder, storeOrder);
+		n->next.store(n, storeOrder);
+		exchange(n->next, atomic_ptr, loadOrder, storeOrder);
 		return result;
 	}
 
-	node* seperate(std::atomic<node*> &atomic_ptr, std::memory_order loadOrder, std::memory_order storeOrder) {
+	static node* seperate(std::atomic<node*> &atomic_ptr, std::memory_order loadOrder, std::memory_order storeOrder) {
 		node* oldNext = nullptr;
 		exchange(atomic_ptr, oldNext, loadOrder, storeOrder);
 		return oldNext;
 	}
 
-	void concat(node* n, std::memory_order loadOrder, std::memory_order storeOrder){
+	static void concat(std::atomic<node*> &first, node* n, std::memory_order loadOrder, std::memory_order storeOrder){
 		if (n == nullptr) return;
 		std::atomic<node*> *atomic_ptr_ptr = &first;
 		node* temp = nullptr;
@@ -423,26 +452,28 @@ private:
 			if (temp == deadDummy) { //start over
 				atomic_ptr_ptr = &first;
 				temp = nullptr;
-			} else {
+			}
+			else {
 				atomic_ptr_ptr = &temp->next;
 				temp = nullptr;
 			}
 		}
 	}
 
-	bool remove_node(std::atomic<node*> &atomic_ptr, T &value, std::memory_order loadOrder, std::memory_order storeOrder) {
+	static bool remove_node(std::atomic<node*> &atomic_ptr, T &value, std::memory_order loadOrder, std::memory_order storeOrder) {
 		std::memory_order combinedOrder = combine_memory_order(loadOrder, storeOrder);
 		node *x = lockLoadTransferOwnership(atomic_ptr, storeOrder, loadOrder);
 		if (x == nullptr) {
+			if (atomic_ptr.load(loadOrder) == deadDummy) return false;
 			node *temp = nullptr;
 			storeTransferOwnershipUnlock(atomic_ptr, temp, storeOrder, loadOrder);
-			return true;
+			return false;
 		}
 		value = x->value;
-		node *y = lockLoadTransferOwnership(x->next2, loadOrder, storeOrder);
+		node *y = lockLoadTransferOwnership(x->next, loadOrder, storeOrder);
 		storeTransferOwnershipUnlock(atomic_ptr, y, loadOrder, storeOrder);
-		node *temp = nullptr;
-		storeTransferOwnershipUnlock(x->next2, temp, loadOrder, storeOrder);
+		node *temp = deadDummy;
+		storeTransferOwnershipUnlock(x->next, temp, loadOrder, storeOrder);
 		loseOwnership(x, loadOrder, storeOrder);
 		return true;
 	}

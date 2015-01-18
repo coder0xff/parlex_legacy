@@ -1,4 +1,11 @@
+#ifdef _MSC_VER //for doing leak detection
+#	define DUMP _CrtDumpMemoryLeaks()
+#else
+#	define DUMP
+#endif 
+
 #include "lock_free_forward_list.h"
+
 #include <vector>
 #include <thread>
 #include <iostream>
@@ -11,7 +18,7 @@ public:
 		{
 			lock_free_forward_list<int> a;
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_02() {
@@ -19,11 +26,12 @@ public:
 			lock_free_forward_list<int> a;
 			a.push_front(2);
 			int v = 0;
-			assert(a.pop_front(v));
+			bool success = a.pop_front(v);
+			assert(success);
 			assert(v == 2);
 			assert(a.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_03() {
@@ -32,13 +40,15 @@ public:
 			a.push_front(2);
 			a.push_front(5);
 			int v = 0;
-			assert(a.pop_front(v));
+			bool success = a.pop_front(v);
+			assert(success);
 			assert(v == 5);
-			assert(a.pop_front(v));
+			success = a.pop_front(v);
+			assert(v);
 			assert(v == 2);
 			assert(a.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_04() {
@@ -60,12 +70,13 @@ public:
 			int totalElementCount = perThreadElementCount * threadCount;
 			for (int k = 0; k < totalElementCount; k++) {
 				int v = 0;
-				assert(a.pop_front(v));
+				bool success = a.pop_front(v);
+				assert(success);
 				std::cout << v << " ";
 			}
 			assert(a.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_05() {
@@ -94,7 +105,7 @@ public:
 			}
 			assert(a.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_06() {
@@ -119,15 +130,17 @@ public:
 				remainingNumbers.insert(k);
 			}
 			for (int k = 0; k < totalElementCount; k++) {
-				int v;
-				assert(a.pop_front(v));
+				int v = 0;
+				bool success = a.pop_front(v);
+				assert(success);
 				std::cout << v << " ";
-				assert(remainingNumbers.erase(v));
+				success = remainingNumbers.erase(v);
+				assert(success);
 			}
 			assert(remainingNumbers.empty());
 			assert(a.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_07() {
@@ -153,7 +166,8 @@ public:
 						a.pop_front(x, std::memory_order_relaxed, std::memory_order_relaxed);
 						{
 							std::unique_lock<std::mutex> lock(mutex);
-							assert(remainingNumbers.erase(x));
+							bool success = remainingNumbers.erase(x);
+							assert(success);
 						}
 						if (x == y) {
 							std::cout << "y";
@@ -170,7 +184,7 @@ public:
 			assert(a.empty());
 			assert(remainingNumbers.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_08() {
@@ -201,7 +215,8 @@ public:
 						a.pop_front(x, std::memory_order_relaxed, std::memory_order_relaxed);
 						{
 							std::unique_lock<std::mutex> lock(mutex);
-							assert(remainingNumbers.erase(x));
+							bool success = remainingNumbers.erase(x);
+							assert(success);
 						}
 						std::cout << x << " ";
 					}
@@ -213,7 +228,7 @@ public:
 			assert(a.empty());
 			assert(remainingNumbers.empty());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_09() {
@@ -229,7 +244,7 @@ public:
 			assert(i == a.end());
 
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_10() {
@@ -242,7 +257,7 @@ public:
 			i++;
 			assert(i == a.end());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_11() {
@@ -261,7 +276,7 @@ public:
 			j++;
 			assert(j == a.end());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_12() {
@@ -279,7 +294,7 @@ public:
 			i++;
 			assert(i == a.end());
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_13() {
@@ -299,7 +314,7 @@ public:
 			assert(i == a.end());
 			assert(*(++a.begin()) == 2);
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_14() {
@@ -310,7 +325,7 @@ public:
 				a.push_front(i);
 			}
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	static void test_15() {
@@ -358,14 +373,14 @@ public:
 				thread.join();
 			}
 		}
-		_CrtDumpMemoryLeaks();
+		DUMP;
 	}
 
 	//static void test_() {
 	//	{
 	//		lock_free_forward_list<int> a;
 	//	}
-	//	_CrtDumpMemoryLeaks();
+	//	DUMP;
 	//}
 
 
