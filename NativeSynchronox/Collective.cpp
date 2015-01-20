@@ -170,6 +170,13 @@ namespace Synchronox {
 	}
 
 	void Collective::RunnerLoop(coroutine::yield_type& yield) {
-
+		startBlocker.Wait();
+		while (!blocker.IsSet()) {
+			for (auto &boxPtr : boxes) {
+				if (boxPtr->hasPendingWork.exchange(false)) {
+					yield(boxPtr->coro);
+				}
+			}
+		}
 	}
 }

@@ -7,8 +7,11 @@
 #include "IOutput.h"
 #include <boost/coroutine/coroutine.hpp>
 #include <mutex>
+#include <atomic>
 
 namespace Synchronox {
+	typedef boost::coroutines::symmetric_coroutine<void> coroutine;
+
 	class Collective;
 
 	class Box
@@ -19,9 +22,11 @@ namespace Synchronox {
 		virtual void Computer() = 0;
 		virtual void Terminator();
 	private:
+		coroutine::yield_type *yield;
 		friend class Collective;
+		std::atomic<bool> hasPendingWork;
 		bool isHalted;
-		NoResetEvent constructionBlocker;
+		coroutine::call_type coro;
 		NoResetEvent completion;
 		std::vector<IInput*> inputs;
 		std::vector<IOutput*> outputs;
@@ -36,9 +41,6 @@ namespace Synchronox {
 		void Join();
 		void _internal_use_only_register_input(IInput *input);
 		void _internal_use_only_register_output(IOutput *output);
-		void SetConstructionCompleted() {
-			constructionBlocker.Set();
-		}
 		std::atomic<bool> needsService;
 	};
 }

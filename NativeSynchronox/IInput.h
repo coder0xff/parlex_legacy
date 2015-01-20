@@ -15,9 +15,7 @@ namespace Synchronox {
 		friend class Collective;
 		virtual std::set<IOutput *> GetConnectedOutputs() = 0;
 		virtual Box* GetOwner() = 0;
-		virtual void CheckWillHalt() = 0;
 		virtual bool GetIsBlocked() = 0;
-		virtual void SignalHalt() = 0;
 		virtual void Lock() = 0;
 		virtual void Unlock() = 0;
 	};

@@ -1,16 +1,8 @@
 #include "Box.h"
+#include "Collective.h"
 
 namespace Synchronox {
-
-	Box::Box(Collective* collective_ptr)
-	{
-		collective = collective_ptr;
-		collective->Add(this);
-	}
-
-
-	Box::~Box()
+	Box::Box() : isHalted(false), collective(nullptr)
 	{
 	}
-
 }

@@ -15,6 +15,7 @@
 #include "Box.h"
 #include "Input.h"
 #include "Output.h"
+#include "lock_free_forward_list.h"
 
 namespace Synchronox {
 	typedef boost::coroutines::symmetric_coroutine<void> coroutine;
@@ -32,7 +33,15 @@ namespace Synchronox {
 		template<typename T, typename... U>
 		std::shared_ptr<T> CreateBox(U... args) {
 			std::lock<std::mutex> lock(boxesMutex);
-			boxes.emplace_back(new T(args...));
+			auto box = new T(args...);
+			box->collective = this;
+			box->Initializer();
+			box->coro = std::move(coroutine::call_type([this, box](coroutine::yield_type& yield) {
+				box->yield = &yield;
+				box->Computer();
+			}));
+			box->hasPendingWork = true;
+			boxes.emplace_front(box);
 		}
 
 	protected:
@@ -45,10 +54,9 @@ namespace Synchronox {
 		NoResetEvent startBlocker;
 		std::atomic<int> haltedBoxCount;
 		NoResetEvent blocker;
-		std::forward_list<std::unique_ptr<Box>> boxes;
+		lock_free_forward_list<std::unique_ptr<Box>> boxes;
 
-		std::mutex boxesMutex;
-		boost::thread_specific_ptr<coroutine::call_type*> runner;
+		boost::thread_specific_ptr<coroutine::call_type> runner;
 		std::vector<coroutine::call_type> runners;
 		std::vector<std::thread> runnerThreads;
 
