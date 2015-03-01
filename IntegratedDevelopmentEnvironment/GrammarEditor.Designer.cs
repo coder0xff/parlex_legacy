@@ -23,6 +23,7 @@
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent() {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(GrammarEditor));
             this.treeView = new System.Windows.Forms.TreeView();
             this.toolStripButtonSequence = new System.Windows.Forms.ToolStripButton();
@@ -34,7 +35,15 @@
             this.toolStripButtonLeaf = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripButtonTester = new System.Windows.Forms.ToolStripButton();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exportCSharpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.exportCSharpSaveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            this.productionContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1.SuspendLayout();
+            this.menuStrip1.SuspendLayout();
+            this.productionContextMenu.SuspendLayout();
             this.SuspendLayout();
             // 
             // treeView
@@ -44,9 +53,9 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.treeView.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.treeView.LabelEdit = true;
-            this.treeView.Location = new System.Drawing.Point(0, 28);
+            this.treeView.Location = new System.Drawing.Point(0, 52);
             this.treeView.Name = "treeView";
-            this.treeView.Size = new System.Drawing.Size(548, 295);
+            this.treeView.Size = new System.Drawing.Size(548, 271);
             this.treeView.TabIndex = 0;
             this.treeView.BeforeLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.treeView_BeforeLabelEdit);
             this.treeView.AfterLabelEdit += new System.Windows.Forms.NodeLabelEditEventHandler(this.treeView_AfterLabelEdit);
@@ -105,7 +114,7 @@
             this.toolStripButtonLeaf,
             this.toolStripSeparator2,
             this.toolStripButtonTester});
-            this.toolStrip1.Location = new System.Drawing.Point(0, 0);
+            this.toolStrip1.Location = new System.Drawing.Point(0, 24);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(548, 25);
             this.toolStrip1.TabIndex = 1;
@@ -141,18 +150,66 @@
             this.toolStripButtonTester.Text = "toolStripButton1";
             this.toolStripButtonTester.Click += new System.EventHandler(this.toolStripButtonTester_Click);
             // 
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(548, 24);
+            this.menuStrip1.TabIndex = 2;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.exportCSharpToolStripMenuItem});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.fileToolStripMenuItem.Text = "&File";
+            // 
+            // exportCSharpToolStripMenuItem
+            // 
+            this.exportCSharpToolStripMenuItem.Name = "exportCSharpToolStripMenuItem";
+            this.exportCSharpToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
+            this.exportCSharpToolStripMenuItem.Text = "Export C#";
+            this.exportCSharpToolStripMenuItem.Click += new System.EventHandler(this.exportCSharpToolStripMenuItem_Click);
+            // 
+            // exportCSharpSaveFileDialog
+            // 
+            this.exportCSharpSaveFileDialog.Filter = "C# files|*.cs|All files|*.*";
+            // 
+            // productionContextMenu
+            // 
+            this.productionContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.testToolStripMenuItem});
+            this.productionContextMenu.Name = "productionContextMenu";
+            this.productionContextMenu.Size = new System.Drawing.Size(153, 48);
+            // 
+            // testToolStripMenuItem
+            // 
+            this.testToolStripMenuItem.Name = "testToolStripMenuItem";
+            this.testToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.testToolStripMenuItem.Text = "Test";
+            this.testToolStripMenuItem.Click += new System.EventHandler(this.testToolStripMenuItem_Click);
+            // 
             // GrammarEditor
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(548, 323);
             this.Controls.Add(this.toolStrip1);
+            this.Controls.Add(this.menuStrip1);
             this.Controls.Add(this.treeView);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.MainMenuStrip = this.menuStrip1;
             this.Name = "GrammarEditor";
             this.Text = "GrammarEditor";
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
+            this.productionContextMenu.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -170,6 +227,12 @@
         private System.Windows.Forms.ToolStripButton toolStripButtonLeaf;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton toolStripButtonTester;
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportCSharpToolStripMenuItem;
+        private System.Windows.Forms.SaveFileDialog exportCSharpSaveFileDialog;
+        private System.Windows.Forms.ContextMenuStrip productionContextMenu;
+        private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
 
     }
 }

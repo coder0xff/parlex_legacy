@@ -507,8 +507,17 @@ namespace IntegratedDevelopmentEnvironment {
             e.Node.Text = editText;
         }
 
+        private TreeNode _contextMenuNode;
         private void treeView_MouseUp(object sender, MouseEventArgs e) {
-            if (treeView.GetNodeAt(e.Location) == null) {
+            var node = treeView.GetNodeAt(e.Location);
+            if (e.Button == MouseButtons.Right) {
+                String name;
+                if (TryGetTagValue(node, "name", out name)) {
+                    _contextMenuNode = node;
+                    productionContextMenu.Show(treeView, e.Location);
+                }
+            }
+            if (node == null) {
                 treeView.SelectedNode = null;
                 treeView_AfterSelect(null, null);
             }
@@ -523,6 +532,30 @@ namespace IntegratedDevelopmentEnvironment {
             var result = new GrammarEditor(grammar) { _formatter = formatter, _filePathName = null, _hasUnsavedChanges = true };
             result.UpdateTitle();
             return result;
+        }
+
+        private void exportCSharpToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (exportCSharpSaveFileDialog.ShowDialog(Main.Instance) == DialogResult.OK) {
+                var formatter = new CSharpFormatter();
+                Grammar g;
+                bool errors;
+                g = GetGrammar(out errors);
+                if (g == null) {
+                    MessageBox.Show(Main.Instance, "Grammar error", "The grammar contains errors. Exporting could not be completed.");
+                    return;
+                }
+                if (errors) {
+                    if (MessageBox.Show(Main.Instance, "Grammar error", "The grammar appears to contain errors but was partially constructed. Export anyway?", MessageBoxButtons.YesNo) == DialogResult.No) {
+                        return;
+                    }
+                }
+                formatter.Serialize(File.Open(exportCSharpSaveFileDialog.FileName, FileMode.Create, FileAccess.Write), g);
+            }
+        }
+
+        private void testToolStripMenuItem_Click(object sender, EventArgs e) {
+            var tester = new GrammarTester(this, GetTagValue<String>(_contextMenuNode, "name"));
+            tester.Show();
         }
     }
 }

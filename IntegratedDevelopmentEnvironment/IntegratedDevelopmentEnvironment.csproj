@@ -116,10 +116,6 @@
       <Project>{440d651a-2de1-4ae1-b293-4c21d5ecc16a}</Project>
       <Name>Parlex</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Synchronox\Synchronox.csproj">
-      <Project>{86945759-8058-4377-834F-693EE5B8F787}</Project>
-      <Name>Synchronox</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

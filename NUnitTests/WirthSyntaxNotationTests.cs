@@ -14,7 +14,7 @@ namespace NUnitTests {
             Parser parser = new Parser(grammar);
             Parser.Job job = parser.Parse(metaMetaSyntax);
             job.Join();
-            Parser.AbstractSyntaxForest asf = job.AbstractSyntaxForest;
+            var asf = job.AbstractSyntaxGraph;
         }
     }
 }

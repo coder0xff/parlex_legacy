@@ -14,9 +14,11 @@ namespace IntegratedDevelopmentEnvironment {
     public partial class GrammarTester : DockContent {
         private GrammarEditor _grammarEditor;
         private Grammar _grammar;
+        private String _main;
 
-        public GrammarTester(GrammarEditor grammarEditor) {
+        public GrammarTester(GrammarEditor grammarEditor, String main = null) {
             _grammarEditor = grammarEditor;
+            _main = main;
             InitializeComponent();
             Show(Main.Instance.dockPanel1, DockState.Document);
         }
@@ -24,9 +26,9 @@ namespace IntegratedDevelopmentEnvironment {
         class ErrorInfo {
             public readonly int Position;
             public readonly Grammar.ISymbol Symbol;
-            public ErrorInfo(Parser.MatchCategory error) {
+            public ErrorInfo(MatchCategory error) {
                 Position = error.Position;
-                Symbol = error.Symbol;
+                //Symbol = error.Symbol;
             }
 
             public override string ToString() {
@@ -37,9 +39,13 @@ namespace IntegratedDevelopmentEnvironment {
             bool errors;
             var grammar = _grammarEditor.GetGrammar(out errors);
             var parser = new Parser(grammar);
-            var job = parser.Parse(textBoxDocument.Text);
+            Grammar.Production m = grammar.MainProduction;
+            if (_main != null) {
+                m = grammar.GetRecognizerByName(_main);
+            }
+            var job = parser.Parse(textBoxDocument.Text, 0, -1, m);
             job.Join();
-            if (job.AbstractSyntaxForest.IsEmpty) {
+            if (job.AbstractSyntaxGraph.IsEmpty) {
                 if (errors) {
                     toolStripStatusLabel1.Text = "The grammar contains errors, and this text could not be parsed.";
                 } else {
@@ -53,7 +59,7 @@ namespace IntegratedDevelopmentEnvironment {
                 }
             }
             listBoxErrors.Items.Clear();
-            listBoxErrors.Items.AddRange(job.PossibleErrors.Select(x => new ErrorInfo(x)).ToArray<Object>());
+            //listBoxErrors.Items.AddRange(job.PossibleErrors.Select(x => new ErrorInfo(x)).ToArray<Object>());
         }
 
         private void timer1_Tick(object sender, EventArgs e) {

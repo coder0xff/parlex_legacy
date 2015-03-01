@@ -33,7 +33,6 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SynchronoxTests.cs" />
     <Compile Include="GrammarTests.cs" />
     <Compile Include="BehaviorTreeTests.cs" />
     <Compile Include="NfaTests.cs" />
@@ -53,10 +52,6 @@
     <ProjectReference Include="..\Parlex\Parlex.csproj">
       <Project>{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}</Project>
       <Name>Parlex</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Synchronox\Synchronox.csproj">
-      <Project>{86945759-8058-4377-834f-693ee5b8f787}</Project>
-      <Name>Synchronox</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

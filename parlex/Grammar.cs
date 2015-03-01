@@ -23,6 +23,8 @@ namespace Parlex {
 
         public static readonly CharacterSetTerminal WhiteSpaceTerminal = new CharacterSetTerminal("whitespace", Unicode.WhiteSpace);
 
+        public static readonly Production NewLine  = new Production("newLine", true, false);
+
         public static readonly Production WhiteSpacesEater = new Production("whiteSpaces", true, false);
 
         public static readonly NonDoubleQuoteCharacterTerminalT NonDoubleQuoteCharacterTerminal = new NonDoubleQuoteCharacterTerminalT();
@@ -30,6 +32,10 @@ namespace Parlex {
         public static readonly StringTerminal DoubleQuoteTerminal = new StringTerminal("\"");
 
         public static readonly NonDoubleQuoteNonBackSlashCharacterTerminalT NonDoubleQuoteNonBackSlashCharacterTerminal = new NonDoubleQuoteNonBackSlashCharacterTerminalT();
+
+        public static readonly CarriageReturnTerminalT CarriageReturnTerminal = new CarriageReturnTerminalT();
+
+        public static readonly LineFeedTerminalT LineFeedTerminal = new LineFeedTerminalT();
 
         public static readonly SimpleEscapeSequenceTerminalT SimpleEscapeSequenceTerminal = new SimpleEscapeSequenceTerminalT();
 
@@ -43,6 +49,22 @@ namespace Parlex {
         public Production MainProduction;
 
         static Grammar() {
+            var newLineState0 = new Production.State();
+            var newLineState1 = new Production.State();
+            var newLineState2 = new Production.State();
+            var newLineState3 = new Production.State();
+            NewLine.States.Add(newLineState0);
+            NewLine.States.Add(newLineState1);
+            NewLine.States.Add(newLineState2);
+            NewLine.States.Add(newLineState3);
+            NewLine.StartStates.Add(newLineState0);
+            NewLine.AcceptStates.Add(newLineState1);
+            NewLine.AcceptStates.Add(newLineState2);
+            NewLine.AcceptStates.Add(newLineState3);
+            NewLine.TransitionFunction[newLineState0][CarriageReturnTerminal].Add(newLineState1);
+            NewLine.TransitionFunction[newLineState1][LineFeedTerminal].Add(newLineState2);
+            NewLine.TransitionFunction[newLineState0][LineFeedTerminal].Add(newLineState3);
+
             var whiteSpacesState0 = new Production.State();
             var whiteSpacesState1 = new Production.State();
             WhiteSpacesEater.States.Add(whiteSpacesState0);
@@ -73,10 +95,13 @@ namespace Parlex {
             NameToBuiltInSymbol["alphanumeric"] = AlphaNumericTerminal;
             NameToBuiltInSymbol["character"] = CharacterTerminal;
             NameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
+            NameToBuiltInSymbol["newLine"] = NewLine;
             NameToBuiltInSymbol["whiteSpacesEater"] = WhiteSpacesEater;
             NameToBuiltInSymbol["nonDoubleQuote"] = NonDoubleQuoteCharacterTerminal;
             NameToBuiltInSymbol["doubleQuote"] = DoubleQuoteTerminal;
             NameToBuiltInSymbol["nonDoubleQuoteNonBackSlash"] = NonDoubleQuoteNonBackSlashCharacterTerminal;
+            NameToBuiltInSymbol["carriageReturn"] = CarriageReturnTerminal;
+            NameToBuiltInSymbol["lineFeed"] = LineFeedTerminal;
             NameToBuiltInSymbol["simpleEscapeSequence"] = SimpleEscapeSequenceTerminal;
             NameToBuiltInSymbol["unicodeEscapeSequence"] = UnicodeEscapeSequnceTerminal;
             NameToBuiltInSymbol["stringLiteral"] = StringLiteral;
@@ -92,8 +117,8 @@ namespace Parlex {
 
         public static bool TryGetBuiltinFieldByName(String name, out FieldInfo field) {
             field = null;
-            foreach (var fieldInfo in typeof(Grammar).GetFields(BindingFlags.Static)) {
-                if (fieldInfo.FieldType.IsSubclassOf(typeof(ISymbol))) {
+            foreach (var fieldInfo in typeof(Grammar).GetFields(BindingFlags.Public | BindingFlags.Static)) {
+                if (typeof(ISymbol).IsAssignableFrom(fieldInfo.FieldType)) {
                     if (((ISymbol)fieldInfo.GetValue(null)).Name == name) {
                         field = fieldInfo;
                         return true;
@@ -271,6 +296,24 @@ namespace Parlex {
                 if (documentIndex >= documentUtf32CodePoints.Length) return false;
                 return documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\"", 0) &&
                        documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\\", 0);
+            }
+        }
+
+        public class CarriageReturnTerminalT : ITerminal {
+            public string Name { get { return "Carriage return"; } }
+            public int Length { get { return 1; } }
+            public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
+                if (documentIndex >= documentUtf32CodePoints.Length) return false;
+                return documentUtf32CodePoints[documentIndex] == '\r';
+            }
+        }
+
+        public class LineFeedTerminalT : ITerminal {
+            public string Name { get { return "Carriage return"; } }
+            public int Length { get { return 1; } }
+            public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
+                if (documentIndex >= documentUtf32CodePoints.Length) return false;
+                return documentUtf32CodePoints[documentIndex] == '\n';
             }
         }
         

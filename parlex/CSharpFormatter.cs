@@ -15,30 +15,55 @@ namespace Parlex {
                 production.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is Grammar.StringTerminal).Cast<Grammar.StringTerminal>()
                 ).ToArray();
             for (var i = 0; i < stringTerminals.Length; i++) {
-                results[stringTerminals[i]] = "stringTerminal" + i;
-                s.WriteLine("\tprivate static readonly Grammar.ITerminal stringTerminal" + i + " = new Grammar.StringTerminal(\"" + stringTerminals[i] + "\");");
+                var name = "StringTerminal" + i;
+                results[stringTerminals[i]] = name;
+                s.WriteLine("\tprivate static readonly Grammar.ITerminal " + name + " = new Grammar.StringTerminal(\"" + stringTerminals[i] + "\");");
             }
             return results;
         }
 
+        private static String CSharpName(String productionName) {
+            bool capitalized = true;
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < productionName.Length; i++) {
+                var c = productionName[i];
+                if (Char.IsLetter(c)) {
+                    c = capitalized ? Char.ToUpper(c) : Char.ToLower(c);
+                    result.Append(c);
+                    capitalized = false;
+                    continue;
+                }
+                capitalized = false;
+                if (c == '_') {
+                    capitalized = true;
+                    continue;
+                }
+                result.Append(c);
+            }
+            return result.ToString();
+        }
+
         private void DefineProduction(StreamWriter s, Grammar.Production production) {
-            s.WriteLine("\tprivate static readonly Grammar.Production " + production.Name + " = new Grammar.Production(" + production.Name + ", " + production.Greedy + ", " + production.EatWhiteSpace + ");");
+            var cSharpName = CSharpName(production.Name);
+            s.WriteLine("\tprivate static readonly Grammar.Production " + cSharpName + " = new Grammar.Production(\"" + cSharpName + "\", " + (production.Greedy ? "true" : "false") + ", " + (production.EatWhiteSpace ? "true" : "false") + ");");
         }
 
         private void SerializeProduction(StreamWriter s, Grammar.Production production, Dictionary<Grammar.ISymbol, string> stringTerminalNames) {
+            var cSharpName = CSharpName(production.Name);
+            var lowerCSharpName = Char.ToLower(cSharpName[0]) + cSharpName.Substring(1);
             var names = new Dictionary<Nfa<Grammar.ISymbol>.State, string>();
             int counter = 0;
             foreach (var state in production.States) {
-                names[state] = production.Name + "_State" + counter;
+                names[state] = lowerCSharpName + "State" + counter;
                 counter++;
                 s.WriteLine("\t\tvar " + names[state] + " = new Grammar.Production.State();");
-                s.WriteLine("\t\t" + production.Name + ".States.Add(" + names[state] + ");");
+                s.WriteLine("\t\t" + cSharpName + ".States.Add(" + names[state] + ");");
             }
             foreach (var startState in production.StartStates) {
-                s.WriteLine("\t\t" + production.Name + ".StartStates.Add(" + names[startState] +");");
+                s.WriteLine("\t\t" + cSharpName + ".StartStates.Add(" + names[startState] +");");
             }
             foreach (var acceptState in production.AcceptStates) {
-                s.WriteLine("\t\t" + production.Name + ".AcceptStates.Add(" + names[acceptState] + ");");
+                s.WriteLine("\t\t" + cSharpName + ".AcceptStates.Add(" + names[acceptState] + ");");
             }
             foreach (var transition in production.GetTransitions()) {
                 var symbolName = transition.Symbol.Name;
@@ -46,19 +71,27 @@ namespace Parlex {
                     symbolName = stringTerminalNames[transition.Symbol];
                 } else {
                     FieldInfo field;
-                    if (Grammar.TryGetBuiltinFieldByName("symbolName", out field)) {
+                    if (Grammar.TryGetBuiltinFieldByName(symbolName, out field)) {
                         symbolName = field.DeclaringType.FullName + "." + field.Name;
+                        if (symbolName.StartsWith("Parlex.")) {
+                            symbolName = symbolName.Substring("Parlex.".Length);
+                        }
+                    } else {
+                        symbolName = CSharpName(symbolName);
                     }
                 }
-                s.WriteLine("\t\t" + production.Name + ".TransitionFunction[" + names[transition.FromState] + "][" + symbolName + "].Add(" + transition.ToState + ")");
+                s.WriteLine("\t\t" + cSharpName + ".TransitionFunction[" + names[transition.FromState] + "][" + symbolName + "].Add(" + names[transition.ToState] + ");");
             }
+            s.WriteLine("\t\tGrammar.Productions.Add(" + cSharpName + ");");
             s.WriteLine();
         }
 
         public void Serialize(Stream s, Grammar grammar) {
             var sw = new StreamWriter(s);
-            sw.WriteLine("public static GeneratedGrammar {");
-            sw.WriteLine("\tpublic static Grammar Grammar;");
+            sw.WriteLine("using Parlex;");
+            sw.WriteLine();
+            sw.WriteLine("public static class GeneratedGrammar {");
+            sw.WriteLine("\tpublic static Grammar Grammar = new Grammar();");
             var stringTerminalNames = SerializeStringTerminals(sw, grammar);
             foreach (var production in grammar.Productions) {
                 DefineProduction(sw, production);
@@ -67,6 +100,7 @@ namespace Parlex {
             foreach (var production in grammar.Productions) {
                 SerializeProduction(sw, production, stringTerminalNames);
             }
+            sw.WriteLine("\t\tGrammar.MainProduction = Syntax;");
             sw.WriteLine("\t}");
             sw.WriteLine("}");
             sw.Close();
