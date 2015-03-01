@@ -23,10 +23,6 @@ namespace Parlex {
 
         public static readonly CharacterSetTerminal WhiteSpaceTerminal = new CharacterSetTerminal("whitespace", Unicode.WhiteSpace);
 
-        public static readonly Production NewLine  = new Production("newLine", true, false);
-
-        public static readonly Production WhiteSpacesEater = new Production("whiteSpaces", true, false);
-
         public static readonly NonDoubleQuoteCharacterTerminalT NonDoubleQuoteCharacterTerminal = new NonDoubleQuoteCharacterTerminalT();
 
         public static readonly StringTerminal DoubleQuoteTerminal = new StringTerminal("\"");
@@ -40,6 +36,10 @@ namespace Parlex {
         public static readonly SimpleEscapeSequenceTerminalT SimpleEscapeSequenceTerminal = new SimpleEscapeSequenceTerminalT();
 
         public static readonly UnicodeEscapeSequnceTerminalT UnicodeEscapeSequnceTerminal = new UnicodeEscapeSequnceTerminalT();
+
+        public static readonly Production NewLine  = new Production("newLine", true, false);
+
+        public static readonly Production WhiteSpaces = new Production("whiteSpaces", true, false);
 
         public static readonly Production StringLiteral = new Production("stringLiteral", false, true);
 
@@ -67,12 +67,12 @@ namespace Parlex {
 
             var whiteSpacesState0 = new Production.State();
             var whiteSpacesState1 = new Production.State();
-            WhiteSpacesEater.States.Add(whiteSpacesState0);
-            WhiteSpacesEater.States.Add(whiteSpacesState1);
-            WhiteSpacesEater.StartStates.Add(whiteSpacesState0);
-            WhiteSpacesEater.AcceptStates.Add(whiteSpacesState1);
-            WhiteSpacesEater.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState1);
-            WhiteSpacesEater.TransitionFunction[whiteSpacesState1][WhiteSpaceTerminal].Add(whiteSpacesState1);
+            WhiteSpaces.States.Add(whiteSpacesState0);
+            WhiteSpaces.States.Add(whiteSpacesState1);
+            WhiteSpaces.StartStates.Add(whiteSpacesState0);
+            WhiteSpaces.AcceptStates.Add(whiteSpacesState1);
+            WhiteSpaces.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState1);
+            WhiteSpaces.TransitionFunction[whiteSpacesState1][WhiteSpaceTerminal].Add(whiteSpacesState1);
 
             var stringLiteralState0 = new Production.State();
             var stringLiteralState1 = new Production.State();
@@ -96,7 +96,7 @@ namespace Parlex {
             NameToBuiltInSymbol["character"] = CharacterTerminal;
             NameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
             NameToBuiltInSymbol["newLine"] = NewLine;
-            NameToBuiltInSymbol["whiteSpacesEater"] = WhiteSpacesEater;
+            NameToBuiltInSymbol["whiteSpacesEater"] = WhiteSpaces;
             NameToBuiltInSymbol["nonDoubleQuote"] = NonDoubleQuoteCharacterTerminal;
             NameToBuiltInSymbol["doubleQuote"] = DoubleQuoteTerminal;
             NameToBuiltInSymbol["nonDoubleQuoteNonBackSlash"] = NonDoubleQuoteNonBackSlashCharacterTerminal;

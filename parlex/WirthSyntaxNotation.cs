@@ -37,7 +37,7 @@ namespace Parlex {
             Syntax.AcceptStates.Add(syntaxState0);
             Syntax.AcceptStates.Add(syntaxState1);
             Syntax.TransitionFunction[syntaxState0][Production].Add(syntaxState0);
-            Syntax.TransitionFunction[syntaxState0][Grammar.WhiteSpacesEater].Add(syntaxState1);
+            Syntax.TransitionFunction[syntaxState0][Grammar.WhiteSpaces].Add(syntaxState1);
 
             var productionState0 = new Nfa<Grammar.ISymbol>.State();
             var productionState1 = new Nfa<Grammar.ISymbol>.State();
@@ -52,10 +52,10 @@ namespace Parlex {
             Production.StartStates.Add(productionState0);
             Production.AcceptStates.Add(productionState4);
             Production.TransitionFunction[productionState0][Identifier].Add(productionState1);
-            Production.TransitionFunction[productionState1][Grammar.WhiteSpacesEater].Add(productionState1);
+            Production.TransitionFunction[productionState1][Grammar.WhiteSpaces].Add(productionState1);
             Production.TransitionFunction[productionState1][EqualsTerminal].Add(productionState2);
             Production.TransitionFunction[productionState2][Expression].Add(productionState3);
-            Production.TransitionFunction[productionState3][Grammar.WhiteSpacesEater].Add(productionState3);
+            Production.TransitionFunction[productionState3][Grammar.WhiteSpaces].Add(productionState3);
             Production.TransitionFunction[productionState3][PeriodTerminal].Add(productionState4);
 
             var expressionState0 = new Nfa<Grammar.ISymbol>.State();
@@ -65,7 +65,7 @@ namespace Parlex {
             Expression.StartStates.Add(expressionState0);
             Expression.AcceptStates.Add(expressionState1);
             Expression.TransitionFunction[expressionState0][Term].Add(expressionState1);
-            Expression.TransitionFunction[expressionState1][Grammar.WhiteSpacesEater].Add(expressionState1);
+            Expression.TransitionFunction[expressionState1][Grammar.WhiteSpaces].Add(expressionState1);
             Expression.TransitionFunction[expressionState1][PipeTerminal].Add(expressionState0);
 
             var termState0 = new Nfa<Grammar.ISymbol>.State();
@@ -97,7 +97,7 @@ namespace Parlex {
             Factor.States.Add(factorState8);
             Factor.StartStates.Add(factorState0);
             Factor.AcceptStates.Add(factorState1);
-            Factor.TransitionFunction[factorState0][Grammar.WhiteSpacesEater].Add(factorState8);
+            Factor.TransitionFunction[factorState0][Grammar.WhiteSpaces].Add(factorState8);
             Factor.TransitionFunction[factorState0][Identifier].Add(factorState1);
             Factor.TransitionFunction[factorState0][Literal].Add(factorState1);
             Factor.TransitionFunction[factorState0][OpenSquareTerminal].Add(factorState2);
@@ -119,7 +119,7 @@ namespace Parlex {
             Identifier.States.Add(identifierState1);
             Identifier.StartStates.Add(identifierState0);
             Identifier.AcceptStates.Add(identifierState1);
-            Identifier.TransitionFunction[identifierState0][Grammar.WhiteSpacesEater].Add(identifierState0);
+            Identifier.TransitionFunction[identifierState0][Grammar.WhiteSpaces].Add(identifierState0);
             Identifier.TransitionFunction[identifierState0][Grammar.AlphaNumericTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState0][UnderscoreTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState1][Grammar.AlphaNumericTerminal].Add(identifierState1);
@@ -131,7 +131,7 @@ namespace Parlex {
             Literal.States.Add(literalState1);
             Literal.StartStates.Add(literalState0);
             Literal.AcceptStates.Add(literalState1);
-            Literal.TransitionFunction[literalState0][Grammar.WhiteSpacesEater].Add(literalState0);
+            Literal.TransitionFunction[literalState0][Grammar.WhiteSpaces].Add(literalState0);
             Literal.TransitionFunction[literalState0][Grammar.StringLiteral].Add(literalState1);
 
             WorthSyntaxNotationParserGrammar = new Grammar();
@@ -170,7 +170,7 @@ namespace Parlex {
         private static Nfa<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Match factor) {
             Match firstChild = job.AbstractSyntaxGraph.NodeTable[factor.Children[0]].First();
 
-            if (firstChild.Symbol == Identifier) {
+            if (firstChild.Symbol.Is(Identifier)) {
                 Grammar.ISymbol transition = new Grammar.Production(PlaceHolderMarker + ProcessIdentifierClause(job, firstChild), false, false);
                 var result = new Nfa<Grammar.ISymbol>();
                 var state0 = new Nfa<Grammar.ISymbol>.State();
@@ -183,7 +183,7 @@ namespace Parlex {
                 return result;
             }
 
-            if (firstChild.Symbol == Literal) {
+            if (firstChild.Symbol.Is(Literal)) {
                 var transition = new Grammar.StringTerminal(ProcessLiteralClause(job, firstChild));
                 var result = new Nfa<Grammar.ISymbol>();
                 var state0 = new Nfa<Grammar.ISymbol>.State();
@@ -196,7 +196,7 @@ namespace Parlex {
                 return result;
             }
 
-            if (firstChild.Symbol == OpenSquareTerminal) {
+            if (firstChild.Symbol.Is(OpenSquareTerminal)) {
                 Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
                 Nfa<Grammar.ISymbol> result = ProcessExpressionClause(job, expression);
                 foreach (Nfa<Grammar.ISymbol>.State state in result.StartStates) {
@@ -205,13 +205,13 @@ namespace Parlex {
                 return result;
             }
 
-            if (firstChild.Symbol == OpenParenthesisTerminal) {
+            if (firstChild.Symbol.Is(OpenParenthesisTerminal)) {
                 Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
                 Nfa<Grammar.ISymbol> result = ProcessExpressionClause(job, expression);
                 return result;
             }
 
-            if (firstChild.Symbol == OpenCurlyTerminal) {
+            if (firstChild.Symbol.Is(OpenCurlyTerminal)) {
                 Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
                 Nfa<Grammar.ISymbol> result = ProcessExpressionClause(job, expression);
                 var acceptNothingState = new Nfa<Grammar.ISymbol>.State();

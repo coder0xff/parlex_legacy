@@ -43,8 +43,10 @@ namespace IntegratedDevelopmentEnvironment {
             if (_main != null) {
                 m = grammar.GetRecognizerByName(_main);
             }
+            DateTime start = DateTime.Now;
             var job = parser.Parse(textBoxDocument.Text, 0, -1, m);
             job.Join();
+            var seconds = (DateTime.Now - start).TotalSeconds;
             if (job.AbstractSyntaxGraph.IsEmpty) {
                 if (errors) {
                     toolStripStatusLabel1.Text = "The grammar contains errors, and this text could not be parsed.";
@@ -58,6 +60,7 @@ namespace IntegratedDevelopmentEnvironment {
                     toolStripStatusLabel1.Text = "The grammar parses this text.";
                 }
             }
+            toolStripStatusLabel1.Text += " (" + seconds + "s)";
             listBoxErrors.Items.Clear();
             //listBoxErrors.Items.AddRange(job.PossibleErrors.Select(x => new ErrorInfo(x)).ToArray<Object>());
         }

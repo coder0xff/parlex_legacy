@@ -46,11 +46,10 @@ namespace Parlex {
 
             public DynamicSyntaxNodeFactory(Parser parser, Grammar.ISymbol symbol) {
                 _parser = parser;
-                var asProduction = symbol as Grammar.Production;
-                if (asProduction != null) {
-                    _production = new Grammar.Production(asProduction.Name, asProduction.Greedy, asProduction.MinimizedDfa().Reassign());
-                } else {
+                _production = symbol as Grammar.Production;
+                if (_production == null) {
                     _terminal = symbol as Grammar.ITerminal;
+                    System.Diagnostics.Debug.Assert(_terminal != null);
                 }
             }
 
@@ -85,6 +84,10 @@ namespace Parlex {
 
             public bool Is(Grammar.Production production) {
                 return _production == production;
+            }
+
+            public override string ToString() {
+                return Name;
             }
         }
 

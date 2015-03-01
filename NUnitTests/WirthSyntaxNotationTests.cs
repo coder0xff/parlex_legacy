@@ -8,7 +8,7 @@ namespace NUnitTests {
     public class WirthSyntaxNotationTests {
         [Test]
         public void SelfReferentialParseTest() {
-            string metaMetaSyntax = File.ReadAllText("C:\\WirthSyntaxNotationDefinedInItself.txt");
+            string metaMetaSyntax = File.ReadAllText(@"C:\Users\coder_000\Dropbox\parlex\WorthSyntaxNotationDefinedInItself.wsn");
             Grammar grammar = WirthSyntaxNotation.GrammarFromString(metaMetaSyntax);
             grammar.MainProduction = grammar.Productions.First(x => x.Name == "SYNTAX");
             Parser parser = new Parser(grammar);

@@ -51,7 +51,7 @@ namespace Parlex {
 
         internal void EndDependency() {
             if (Interlocked.Decrement(ref _activeDependencyCount) == 0) {
-                DebugThreadPool.QueueUserWorkItem(_ => Dispatcher.NodeCompleted());
+                Engine.ThreadPool.QueueUserWorkItem(_ => Dispatcher.NodeCompleted());
             }
         }
     }

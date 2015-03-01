@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 
 namespace Parlex {
@@ -25,8 +26,7 @@ namespace Parlex {
         }
 
         internal void StripWhiteSpaceEaters() {
-            //Children = Children.Where(x => x.Symbol != Grammar.WhiteSpacesEater).ToArray();
-            throw new NotImplementedException();
+            Children = Children.Where(x => !x.Symbol.Is(Grammar.WhiteSpaces)).ToArray();
         }
 
     }
