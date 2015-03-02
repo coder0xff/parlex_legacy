@@ -21,9 +21,14 @@ namespace Parlex {
             return false;
         }
 
-        public GenericSyntaxNodeFactory(bool greedy) {
+        public GenericSyntaxNodeFactory() {
             Name = typeof(T).Name;
-            IsGreedy = greedy;
+            IsGreedy = typeof(T).GetCustomAttributes(typeof(GreedyAttribute), false).Length > 0;
+        }
+
+        public static ISyntaxNodeFactory FromType(Type t) {
+            var t2 = typeof(GenericSyntaxNodeFactory<>).MakeGenericType(t);
+            return (ISyntaxNodeFactory)Activator.CreateInstance(t2);
         }
     }
 }
