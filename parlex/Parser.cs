@@ -23,7 +23,9 @@ namespace Parlex {
             }
 
             public override void Start() {
-                ProcessState(_production.StartStates.First());
+                foreach (var state in _production.StartStates) {
+                    ProcessState(state);
+                }
             }
 
             private void ProcessState(Grammar.Production.State state) {
