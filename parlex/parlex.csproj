@@ -66,7 +66,7 @@
     <Compile Include="NfaSymbolNode.cs" />
     <Compile Include="NodeParseResult.cs" />
     <Compile Include="Parser.cs" />
-    <Compile Include="ParserEngine.cs" />
+    <Compile Include="ParseEngine.cs" />
     <Compile Include="ParseContext.cs" />
     <Compile Include="ParseEngineTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

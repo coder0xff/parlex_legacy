@@ -8,8 +8,8 @@ using Parlex;
 
 namespace Parlex {
     public abstract class SyntaxNode {
-        internal ParserEngine Engine { get; set; }
-        internal ParserEngine.Dispatcher Dispatcher { get; set; }
+        internal ParseEngine Engine { get; set; }
+        internal ParseEngine.Dispatcher Dispatcher { get; set; }
         internal readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
 
         internal int _activeDependencyCount;

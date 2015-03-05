@@ -45,7 +45,7 @@ namespace Parlex {
                     } else if (Grammar.IsBuiltIn(transition)) {
                         builder.AppendLine("\t\t\tTransition(Grammar." + Grammar.TryGetBuiltInFieldBySymbol(transition).Name + ", State" + toState.Value + ");");
                     } else {
-                        builder.AppendLine("\t\t\tTransition<"+ _namespace + "." + nameMap[transition] + ">(State" + toState.Value + ");");
+                        builder.AppendLine("\t\t\tTransition<" + nameMap[transition] + ">(State" + toState.Value + ");");
                     }
                 }
             }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 
 namespace Parlex {
-    internal class ParserEngine {
+    internal class ParseEngine {
         internal readonly Int32[] CodePoints;
         private readonly ISyntaxNodeFactory _main;
         private int _activeDispatcherCount;
@@ -17,7 +17,7 @@ namespace Parlex {
         public readonly CustomThreadPool ThreadPool = new CustomThreadPool();
         private readonly Action _idleHandler;
 
-        internal ParserEngine(String document, int start, int length, ISyntaxNodeFactory main) {
+        internal ParseEngine(String document, int start, int length, ISyntaxNodeFactory main) {
             _start = start;
             CodePoints = document.GetUtf32CodePoints();
             _length = length < 0 ? CodePoints.Length : length;

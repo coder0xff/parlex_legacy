@@ -94,12 +94,12 @@ namespace Parlex {
         }
 
         public class Job {
-            private readonly ParserEngine _engine;
+            private readonly ParseEngine _engine;
             private readonly String _document;
             public String Document { get { return _document; } }
             internal Job(String document, int start, int length, DynamicSyntaxNodeFactory main) {
                 _document = document;
-                _engine = new ParserEngine(_document, start, length, main);
+                _engine = new ParseEngine(_document, start, length, main);
             }
 
             public AbstractSyntaxGraph AbstractSyntaxGraph { get { return _engine.AbstractSyntaxGraph; } }

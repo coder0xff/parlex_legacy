@@ -13,7 +13,7 @@ namespace Parlex {
         internal ISyntaxNodeFactory Symbol { get; set; }
         internal int Length { get; set; }
         internal MatchClass[] Children { get; set; }
-        internal ParserEngine Engine { private get; set; }
+        internal ParseEngine Engine { private get; set; }
 
         public override string ToString() {
             var sb = new StringBuilder();
