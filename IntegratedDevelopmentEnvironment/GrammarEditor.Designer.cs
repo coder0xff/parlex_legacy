@@ -41,6 +41,8 @@
             this.exportCSharpSaveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.productionContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.generateCParserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.toolStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.productionContextMenu.SuspendLayout();
@@ -163,7 +165,9 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.exportCSharpToolStripMenuItem});
+            this.exportCSharpToolStripMenuItem,
+            this.generateCParserToolStripMenuItem});
+            this.fileToolStripMenuItem.MergeAction = System.Windows.Forms.MergeAction.MatchOnly;
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "&File";
@@ -171,7 +175,7 @@
             // exportCSharpToolStripMenuItem
             // 
             this.exportCSharpToolStripMenuItem.Name = "exportCSharpToolStripMenuItem";
-            this.exportCSharpToolStripMenuItem.Size = new System.Drawing.Size(125, 22);
+            this.exportCSharpToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
             this.exportCSharpToolStripMenuItem.Text = "Export C#";
             this.exportCSharpToolStripMenuItem.Click += new System.EventHandler(this.exportCSharpToolStripMenuItem_Click);
             // 
@@ -184,14 +188,21 @@
             this.productionContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.testToolStripMenuItem});
             this.productionContextMenu.Name = "productionContextMenu";
-            this.productionContextMenu.Size = new System.Drawing.Size(153, 48);
+            this.productionContextMenu.Size = new System.Drawing.Size(97, 26);
             // 
             // testToolStripMenuItem
             // 
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
-            this.testToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.testToolStripMenuItem.Size = new System.Drawing.Size(96, 22);
             this.testToolStripMenuItem.Text = "Test";
             this.testToolStripMenuItem.Click += new System.EventHandler(this.testToolStripMenuItem_Click);
+            // 
+            // generateCParserToolStripMenuItem
+            // 
+            this.generateCParserToolStripMenuItem.Name = "generateCParserToolStripMenuItem";
+            this.generateCParserToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
+            this.generateCParserToolStripMenuItem.Text = "Generate C# Parser";
+            this.generateCParserToolStripMenuItem.Click += new System.EventHandler(this.generateCParserToolStripMenuItem_Click);
             // 
             // GrammarEditor
             // 
@@ -233,6 +244,8 @@
         private System.Windows.Forms.SaveFileDialog exportCSharpSaveFileDialog;
         private System.Windows.Forms.ContextMenuStrip productionContextMenu;
         private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem generateCParserToolStripMenuItem;
+        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
 
     }
 }

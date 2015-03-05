@@ -557,5 +557,24 @@ namespace IntegratedDevelopmentEnvironment {
             var tester = new GrammarTester(this, GetTagValue<String>(_contextMenuNode, "name"));
             tester.Show();
         }
+
+        private void generateCParserToolStripMenuItem_Click(object sender, EventArgs e) {
+            if (folderBrowserDialog1.ShowDialog(this) == DialogResult.OK) {
+                Grammar g;
+                bool errors;
+                g = GetGrammar(out errors);
+                if (g == null) {
+                    MessageBox.Show(Main.Instance, "Grammar error", "The grammar contains errors. Exporting could not be completed.");
+                    return;
+                }
+                if (errors) {
+                    if (MessageBox.Show(Main.Instance, "Grammar error", "The grammar appears to contain errors but was partially constructed. Export anyway?", MessageBoxButtons.YesNo) == DialogResult.No) {
+                        return;
+                    }
+                }
+                var generator = new Parlex.CSharpParserGenerator("Generated");
+                generator.Generate(folderBrowserDialog1.SelectedPath, g, "Parser");
+            }
+        }
     }
 }

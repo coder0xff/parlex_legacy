@@ -26,11 +26,23 @@ namespace Parlex {
         }
 
         public abstract void Start();
-        public abstract void OnCompletion(NodeParseResult result);
+        public virtual void OnCompletion(NodeParseResult result) {}
 
         protected void Transition(ISyntaxNodeFactory symbol, Action nextState) {
             StartDependency();
             Engine.AddDependency(symbol, Dispatcher, this, nextState);
+        }
+
+        protected void Transition(Grammar.ISymbol symbol, Action nextState) {
+            Transition(new SymbolNodeFactory(symbol), nextState);
+        }
+
+        protected void Transition<T>(Action nextState) where T : SyntaxNode, new() {
+            Transition(new GenericSyntaxNodeFactory<T>(), nextState);
+        }
+
+        protected void Transition(String text, Action nextState) {
+            Transition(new Grammar.StringTerminal(text), nextState);
         }
 
         protected void Accept() {

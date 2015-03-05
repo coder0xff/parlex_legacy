@@ -618,7 +618,7 @@ namespace Automata {
                 if (!ProprocessedIsEquivalent(thatMinDfa)) {
                     TransitionFunction[transition.FromState][transition.Symbol].Add(transition.ToState);
                 } else {
-                    System.Diagnostics.Debug.WriteLine("Trimmed transition");
+                    //System.Diagnostics.Debug.WriteLine("Trimmed transition");
                 }
             }
         }

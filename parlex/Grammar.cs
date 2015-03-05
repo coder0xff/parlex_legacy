@@ -135,9 +135,18 @@ namespace Parlex {
             }
             return result;
         }
-
+        
         public static String TryGetBuiltInNameBySymbol(ISymbol symbol) {
-            return NameToBuiltInSymbol.FirstOrDefault(kvp => kvp.Value == symbol).Key;
+            var entry = NameToBuiltInSymbol.FirstOrDefault(kvp => kvp.Value == symbol);
+            if (entry.Equals(default(KeyValuePair<String, ISymbol>))) {
+                return null;
+            }
+            return entry.Key;
+        }
+
+        public static FieldInfo TryGetBuiltInFieldBySymbol(ISymbol symbol) {
+            FieldInfo field;
+            return TryGetBuiltinFieldByName(symbol.Name, out field) ? field : null;
         }
 
         public class CharacterSetTerminal : ITerminal {
@@ -470,10 +479,14 @@ namespace Parlex {
             text = text.Replace("\n", "\\a");
             text = text.Replace("\r", "\\a");
             text = text.Replace("\t", "\\a");
-            text = text.Replace("'", "\'");
+            //text = text.Replace("'", "\'");
             text = text.Replace("\"", "\\\"");
-            text = text.Replace("?", "\\?");
+            //text = text.Replace("?", "\\?");
             return "\"" + text + "\"";
+        }
+
+        public static bool IsBuiltIn(ISymbol transition) {
+            return NameToBuiltInSymbol.ContainsValue(transition);
         }
     }
 }
