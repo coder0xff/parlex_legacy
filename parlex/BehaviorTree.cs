@@ -180,13 +180,13 @@ namespace Parlex {
         }
 
         public GNfa ToNfa() {
-            return Root.ToNfa();
+            return Root.ToNfa().Minimized();
         }
 
         public class Choice : Node {
             public readonly List<Node> Children = new List<Node>();
 
-            private void expandNestedChoices() {
+            private void FlattenNestedChoices() {
                 Node[] oldChildren = Children.ToArray();
                 Children.Clear();
                 foreach (Node oldChild in oldChildren) {
@@ -205,12 +205,12 @@ namespace Parlex {
             }
 
             internal override void Optimize() {
-                expandNestedChoices();
+                FlattenNestedChoices();
                 //todo: convert some choices to options
             }
 
             internal override GNfa ToNfa() {
-                return GNfa.Union(Children.Select(x => x.ToNfa())).Minimized();
+                return GNfa.Union(Children.Select(x => x.ToNfa()));
             }
         }
 
@@ -259,7 +259,6 @@ namespace Parlex {
                 foreach (GState startState in result.StartStates) {
                     result.AcceptStates.Add(startState);
                 }
-                result = result.Minimized();
                 return result;
             }
         }
@@ -297,7 +296,6 @@ namespace Parlex {
                 foreach (GState startState in result.StartStates) {
                     result.AcceptStates.Add(startState);
                 }
-                result = result.Minimized();
                 return result;
             }
         }
@@ -305,7 +303,7 @@ namespace Parlex {
         public class Sequence : Node {
             public readonly List<Node> Children = new List<Node>();
 
-            internal void expandNestedSequences() {
+            private void FlattenNestedSequences() {
                 Node[] oldChildren = Children.ToArray();
                 Children.Clear();
                 foreach (Node oldChild in oldChildren) {
@@ -324,7 +322,7 @@ namespace Parlex {
             }
 
             internal override void Optimize() {
-                expandNestedSequences();
+                FlattenNestedSequences();
             }
 
             internal override GNfa ToNfa() {
@@ -337,7 +335,6 @@ namespace Parlex {
                     GNfa childNfa = child.ToNfa();
                     result.Insert(result.AcceptStates.First(), childNfa);
                 }
-                result = result.Minimized();
                 return result;
             }
         }
