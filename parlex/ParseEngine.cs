@@ -1,23 +1,24 @@
-﻿using System;
+﻿//#define PARSE_TRACE
+using System;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
 namespace Parlex {
-    internal class ParseEngine {
+    public class ParseEngine {
         internal readonly Int32[] CodePoints;
         private readonly ISyntaxNodeFactory _main;
         private int _activeDispatcherCount;
         private readonly Dictionary<MatchCategory, Dispatcher> _dispatchers = new Dictionary<MatchCategory, Dispatcher>();
         private readonly ManualResetEventSlim _blocker = new ManualResetEventSlim();
-        internal AbstractSyntaxGraph AbstractSyntaxGraph { get; private set; }
+        public AbstractSyntaxGraph AbstractSyntaxGraph { get; private set; }
         private readonly int _start;
         private readonly int _length;
-        public readonly CustomThreadPool ThreadPool = new CustomThreadPool();
+        internal readonly CustomThreadPool ThreadPool = new CustomThreadPool();
         private readonly Action _idleHandler;
 
-        internal ParseEngine(String document, int start, int length, ISyntaxNodeFactory main) {
+        public ParseEngine(string document, ISyntaxNodeFactory main, int start = 0, int length = -1) {
             _start = start;
             CodePoints = document.GetUtf32CodePoints();
             _length = length < 0 ? CodePoints.Length : length;
@@ -26,6 +27,9 @@ namespace Parlex {
             ThreadPool.OnIdle += _idleHandler;
             StartParse();
         }
+
+        public ParseEngine(string document, Type mainSyntaxNode, int start = 0, int length = -1) :
+            this(document, new GenericSyntaxNodeFactory(mainSyntaxNode), start, length) { }
 
         internal class Dispatcher : MatchCategory {
             internal class DependencyEntry {
@@ -48,18 +52,24 @@ namespace Parlex {
                 : base(position, symbol) {
                 _threadPool = threadPool;
                 IsGreedy = symbol.IsGreedy;
-                //Debug.WriteLine("Creating Dispatcher " + this);
+#if PARSE_TRACE
+                System.Diagnostics.Debug.WriteLine("Creating Dispatcher " + this);
+#endif
             }
 
             internal void AddResult(Match match) {
-                //Debug.WriteLine("Adding Match " + match);
+#if PARSE_TRACE
+                System.Diagnostics.Debug.WriteLine("Adding Match " + match);
+#endif
                 lock (Matches) {
                     Matches.Add(match);
                 }
                 if (!IsGreedy) {
                     lock (_matchClasses) {
                         if (!_matchClasses.Contains(match.MatchClass)) {
-                            //Debug.WriteLine("New MatchClass " + match.MatchClass);
+#if PARSE_TRACE
+                            System.Diagnostics.Debug.WriteLine("New MatchClass " + match.MatchClass);
+#endif
                             _matchClasses.Add(match.MatchClass);
                             ScheduleFlush();
                         }
@@ -68,7 +78,9 @@ namespace Parlex {
             }
 
             internal void AddDependency(Dispatcher dependent, SyntaxNode node, Action handler) {
-                //Debug.WriteLine("Creating dependency by Dispatcher " + dependent + " on Dispatcher " + this);
+#if PARSE_TRACE
+                System.Diagnostics.Debug.WriteLine("Creating dependency by Dispatcher " + dependent + " on Dispatcher " + this);
+#endif
                 lock (Dependents) {
                     Dependents.Add(new DependencyEntry { Node = node, Handler = handler, Context = node._context.Value, Dependent = dependent }); //context is TLS
                 }
@@ -85,7 +97,9 @@ namespace Parlex {
                         foreach (var dependencyEntry in Dependents) {
                             while (dependencyEntry.FifoIndex < _matchClasses.Count) {
                                 var matchClass = _matchClasses[dependencyEntry.FifoIndex];
-                                //Debug.WriteLine("Sending " + matchClass + " to " + dependencyEntry.Dependent);
+#if PARSE_TRACE
+                                System.Diagnostics.Debug.WriteLine("Sending " + matchClass + " to " + dependencyEntry.Dependent);
+#endif
                                 dependencyEntry.FifoIndex++;
                                 var newPos = dependencyEntry.Context.Position + matchClass.Length;
                                 var newChain = new List<MatchClass>(dependencyEntry.Context.ParseChain) { matchClass };
@@ -98,7 +112,9 @@ namespace Parlex {
                             }
                             if (Completed && !dependencyEntry.Ended) {
                                 dependencyEntry.Ended = true;
-                                //Debug.WriteLine("Informing " + dependencyEntry.Dependent + " that " + this + " has completed");
+#if PARSE_TRACE
+                                System.Diagnostics.Debug.WriteLine("Informing " + dependencyEntry.Dependent + " that " + this + " has completed");
+#endif
                                 dependencyEntry.Node.EndDependency();
                             }
                         }
@@ -115,7 +131,9 @@ namespace Parlex {
                             lock (_matchClasses) {
                                 foreach (var matchClass in Matches.Where(match => match.Length == length).Select(match => match.MatchClass)) {
                                     if (!_matchClasses.Contains(matchClass)) {
-                                        //Debug.WriteLine("New MatchClass (greedy) " + matchClass);
+#if PARSE_TRACE
+                                        System.Diagnostics.Debug.WriteLine("New MatchClass (greedy) " + matchClass);
+#endif
                                         _matchClasses.Add(matchClass);
                                     }
                                 }
@@ -161,7 +179,9 @@ namespace Parlex {
         }
 
         private void OnDispatcherTerminated(Dispatcher dispatcher) {
-            //Debug.WriteLine("Terminating Dispatcher " + dispatcher);
+#if PARSE_TRACE
+            System.Diagnostics.Debug.WriteLine("Terminating Dispatcher " + dispatcher);
+#endif
             if (Interlocked.Decrement(ref _activeDispatcherCount) == 0) {
                 Finish();
             }
@@ -239,7 +259,7 @@ namespace Parlex {
         }
 
         private void DeadLockBreaker() {
-            //The should only be called when a complete work stopage is detected
+            //This should only be called when a complete work stopage is detected
             //As such, locking is not needed
             var dispatchers = _dispatchers.Values.Where(dispatcher => !dispatcher.Completed).ToArray();
             //construct the flow graph
