@@ -10,16 +10,16 @@ namespace Parlex {
     public static class WirthSyntaxNotation {
         private const String PlaceHolderMarker = "6CC3C4B8-33EC-4093-ADB4-418C2BA0E97B ";
         public static readonly Grammar WorthSyntaxNotationParserGrammar;
-        private static readonly ITerminal EqualsTerminal = new Grammar.StringTerminal("=");
-        private static readonly ITerminal PeriodTerminal = new Grammar.StringTerminal(".");
-        private static readonly ITerminal PipeTerminal = new Grammar.StringTerminal("|");
-        private static readonly ITerminal OpenParenthesisTerminal = new Grammar.StringTerminal("(");
-        private static readonly ITerminal CloseParenthesisTerminal = new Grammar.StringTerminal(")");
-        private static readonly ITerminal OpenSquareTerminal = new Grammar.StringTerminal("[");
-        private static readonly ITerminal CloseSquareTerminal = new Grammar.StringTerminal("]");
-        private static readonly ITerminal OpenCurlyTerminal = new Grammar.StringTerminal("{");
-        private static readonly ITerminal CloseCurlyTerminal = new Grammar.StringTerminal("}");
-        private static readonly ITerminal UnderscoreTerminal = new Grammar.StringTerminal("_");
+        private static readonly ITerminal EqualsTerminal = new StringTerminal("=");
+        private static readonly ITerminal PeriodTerminal = new StringTerminal(".");
+        private static readonly ITerminal PipeTerminal = new StringTerminal("|");
+        private static readonly ITerminal OpenParenthesisTerminal = new StringTerminal("(");
+        private static readonly ITerminal CloseParenthesisTerminal = new StringTerminal(")");
+        private static readonly ITerminal OpenSquareTerminal = new StringTerminal("[");
+        private static readonly ITerminal CloseSquareTerminal = new StringTerminal("]");
+        private static readonly ITerminal OpenCurlyTerminal = new StringTerminal("{");
+        private static readonly ITerminal CloseCurlyTerminal = new StringTerminal("}");
+        private static readonly ITerminal UnderscoreTerminal = new StringTerminal("_");
         private static readonly NfaProduction Syntax = new NfaProduction("syntax", true, true);
         private static readonly NfaProduction Production = new NfaProduction("production", true, false);
         private static readonly NfaProduction Expression = new NfaProduction("expression", true, true);
@@ -37,7 +37,7 @@ namespace Parlex {
             Syntax.AcceptStates.Add(syntaxState0);
             Syntax.AcceptStates.Add(syntaxState1);
             Syntax.TransitionFunction[syntaxState0][Production].Add(syntaxState0);
-            Syntax.TransitionFunction[syntaxState0][Grammar.WhiteSpaces].Add(syntaxState1);
+            Syntax.TransitionFunction[syntaxState0][StandardSymbols.WhiteSpaces].Add(syntaxState1);
 
             var productionState0 = new Nfa<ISymbol>.State();
             var productionState1 = new Nfa<ISymbol>.State();
@@ -52,10 +52,10 @@ namespace Parlex {
             Production.StartStates.Add(productionState0);
             Production.AcceptStates.Add(productionState4);
             Production.TransitionFunction[productionState0][Identifier].Add(productionState1);
-            Production.TransitionFunction[productionState1][Grammar.WhiteSpaces].Add(productionState1);
+            Production.TransitionFunction[productionState1][StandardSymbols.WhiteSpaces].Add(productionState1);
             Production.TransitionFunction[productionState1][EqualsTerminal].Add(productionState2);
             Production.TransitionFunction[productionState2][Expression].Add(productionState3);
-            Production.TransitionFunction[productionState3][Grammar.WhiteSpaces].Add(productionState3);
+            Production.TransitionFunction[productionState3][StandardSymbols.WhiteSpaces].Add(productionState3);
             Production.TransitionFunction[productionState3][PeriodTerminal].Add(productionState4);
 
             var expressionState0 = new Nfa<ISymbol>.State();
@@ -65,7 +65,7 @@ namespace Parlex {
             Expression.StartStates.Add(expressionState0);
             Expression.AcceptStates.Add(expressionState1);
             Expression.TransitionFunction[expressionState0][Term].Add(expressionState1);
-            Expression.TransitionFunction[expressionState1][Grammar.WhiteSpaces].Add(expressionState1);
+            Expression.TransitionFunction[expressionState1][StandardSymbols.WhiteSpaces].Add(expressionState1);
             Expression.TransitionFunction[expressionState1][PipeTerminal].Add(expressionState0);
 
             var termState0 = new Nfa<ISymbol>.State();
@@ -97,7 +97,7 @@ namespace Parlex {
             Factor.States.Add(factorState8);
             Factor.StartStates.Add(factorState0);
             Factor.AcceptStates.Add(factorState1);
-            Factor.TransitionFunction[factorState0][Grammar.WhiteSpaces].Add(factorState8);
+            Factor.TransitionFunction[factorState0][StandardSymbols.WhiteSpaces].Add(factorState8);
             Factor.TransitionFunction[factorState0][Identifier].Add(factorState1);
             Factor.TransitionFunction[factorState0][Literal].Add(factorState1);
             Factor.TransitionFunction[factorState0][OpenSquareTerminal].Add(factorState2);
@@ -119,10 +119,10 @@ namespace Parlex {
             Identifier.States.Add(identifierState1);
             Identifier.StartStates.Add(identifierState0);
             Identifier.AcceptStates.Add(identifierState1);
-            Identifier.TransitionFunction[identifierState0][Grammar.WhiteSpaces].Add(identifierState0);
-            Identifier.TransitionFunction[identifierState0][Grammar.AlphaNumericTerminal].Add(identifierState1);
+            Identifier.TransitionFunction[identifierState0][StandardSymbols.WhiteSpaces].Add(identifierState0);
+            Identifier.TransitionFunction[identifierState0][StandardSymbols.AlphaNumericTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState0][UnderscoreTerminal].Add(identifierState1);
-            Identifier.TransitionFunction[identifierState1][Grammar.AlphaNumericTerminal].Add(identifierState1);
+            Identifier.TransitionFunction[identifierState1][StandardSymbols.AlphaNumericTerminal].Add(identifierState1);
             Identifier.TransitionFunction[identifierState1][UnderscoreTerminal].Add(identifierState1);
 
             var literalState0 = new Nfa<ISymbol>.State();
@@ -131,8 +131,8 @@ namespace Parlex {
             Literal.States.Add(literalState1);
             Literal.StartStates.Add(literalState0);
             Literal.AcceptStates.Add(literalState1);
-            Literal.TransitionFunction[literalState0][Grammar.WhiteSpaces].Add(literalState0);
-            Literal.TransitionFunction[literalState0][Grammar.StringLiteral].Add(literalState1);
+            Literal.TransitionFunction[literalState0][StandardSymbols.WhiteSpaces].Add(literalState0);
+            Literal.TransitionFunction[literalState0][StandardSymbols.StringLiteral].Add(literalState1);
 
             WorthSyntaxNotationParserGrammar = new Grammar();
             WorthSyntaxNotationParserGrammar.Productions.Add(Syntax);
@@ -172,7 +172,7 @@ namespace Parlex {
             }
 
             if (firstChild.Symbol.Is(Literal)) {
-                var transition = new Grammar.StringTerminal(ProcessLiteralClause(job, firstChild));
+                var transition = new StringTerminal(ProcessLiteralClause(job, firstChild));
                 var result = new Nfa<ISymbol>();
                 var state0 = new Nfa<ISymbol>.State();
                 result.StartStates.Add(state0);
@@ -230,7 +230,7 @@ namespace Parlex {
             }
 
             if (firstChild.Symbol.Is(Literal)) {
-                var transition = new Grammar.StringTerminal(ProcessLiteralClause(job, firstChild));
+                var transition = new StringTerminal(ProcessLiteralClause(job, firstChild));
                 return new BehaviorTree.Leaf(transition);
             }
 
@@ -265,7 +265,7 @@ namespace Parlex {
             result.States.Add(state);
             result.AcceptStates.Add(state);
             foreach (MatchClass matchClass in term.Children) {
-                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) {
+                if (matchClass.Symbol == StandardSymbols.WhiteSpaceTerminal) {
                     continue;
                 }
                 Match factor = job.AbstractSyntaxGraph.NodeTable[matchClass].First();
@@ -280,7 +280,7 @@ namespace Parlex {
         private static BehaviorTree.Node ProcessTermClause2(Parser.Job job, Match term) {
             var result = new BehaviorTree.Sequence();
             foreach (MatchClass matchClass in term.Children) {
-                if (matchClass.Symbol.Is(Grammar.WhiteSpaceTerminal)) {
+                if (matchClass.Symbol.Is(StandardSymbols.WhiteSpaceTerminal)) {
                     continue;
                 }
                 Match factor = job.AbstractSyntaxGraph.NodeTable[matchClass].First();
@@ -326,7 +326,7 @@ namespace Parlex {
 
         private static void ProcessSyntaxClause(Parser.Job job, Match syntax, Grammar result) {
             foreach (MatchClass matchClass in syntax.Children) {
-                if (matchClass.Symbol == Grammar.WhiteSpaceTerminal) {
+                if (matchClass.Symbol == StandardSymbols.WhiteSpaceTerminal) {
                     continue;
                 }
                 NfaProduction production = ProcessProductionClause(job, job.AbstractSyntaxGraph.NodeTable[matchClass].First());
@@ -346,7 +346,7 @@ namespace Parlex {
                                 toRemoves.Add(symbol);
                                 string deMarkedName = symbolAsRecognizer.Name.Substring(PlaceHolderMarker.Length);
                                 ISymbol resolved;
-                                if (!Grammar.TryGetBuiltinISymbolByName(deMarkedName, out resolved)) {
+                                if (!StandardSymbols.TryGetBuiltinISymbolByName(deMarkedName, out resolved)) {
                                     resolved =
                                         grammar.GetRecognizerByName(deMarkedName) ??
                                         new NfaProduction(deMarkedName, false, false);
@@ -436,14 +436,14 @@ namespace Parlex {
 
         private static String BehaviorTreeTerminalToString(BehaviorTree.Leaf leaf) {
             string temp = leaf.Symbol.ToString();
-            if (leaf.Symbol is Grammar.StringTerminal) {
+            if (leaf.Symbol is StringTerminal) {
                 if (temp == "\"") {
                     temp = "doubleQuote";
                 } else {
                     temp = Grammar.QuoteStringLiteral(temp);
                 }
             }
-            String temp2 = Grammar.TryGetBuiltInNameBySymbol(leaf.Symbol);
+            String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(leaf.Symbol);
             if (temp2 != null) temp = temp2;
             return temp;
         }

@@ -26,7 +26,7 @@ namespace Parlex {
         }
 
         internal void StripWhiteSpaceEaters() {
-            Children = Children.Where(x => !x.Symbol.Is(Grammar.WhiteSpaces)).ToArray();
+            Children = Children.Where(x => !x.Symbol.Is(StandardSymbols.WhiteSpaces)).ToArray();
         }
 
     }

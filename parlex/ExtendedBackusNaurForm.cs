@@ -52,7 +52,7 @@ namespace Parlex {
             }
 
             internal class TerminalNode : RewriteRuleNode {
-                internal Grammar.StringTerminal terminalString;
+                internal StringTerminal terminalString;
             }
 
             //RewriteRuleNode definition;

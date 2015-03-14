@@ -42,7 +42,7 @@ namespace Parlex {
         }
 
         protected void Transition(String text, Action nextState) {
-            Transition(new Grammar.StringTerminal(text), nextState);
+            Transition(new StringTerminal(text), nextState);
         }
 
         protected void Accept() {

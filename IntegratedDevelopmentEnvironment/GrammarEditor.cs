@@ -442,8 +442,8 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void toolStripButtonLeaf_Click(object sender, EventArgs e) {
-            var treeNode = new TreeNode(Grammar.CharacterTerminal.Name);
-            var leaf = new BehaviorTree.Leaf(Grammar.CharacterTerminal);
+            var treeNode = new TreeNode(StandardSymbols.CharacterTerminal.Name);
+            var leaf = new BehaviorTree.Leaf(StandardSymbols.CharacterTerminal);
             SetTagValue(treeNode, "behavior", leaf);
             AddTreeChild(treeNode);
             AddBehaviorTreeNodeChild(GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior"), leaf);
@@ -457,7 +457,7 @@ namespace IntegratedDevelopmentEnvironment {
             var leaf = behaviorNode as BehaviorTree.Leaf;
             if (leaf != null) {
                 editText = leaf.Symbol.Name;
-                if (leaf.Symbol is Grammar.StringTerminal) {
+                if (leaf.Symbol is StringTerminal) {
                     editText = leaf.Symbol.ToString();
                     TrySyncBehaviorsToGrammar();
                     if (_grammar != null && _grammar.GetSymbol(editText) != null) {
@@ -497,7 +497,7 @@ namespace IntegratedDevelopmentEnvironment {
                     symbol = tempGrammar.GetSymbol(editText);
                 }
                 if (symbol == null) {
-                    symbol = new Grammar.StringTerminal(editText);
+                    symbol = new StringTerminal(editText);
                 }
                 editText = "Symbol: " + symbol.Name;
                 GetTagValue<BehaviorTree.Leaf>(e.Node, "behavior").Symbol = symbol;

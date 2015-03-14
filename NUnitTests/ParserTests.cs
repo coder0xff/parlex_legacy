@@ -16,8 +16,8 @@ namespace NUnitTests {
             identifier.States.Add(identifier1);
             identifier.StartStates.Add(identifier0);
             identifier.AcceptStates.Add(identifier1);
-            identifier.TransitionFunction[identifier0][Grammar.LetterTerminal].Add(identifier1);
-            identifier.TransitionFunction[identifier1][Grammar.LetterTerminal].Add(identifier1);
+            identifier.TransitionFunction[identifier0][StandardSymbols.LetterTerminal].Add(identifier1);
+            identifier.TransitionFunction[identifier1][StandardSymbols.LetterTerminal].Add(identifier1);
 
             var syntax = new NfaProduction("syntax", false, false);
             var syntax0 = new Nfa<ISymbol>.State();
@@ -31,7 +31,7 @@ namespace NUnitTests {
             syntax.StartStates.Add(syntax0);
             syntax.AcceptStates.Add(syntax3);
             syntax.TransitionFunction[syntax0][identifier].Add(syntax1);
-            syntax.TransitionFunction[syntax1][new Grammar.StringTerminal("=")].Add(syntax2);
+            syntax.TransitionFunction[syntax1][new StringTerminal("=")].Add(syntax2);
             syntax.TransitionFunction[syntax2][identifier].Add(syntax3);
 
             g.Productions.Add(syntax);

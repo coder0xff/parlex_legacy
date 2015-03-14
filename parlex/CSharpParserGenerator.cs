@@ -39,11 +39,11 @@ namespace Parlex {
             foreach (var transitionAndToStates in nfa.TransitionFunction[fromState]) {
                 var transition = transitionAndToStates.Key;
                 foreach (var toState in transitionAndToStates.Value) {
-                    var asStringTerminal = transition as Grammar.StringTerminal;
+                    var asStringTerminal = transition as StringTerminal;
                     if (asStringTerminal != null) {
                         builder.AppendLine("\t\t\tTransition(" + Grammar.QuoteStringLiteral(asStringTerminal.ToString()) + ", State" + toState.Value + ");");                        
-                    } else if (Grammar.IsBuiltIn(transition)) {
-                        builder.AppendLine("\t\t\tTransition(Grammar." + Grammar.TryGetBuiltInFieldBySymbol(transition).Name + ", State" + toState.Value + ");");
+                    } else if (StandardSymbols.IsBuiltIn(transition)) {
+                        builder.AppendLine("\t\t\tTransition(Grammar." + StandardSymbols.TryGetBuiltInFieldBySymbol(transition).Name + ", State" + toState.Value + ");");
                     } else {
                         builder.AppendLine("\t\t\tTransition<" + nameMap[transition] + ">(State" + toState.Value + ");");
                     }

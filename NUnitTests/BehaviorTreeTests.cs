@@ -30,7 +30,7 @@ namespace NUnitTests {
                 }
                 Nfa<ISymbol>.State[] indexableStates = nfa.States.ToArray();
                 for (int i = 0; i < transitionCount; ++i) {
-                    var symbol = new Grammar.StringTerminal(('A' + i).ToString(CultureInfo.InvariantCulture));
+                    var symbol = new StringTerminal(('A' + i).ToString(CultureInfo.InvariantCulture));
                     Nfa<ISymbol>.State fromState = indexableStates[rnd.Next(0, stateCount)];
                     Nfa<ISymbol>.State toState = indexableStates[rnd.Next(0, stateCount)];
                     nfa.TransitionFunction[fromState][symbol].Add(toState);

@@ -12,7 +12,7 @@ namespace Parlex {
         private Dictionary<ISymbol, String> SerializeStringTerminals(StreamWriter s, Grammar grammar) {
             var results = new Dictionary<ISymbol, String>();
             var stringTerminals = grammar.Productions.SelectMany(production =>
-                production.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is Grammar.StringTerminal).Cast<Grammar.StringTerminal>()
+                production.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminal).Cast<StringTerminal>()
                 ).ToArray();
             for (var i = 0; i < stringTerminals.Length; i++) {
                 var name = "StringTerminal" + i;
@@ -71,7 +71,7 @@ namespace Parlex {
                     symbolName = stringTerminalNames[transition.Symbol];
                 } else {
                     FieldInfo field;
-                    if (Grammar.TryGetBuiltinFieldByName(symbolName, out field)) {
+                    if (StandardSymbols.TryGetBuiltinFieldByName(symbolName, out field)) {
                         symbolName = field.DeclaringType.FullName + "." + field.Name;
                         if (symbolName.StartsWith("Parlex.")) {
                             symbolName = symbolName.Substring("Parlex.".Length);
