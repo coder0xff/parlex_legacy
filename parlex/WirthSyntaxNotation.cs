@@ -10,16 +10,16 @@ namespace Parlex {
     public static class WirthSyntaxNotation {
         private const String PlaceHolderMarker = "6CC3C4B8-33EC-4093-ADB4-418C2BA0E97B ";
         public static readonly Grammar WorthSyntaxNotationParserGrammar;
-        private static readonly Grammar.ITerminal EqualsTerminal = new Grammar.StringTerminal("=");
-        private static readonly Grammar.ITerminal PeriodTerminal = new Grammar.StringTerminal(".");
-        private static readonly Grammar.ITerminal PipeTerminal = new Grammar.StringTerminal("|");
-        private static readonly Grammar.ITerminal OpenParenthesisTerminal = new Grammar.StringTerminal("(");
-        private static readonly Grammar.ITerminal CloseParenthesisTerminal = new Grammar.StringTerminal(")");
-        private static readonly Grammar.ITerminal OpenSquareTerminal = new Grammar.StringTerminal("[");
-        private static readonly Grammar.ITerminal CloseSquareTerminal = new Grammar.StringTerminal("]");
-        private static readonly Grammar.ITerminal OpenCurlyTerminal = new Grammar.StringTerminal("{");
-        private static readonly Grammar.ITerminal CloseCurlyTerminal = new Grammar.StringTerminal("}");
-        private static readonly Grammar.ITerminal UnderscoreTerminal = new Grammar.StringTerminal("_");
+        private static readonly ITerminal EqualsTerminal = new Grammar.StringTerminal("=");
+        private static readonly ITerminal PeriodTerminal = new Grammar.StringTerminal(".");
+        private static readonly ITerminal PipeTerminal = new Grammar.StringTerminal("|");
+        private static readonly ITerminal OpenParenthesisTerminal = new Grammar.StringTerminal("(");
+        private static readonly ITerminal CloseParenthesisTerminal = new Grammar.StringTerminal(")");
+        private static readonly ITerminal OpenSquareTerminal = new Grammar.StringTerminal("[");
+        private static readonly ITerminal CloseSquareTerminal = new Grammar.StringTerminal("]");
+        private static readonly ITerminal OpenCurlyTerminal = new Grammar.StringTerminal("{");
+        private static readonly ITerminal CloseCurlyTerminal = new Grammar.StringTerminal("}");
+        private static readonly ITerminal UnderscoreTerminal = new Grammar.StringTerminal("_");
         private static readonly NfaProduction Syntax = new NfaProduction("syntax", true, true);
         private static readonly NfaProduction Production = new NfaProduction("production", true, false);
         private static readonly NfaProduction Expression = new NfaProduction("expression", true, true);

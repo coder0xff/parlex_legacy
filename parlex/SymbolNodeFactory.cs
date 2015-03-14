@@ -17,12 +17,12 @@ namespace Parlex {
         }
 
         private readonly NfaProduction _production;
-        private readonly Grammar.ITerminal _terminal;
+        private readonly ITerminal _terminal;
 
         public SymbolNodeFactory(ISymbol symbol) {
             _production = symbol as NfaProduction;
             if (_production == null) {
-                _terminal = symbol as Grammar.ITerminal;
+                _terminal = symbol as ITerminal;
                 System.Diagnostics.Debug.Assert(_terminal != null);
             }
         }
@@ -52,7 +52,7 @@ namespace Parlex {
             return new TerminalSyntaxNode(_terminal);
         }
 
-        public bool Is(Grammar.ITerminal terminal) {
+        public bool Is(ITerminal terminal) {
             return _terminal == terminal;
         }
 

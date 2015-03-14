@@ -249,11 +249,6 @@ namespace Parlex {
             }
         }
 
-        public interface ITerminal : ISymbol {
-            int Length { get; }
-            bool Matches(Int32[] documentUtf32CodePoints, int documentIndex);
-        }
-
         public class LetterTerminalT : ITerminal {
             public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex >= documentUtf32CodePoints.Length) {

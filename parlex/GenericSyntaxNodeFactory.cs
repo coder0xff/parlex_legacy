@@ -13,7 +13,7 @@ namespace Parlex {
             return new T();
         }
 
-        bool ISyntaxNodeFactory.Is(Grammar.ITerminal terminal) {
+        bool ISyntaxNodeFactory.Is(ITerminal terminal) {
             return false;
         }
 
@@ -75,7 +75,7 @@ namespace Parlex {
             return _backing.Create();
         }
 
-        bool ISyntaxNodeFactory.Is(Grammar.ITerminal terminal) {
+        bool ISyntaxNodeFactory.Is(ITerminal terminal) {
             return _backing.Is(terminal);
         }
 
