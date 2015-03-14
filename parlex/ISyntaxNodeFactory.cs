@@ -10,6 +10,6 @@ namespace Parlex {
         Boolean IsGreedy { get; }
         SyntaxNode Create();
         bool Is(Grammar.ITerminal terminal);
-        bool Is(Grammar.Production production);
+        bool Is(NfaProduction production);
     }
 }

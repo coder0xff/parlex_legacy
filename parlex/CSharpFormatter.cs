@@ -9,8 +9,8 @@ using Automata;
 
 namespace Parlex {
     public class CSharpFormatter : IGrammarFormatter {
-        private Dictionary<Grammar.ISymbol, String> SerializeStringTerminals(StreamWriter s, Grammar grammar) {
-            var results = new Dictionary<Grammar.ISymbol, String>();
+        private Dictionary<ISymbol, String> SerializeStringTerminals(StreamWriter s, Grammar grammar) {
+            var results = new Dictionary<ISymbol, String>();
             var stringTerminals = grammar.Productions.SelectMany(production =>
                 production.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is Grammar.StringTerminal).Cast<Grammar.StringTerminal>()
                 ).ToArray();
@@ -43,15 +43,15 @@ namespace Parlex {
             return result.ToString();
         }
 
-        private void DefineProduction(StreamWriter s, Grammar.Production production) {
+        private void DefineProduction(StreamWriter s, NfaProduction production) {
             var cSharpName = CSharpName(production.Name);
             s.WriteLine("\tprivate static readonly Grammar.Production " + cSharpName + " = new Grammar.Production(\"" + cSharpName + "\", " + (production.Greedy ? "true" : "false") + ", " + (production.EatWhiteSpace ? "true" : "false") + ");");
         }
 
-        private void SerializeProduction(StreamWriter s, Grammar.Production production, Dictionary<Grammar.ISymbol, string> stringTerminalNames) {
+        private void SerializeProduction(StreamWriter s, NfaProduction production, Dictionary<ISymbol, string> stringTerminalNames) {
             var cSharpName = CSharpName(production.Name);
             var lowerCSharpName = Char.ToLower(cSharpName[0]) + cSharpName.Substring(1);
-            var names = new Dictionary<Nfa<Grammar.ISymbol>.State, string>();
+            var names = new Dictionary<Nfa<ISymbol>.State, string>();
             int counter = 0;
             foreach (var state in production.States) {
                 names[state] = lowerCSharpName + "State" + counter;

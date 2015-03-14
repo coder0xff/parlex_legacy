@@ -58,12 +58,14 @@
     <Compile Include="IGrammarFormatter.cs" />
     <Compile Include="InvalidNfaOperationException.cs" />
     <Compile Include="IParserGenerator.cs" />
+    <Compile Include="ISymbol.cs" />
     <Compile Include="ISyntaxNodeFactory.cs" />
     <Compile Include="Match.cs" />
     <Compile Include="MatchCategory.cs" />
     <Compile Include="MatchClass.cs" />
     <Compile Include="NfaExtensions.cs" />
     <Compile Include="BehaviorTree.cs" />
+    <Compile Include="NfaProduction.cs" />
     <Compile Include="NfaSymbolNode.cs" />
     <Compile Include="NodeParseResult.cs" />
     <Compile Include="Parser.cs" />

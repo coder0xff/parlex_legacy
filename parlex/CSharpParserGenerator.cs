@@ -35,7 +35,7 @@ namespace Parlex {
             _namespace = @namespace;
         }
 
-        private void OutputTransitions(StringBuilder builder, String _namespace, AutoDictionary<Grammar.ISymbol, String> nameMap, Nfa<Grammar.ISymbol, int> nfa, Nfa<Grammar.ISymbol, int>.State fromState) {
+        private void OutputTransitions(StringBuilder builder, String _namespace, AutoDictionary<ISymbol, String> nameMap, Nfa<ISymbol, int> nfa, Nfa<ISymbol, int>.State fromState) {
             foreach (var transitionAndToStates in nfa.TransitionFunction[fromState]) {
                 var transition = transitionAndToStates.Key;
                 foreach (var toState in transitionAndToStates.Value) {
@@ -52,7 +52,7 @@ namespace Parlex {
         }
 
         public void Generate(string destinationDirectory, Grammar grammar, String parserName) {
-            var nameMap = new AutoDictionary<Grammar.ISymbol, String>(x => CSharpName(x.Name));
+            var nameMap = new AutoDictionary<ISymbol, String>(x => CSharpName(x.Name));
             foreach (var production in grammar.Productions) {
                 var nfa = production.Reassign();
                 var cSharpName = nameMap[production];

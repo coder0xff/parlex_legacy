@@ -3,8 +3,8 @@ using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using GNfa = Automata.Nfa<Parlex.Grammar.ISymbol>;
-using GState = Automata.Nfa<Parlex.Grammar.ISymbol>.State;
+using GNfa = Automata.Nfa<Parlex.ISymbol>;
+using GState = Automata.Nfa<Parlex.ISymbol>.State;
 using Nfa = Automata.Nfa<Parlex.BehaviorTree.Node>;
 using State = Automata.Nfa<Parlex.BehaviorTree.Node>.State;
 using Transition = Automata.Nfa<Parlex.BehaviorTree.Node>.Transition;
@@ -215,9 +215,9 @@ namespace Parlex {
         }
 
         public class Leaf : Node {
-            public Grammar.ISymbol Symbol;
+            public ISymbol Symbol;
 
-            public Leaf(Grammar.ISymbol symbol) {
+            public Leaf(ISymbol symbol) {
                 Symbol = symbol;
             }
 

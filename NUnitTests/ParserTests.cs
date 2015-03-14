@@ -9,9 +9,9 @@ namespace NUnitTests {
         [Test]
         public void TestMethod1() {
             var g = new Grammar();
-            var identifier = new Grammar.Production("identifier", true, false);
-            var identifier0 = new Nfa<Grammar.ISymbol>.State();
-            var identifier1 = new Nfa<Grammar.ISymbol>.State();
+            var identifier = new NfaProduction("identifier", true, false);
+            var identifier0 = new Nfa<ISymbol>.State();
+            var identifier1 = new Nfa<ISymbol>.State();
             identifier.States.Add(identifier0);
             identifier.States.Add(identifier1);
             identifier.StartStates.Add(identifier0);
@@ -19,11 +19,11 @@ namespace NUnitTests {
             identifier.TransitionFunction[identifier0][Grammar.LetterTerminal].Add(identifier1);
             identifier.TransitionFunction[identifier1][Grammar.LetterTerminal].Add(identifier1);
 
-            var syntax = new Grammar.Production("syntax", false, false);
-            var syntax0 = new Nfa<Grammar.ISymbol>.State();
-            var syntax1 = new Nfa<Grammar.ISymbol>.State();
-            var syntax2 = new Nfa<Grammar.ISymbol>.State();
-            var syntax3 = new Nfa<Grammar.ISymbol>.State();
+            var syntax = new NfaProduction("syntax", false, false);
+            var syntax0 = new Nfa<ISymbol>.State();
+            var syntax1 = new Nfa<ISymbol>.State();
+            var syntax2 = new Nfa<ISymbol>.State();
+            var syntax3 = new Nfa<ISymbol>.State();
             syntax.States.Add(syntax0);
             syntax.States.Add(syntax1);
             syntax.States.Add(syntax2);

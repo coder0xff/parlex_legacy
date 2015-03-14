@@ -70,14 +70,14 @@ namespace IntegratedDevelopmentEnvironment {
                 var tree = GetTagValue<BehaviorTree>((TreeNode)node, "tree");
                 var name = GetTagValue<String>((TreeNode)node, "name");
                 var greedy = GetTagValue<bool>((TreeNode)node, "greedy");
-                Automata.Nfa<Grammar.ISymbol> nfa;
+                Automata.Nfa<ISymbol> nfa;
                 try {
                     nfa = tree.ToNfa();
                 } catch (InvalidBehaviorTreeException) {
                     errors = true;
                     continue;
                 }
-                var production = new Grammar.Production(name, greedy, nfa);
+                var production = new NfaProduction(name, greedy, nfa);
                 grammar.Productions.Add(production);
             }
             grammar.MainProduction = grammar.GetRecognizerByName("SYNTAX");
@@ -258,7 +258,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         private void Populate_treeView() {
             treeView.Nodes.Clear();
-            foreach (Grammar.Production production in _grammar.Productions.OrderBy(x => x.Name)) {
+            foreach (NfaProduction production in _grammar.Productions.OrderBy(x => x.Name)) {
                 var behavior = new BehaviorTree(production);
                 TreeNode treeNode = BuildTreeNode(behavior.Root);
                 treeNode.Text = production.Name + " " + treeNode.Text;
@@ -481,7 +481,7 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void treeView_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
-            Grammar.ISymbol symbol = null;
+            ISymbol symbol = null;
             var editText = e.Label ?? e.Node.Text;
             String name;
             if (TryGetTagValue(e.Node, "name", out name)) {

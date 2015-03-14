@@ -17,7 +17,7 @@ namespace Parlex {
             return false;
         }
 
-        bool ISyntaxNodeFactory.Is(Grammar.Production production) {
+        bool ISyntaxNodeFactory.Is(NfaProduction production) {
             return false;
         }
 
@@ -79,7 +79,7 @@ namespace Parlex {
             return _backing.Is(terminal);
         }
 
-        bool ISyntaxNodeFactory.Is(Grammar.Production production) {
+        bool ISyntaxNodeFactory.Is(NfaProduction production) {
             return _backing.Is(production);
         }
 

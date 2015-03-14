@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Parlex {
     public class NfaSymbolNode : SyntaxNode {
-        private readonly Grammar.Production _production;
+        private readonly NfaProduction _production;
 
-        public NfaSymbolNode(Grammar.Production production) {
+        public NfaSymbolNode(NfaProduction production) {
             _production = production;
         }
 
@@ -18,7 +18,7 @@ namespace Parlex {
             }
         }
 
-        private void ProcessState(Grammar.Production.State state) {
+        private void ProcessState(NfaProduction.State state) {
             if (_production.AcceptStates.Contains(state)) {
                 Accept();
             }

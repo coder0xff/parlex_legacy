@@ -25,7 +25,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         class ErrorInfo {
             public readonly int Position;
-            public readonly Grammar.ISymbol Symbol;
+            public readonly ISymbol Symbol;
             public ErrorInfo(MatchCategory error) {
                 Position = error.Position;
                 //Symbol = error.Symbol;
@@ -39,7 +39,7 @@ namespace IntegratedDevelopmentEnvironment {
             bool errors;
             var grammar = _grammarEditor.GetGrammar(out errors);
             var parser = new Parser(grammar);
-            Grammar.Production m = grammar.MainProduction;
+            NfaProduction m = grammar.MainProduction;
             if (_main != null) {
                 m = grammar.GetRecognizerByName(_main);
             }

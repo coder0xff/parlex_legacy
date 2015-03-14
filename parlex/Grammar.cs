@@ -5,7 +5,6 @@ using System.Linq;
 using System.Linq.More;
 using System.Reflection;
 using System.Text;
-using Automata;
 
 namespace Parlex {
     public class Grammar {
@@ -37,22 +36,22 @@ namespace Parlex {
 
         public static readonly UnicodeEscapeSequnceTerminalT UnicodeEscapeSequnceTerminal = new UnicodeEscapeSequnceTerminalT();
 
-        public static readonly Production NewLine  = new Production("newLine", true, false);
+        public static readonly NfaProduction NewLine  = new NfaProduction("newLine", true, false);
 
-        public static readonly Production WhiteSpaces = new Production("whiteSpaces", true, false);
+        public static readonly NfaProduction WhiteSpaces = new NfaProduction("whiteSpaces", true, false);
 
-        public static readonly Production StringLiteral = new Production("stringLiteral", false, true);
+        public static readonly NfaProduction StringLiteral = new NfaProduction("stringLiteral", false, true);
 
         private static readonly Dictionary<String, ISymbol> NameToBuiltInSymbol = new Dictionary<string, ISymbol>();
 
-        public readonly List<Production> Productions = new List<Production>();
-        public Production MainProduction;
+        public readonly List<NfaProduction> Productions = new List<NfaProduction>();
+        public NfaProduction MainProduction;
 
         static Grammar() {
-            var newLineState0 = new Production.State();
-            var newLineState1 = new Production.State();
-            var newLineState2 = new Production.State();
-            var newLineState3 = new Production.State();
+            var newLineState0 = new NfaProduction.State();
+            var newLineState1 = new NfaProduction.State();
+            var newLineState2 = new NfaProduction.State();
+            var newLineState3 = new NfaProduction.State();
             NewLine.States.Add(newLineState0);
             NewLine.States.Add(newLineState1);
             NewLine.States.Add(newLineState2);
@@ -65,8 +64,8 @@ namespace Parlex {
             NewLine.TransitionFunction[newLineState1][LineFeedTerminal].Add(newLineState2);
             NewLine.TransitionFunction[newLineState0][LineFeedTerminal].Add(newLineState3);
 
-            var whiteSpacesState0 = new Production.State();
-            var whiteSpacesState1 = new Production.State();
+            var whiteSpacesState0 = new NfaProduction.State();
+            var whiteSpacesState1 = new NfaProduction.State();
             WhiteSpaces.States.Add(whiteSpacesState0);
             WhiteSpaces.States.Add(whiteSpacesState1);
             WhiteSpaces.StartStates.Add(whiteSpacesState0);
@@ -74,9 +73,9 @@ namespace Parlex {
             WhiteSpaces.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminal].Add(whiteSpacesState1);
             WhiteSpaces.TransitionFunction[whiteSpacesState1][WhiteSpaceTerminal].Add(whiteSpacesState1);
 
-            var stringLiteralState0 = new Production.State();
-            var stringLiteralState1 = new Production.State();
-            var stringLiteralState2 = new Production.State();
+            var stringLiteralState0 = new NfaProduction.State();
+            var stringLiteralState1 = new NfaProduction.State();
+            var stringLiteralState2 = new NfaProduction.State();
             StringLiteral.States.Add(stringLiteralState0);
             StringLiteral.States.Add(stringLiteralState1);
             StringLiteral.States.Add(stringLiteralState2);
@@ -107,7 +106,7 @@ namespace Parlex {
             NameToBuiltInSymbol["stringLiteral"] = StringLiteral;
         }
 
-        public Production GetRecognizerByName(String name) {
+        public NfaProduction GetRecognizerByName(String name) {
             return Productions.FirstOrDefault(x => x.Name == name);
         }
 
@@ -250,10 +249,6 @@ namespace Parlex {
             }
         }
 
-        public interface ISymbol {
-            String Name { get; }
-        }
-
         public interface ITerminal : ISymbol {
             int Length { get; }
             bool Matches(Int32[] documentUtf32CodePoints, int documentIndex);
@@ -323,41 +318,6 @@ namespace Parlex {
             public bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex >= documentUtf32CodePoints.Length) return false;
                 return documentUtf32CodePoints[documentIndex] == '\n';
-            }
-        }
-        
-        public class Production : Nfa<ISymbol>, ISymbol {
-            private readonly bool _eatTrailingWhitespace;
-            private readonly bool _greedy;
-            private String _name;
-
-            public Production(String name, bool greedy, bool eatTrailingWhitespace) {
-                _name = name;
-                _greedy = greedy;
-                _eatTrailingWhitespace = eatTrailingWhitespace;
-            }
-
-            public Production(String name, bool greedy, Nfa<ISymbol> source)
-                : base(source) {
-                _name = name;
-                _greedy = greedy;
-            }
-
-            public bool Greedy {
-                get { return _greedy; }
-            }
-
-            public bool EatWhiteSpace {
-                get { return _eatTrailingWhitespace; }
-            }
-
-            public String Name {
-                get { return _name; }
-                set { _name = value; }
-            }
-
-            public override string ToString() {
-                return Name;
             }
         }
 

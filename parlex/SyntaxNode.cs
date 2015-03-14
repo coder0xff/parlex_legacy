@@ -33,7 +33,7 @@ namespace Parlex {
             Engine.AddDependency(symbol, Dispatcher, this, nextState);
         }
 
-        protected void Transition(Grammar.ISymbol symbol, Action nextState) {
+        protected void Transition(ISymbol symbol, Action nextState) {
             Transition(new SymbolNodeFactory(symbol), nextState);
         }
 

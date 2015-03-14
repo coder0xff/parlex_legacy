@@ -5,19 +5,19 @@ using Automata;
 
 namespace Parlex {
     public class Parser {
-        private readonly Grammar.ISymbol _mainSymbol;
-        public Parser(Grammar grammar, Grammar.ISymbol mainSymbol = null) {
+        private readonly ISymbol _mainSymbol;
+        public Parser(Grammar grammar, ISymbol mainSymbol = null) {
             _mainSymbol = mainSymbol ?? grammar.MainProduction;
-            _factories = new AutoDictionary<Grammar.ISymbol, DynamicSyntaxNodeFactory>(symbol => new DynamicSyntaxNodeFactory(this, symbol));
+            _factories = new AutoDictionary<ISymbol, DynamicSyntaxNodeFactory>(symbol => new DynamicSyntaxNodeFactory(this, symbol));
         }
 
-        private readonly AutoDictionary<Grammar.ISymbol, DynamicSyntaxNodeFactory> _factories;
+        private readonly AutoDictionary<ISymbol, DynamicSyntaxNodeFactory> _factories;
 
         private class DynamicSyntaxNode : SyntaxNode {
-            private readonly Grammar.Production _production;
+            private readonly NfaProduction _production;
             private readonly Parser _parser;
 
-            public DynamicSyntaxNode(Parser parser, Grammar.Production production) {
+            public DynamicSyntaxNode(Parser parser, NfaProduction production) {
                 _production = production;
                 _parser = parser;
             }
@@ -28,7 +28,7 @@ namespace Parlex {
                 }
             }
 
-            private void ProcessState(Grammar.Production.State state) {
+            private void ProcessState(NfaProduction.State state) {
                 if (_production.AcceptStates.Contains(state)) {
                     Accept();
                 }
@@ -43,12 +43,12 @@ namespace Parlex {
 
         internal class DynamicSyntaxNodeFactory : ISyntaxNodeFactory {
             private readonly Parser _parser;
-            private readonly Grammar.Production _production;
+            private readonly NfaProduction _production;
             private readonly Grammar.ITerminal _terminal;
 
-            public DynamicSyntaxNodeFactory(Parser parser, Grammar.ISymbol symbol) {
+            public DynamicSyntaxNodeFactory(Parser parser, ISymbol symbol) {
                 _parser = parser;
-                _production = symbol as Grammar.Production;
+                _production = symbol as NfaProduction;
                 if (_production == null) {
                     _terminal = symbol as Grammar.ITerminal;
                     System.Diagnostics.Debug.Assert(_terminal != null);
@@ -84,7 +84,7 @@ namespace Parlex {
                 return _terminal == terminal;
             }
 
-            public bool Is(Grammar.Production production) {
+            public bool Is(NfaProduction production) {
                 return _production == production;
             }
 
@@ -111,7 +111,7 @@ namespace Parlex {
             }
         }
 
-        public Job Parse(String document, int start = 0, int length = -1, Grammar.ISymbol mainSymbol = null) {
+        public Job Parse(String document, int start = 0, int length = -1, ISymbol mainSymbol = null) {
             return new Job(document, start, length, _factories[mainSymbol ?? _mainSymbol]);
         }
     }
