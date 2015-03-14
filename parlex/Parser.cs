@@ -99,7 +99,7 @@ namespace Parlex {
             public String Document { get { return _document; } }
             internal Job(String document, int start, int length, DynamicSyntaxNodeFactory main) {
                 _document = document;
-                _engine = new ParseEngine(_document, start, length, main);
+                _engine = new ParseEngine(_document, main, start, length);
             }
 
             public AbstractSyntaxGraph AbstractSyntaxGraph { get { return _engine.AbstractSyntaxGraph; } }

@@ -47,7 +47,7 @@ namespace NUnitTests {
         public void TestMethod1() {
             for (int i = 0; i < 1000; i++) {
                 Debug.WriteLine("██████████ Iteration: " + i + " ██████████");
-                var parser = new ParseEngine("a+b", 0, 3, new GenericSyntaxNodeFactory<SumProduction>());
+                var parser = new ParseEngine("a+b", new GenericSyntaxNodeFactory<SumProduction>(), 0, 3);
                 parser.Join();
                 Debug.Assert(parser.AbstractSyntaxGraph.NodeTable.Count == 3);
             }
