@@ -362,6 +362,14 @@ namespace Parlex {
         }
 
         public class StringTerminal : ITerminal {
+            protected bool Equals(StringTerminal other) {
+                return string.Equals(_text, other._text);
+            }
+
+            public override int GetHashCode() {
+                return (_text != null ? _text.GetHashCode() : 0);
+            }
+
             private readonly String _text;
             private readonly Int32[] _unicodeCodePoints;
 
@@ -395,6 +403,19 @@ namespace Parlex {
 
             public override string ToString() {
                 return _text;
+            }
+
+            public override bool Equals(object obj) {
+                if (ReferenceEquals(null, obj)) {
+                    return false;
+                }
+                if (ReferenceEquals(this, obj)) {
+                    return true;
+                }
+                if (obj.GetType() != this.GetType()) {
+                    return false;
+                }
+                return Equals((StringTerminal)obj);
             }
         }
 
