@@ -490,7 +490,7 @@ namespace IntegratedDevelopmentEnvironment {
                 editText = editText + " " + GetTagValue<BehaviorTree.Node>(e.Node, "behavior").GetType().Name;
             } else {
                 var asUtf32 = editText.GetUtf32CodePoints();
-                String asStringLiteral = Grammar.ProcessStringLiteral(asUtf32, 0, asUtf32.Length);
+                String asStringLiteral = Util.ProcessStringLiteral(asUtf32, 0, asUtf32.Length);
                 if (asStringLiteral == null) {
                     bool doNotCare;
                     var tempGrammar = BehaviorsToGrammar(out doNotCare);

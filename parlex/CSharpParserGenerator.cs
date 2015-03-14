@@ -41,7 +41,7 @@ namespace Parlex {
                 foreach (var toState in transitionAndToStates.Value) {
                     var asStringTerminal = transition as StringTerminal;
                     if (asStringTerminal != null) {
-                        builder.AppendLine("\t\t\tTransition(" + Grammar.QuoteStringLiteral(asStringTerminal.ToString()) + ", State" + toState.Value + ");");                        
+                        builder.AppendLine("\t\t\tTransition(" + Util.QuoteStringLiteral(asStringTerminal.ToString()) + ", State" + toState.Value + ");");                        
                     } else if (StandardSymbols.IsBuiltIn(transition)) {
                         builder.AppendLine("\t\t\tTransition(Grammar." + StandardSymbols.TryGetBuiltInFieldBySymbol(transition).Name + ", State" + toState.Value + ");");
                     } else {

@@ -150,7 +150,7 @@ namespace Parlex {
         }
 
         private static string ProcessLiteralClause(Parser.Job job, Match literal) {
-            var result = Grammar.ProcessStringLiteral(job.CodePoints, literal.Position, literal.Length);
+            var result = Util.ProcessStringLiteral(job.CodePoints, literal.Position, literal.Length);
             if (result == null) throw new ApplicationException();
             return result;
         }
@@ -440,7 +440,7 @@ namespace Parlex {
                 if (temp == "\"") {
                     temp = "doubleQuote";
                 } else {
-                    temp = Grammar.QuoteStringLiteral(temp);
+                    temp = Util.QuoteStringLiteral(temp);
                 }
             }
             String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(leaf.Symbol);
