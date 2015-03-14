@@ -27,7 +27,5 @@ namespace Parlex {
                 Transition(new SymbolNodeFactory(transition.Symbol), () => ProcessState(transition1.ToState));
             }
         }
-        public override void OnCompletion(NodeParseResult result) {
-        }
     }
 }

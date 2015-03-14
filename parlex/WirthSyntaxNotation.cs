@@ -145,7 +145,7 @@ namespace Parlex {
             WorthSyntaxNotationParserGrammar.MainProduction = Syntax;
         }
 
-        private static string ProcessIdentifierClause(Parser.Job job, Match identifier) {            
+        private static string ProcessIdentifierClause(Parser.Job job, Match identifier) {
             return job.Document.Utf32Substring(identifier.Position, identifier.Length).Trim();
         }
 
@@ -154,18 +154,6 @@ namespace Parlex {
             if (result == null) throw new ApplicationException();
             return result;
         }
-
-        private static Grammar.Production GetRecognizerByIdentifierString(Grammar result, String identifierString) {
-            foreach (Grammar.Production recognizer in result.Productions) {
-                if (recognizer.Name == identifierString.Trim()) {
-                    return recognizer;
-                }
-            }
-            var newRecognizer = new Grammar.Production(identifierString.Trim(), false, false);
-            result.Productions.Add(newRecognizer);
-            return newRecognizer;
-        }
-
 
         private static Nfa<Grammar.ISymbol> ProcessFactorClause(Parser.Job job, Match factor) {
             Match firstChild = job.AbstractSyntaxGraph.NodeTable[factor.Children[0]].First();
@@ -233,6 +221,43 @@ namespace Parlex {
             throw new InvalidOperationException();
         }
 
+        private static BehaviorTree.Node ProcessFactorClause2(Parser.Job job, Match factor) {
+            Match firstChild = job.AbstractSyntaxGraph.NodeTable[factor.Children[0]].First();
+
+            if (firstChild.Symbol.Is(Identifier)) {
+                Grammar.ISymbol transition = new Grammar.Production(PlaceHolderMarker + ProcessIdentifierClause(job, firstChild), false, false);
+                return new BehaviorTree.Leaf(transition);
+            }
+
+            if (firstChild.Symbol.Is(Literal)) {
+                var transition = new Grammar.StringTerminal(ProcessLiteralClause(job, firstChild));
+                return new BehaviorTree.Leaf(transition);
+            }
+
+            if (firstChild.Symbol.Is(OpenSquareTerminal)) {
+                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
+                var child = ProcessExpressionClause2(job, expression);
+                return new BehaviorTree.Optional { Child = child };
+            }
+
+            if (firstChild.Symbol.Is(OpenParenthesisTerminal)) {
+                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
+                var child = ProcessExpressionClause2(job, expression);
+                var result = new BehaviorTree.Sequence();
+                result.Children.Add(result);
+                return result;
+            }
+
+            if (firstChild.Symbol.Is(OpenCurlyTerminal)) {
+                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
+                var child = ProcessExpressionClause2(job, expression);
+                return new BehaviorTree.Repetition() { Child = child };
+            }
+
+            throw new InvalidOperationException();
+
+        }
+
         private static Nfa<Grammar.ISymbol> ProcessTermClause(Parser.Job job, Match term) {
             var result = new Nfa<Grammar.ISymbol>();
             var state = new Nfa<Grammar.ISymbol>.State();
@@ -252,21 +277,51 @@ namespace Parlex {
             return result;
         }
 
+        private static BehaviorTree.Node ProcessTermClause2(Parser.Job job, Match term) {
+            var result = new BehaviorTree.Sequence();
+            foreach (MatchClass matchClass in term.Children) {
+                if (matchClass.Symbol.Is(Grammar.WhiteSpaceTerminal)) {
+                    continue;
+                }
+                Match factor = job.AbstractSyntaxGraph.NodeTable[matchClass].First();
+                var child = ProcessFactorClause2(job, factor);
+                result.Children.Add(child);
+            }
+            return result;
+        }
+
         private static Nfa<Grammar.ISymbol> ProcessExpressionClause(Parser.Job job, Match expression) {
             var result = new Nfa<Grammar.ISymbol>();
 
             for (int index = 0; index < expression.Children.Length; index += 2) {
                 Nfa<Grammar.ISymbol> termNfa = ProcessTermClause(job, job.AbstractSyntaxGraph.NodeTable[expression.Children[index]].First());
-                result = Nfa<Grammar.ISymbol>.Union(new[] {result, termNfa});
+                result = Nfa<Grammar.ISymbol>.Union(new[] { result, termNfa });
             }
 
             return result.Minimized();
+        }
+
+        private static BehaviorTree.Node ProcessExpressionClause2(Parser.Job job, Match expression) {
+            var result = new BehaviorTree.Choice();
+
+            for (var index = 0; index < expression.Children.Length; index += 2) {
+                var child = ProcessTermClause2(job, job.AbstractSyntaxGraph.NodeTable[expression.Children[index]].First());
+                result.Children.Add(child);
+            }
+
+            return result;
         }
 
         private static Grammar.Production ProcessProductionClause(Parser.Job job, Match production) {
             string name = ProcessIdentifierClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[0]].First()).Trim();
             Nfa<Grammar.ISymbol> nfa = ProcessExpressionClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[2]].First());
             return new Grammar.Production(name, false, nfa);
+        }
+
+        private static KeyValuePair<String, BehaviorTree> ProcessProductionClause2(Parser.Job job, Match production) {
+            string name = ProcessIdentifierClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[0]].First()).Trim();
+            var root = ProcessExpressionClause2(job, job.AbstractSyntaxGraph.NodeTable[production.Children[2]].First());
+            return new KeyValuePair<string, BehaviorTree>(name, new BehaviorTree {Root = root});
         }
 
         private static void ProcessSyntaxClause(Parser.Job job, Match syntax, Grammar result) {
@@ -314,6 +369,9 @@ namespace Parlex {
             }
         }
 
+        private static void ResolveIdentifiers(BehaviorTree tree) {
+            
+        }
         public static Grammar GrammarFromString(String text) {
             Parser parser = new Parser(WorthSyntaxNotationParserGrammar);
             Parser.Job j = parser.Parse(text);

@@ -16,9 +16,6 @@ namespace Parlex {
             Accept();
         }
 
-        public override void OnCompletion(NodeParseResult result) {
-        }
-
         public string Name { get { return _terminal.Name; } }
         public bool IsGreedy { get { return false; } }
         public SyntaxNode Create() {

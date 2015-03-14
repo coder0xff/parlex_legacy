@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="AbstractSyntaxGraph.cs" />
     <Compile Include="BackusNaurForm.cs" />
+    <Compile Include="BehaviorGrammar.cs" />
     <Compile Include="CppParserGenerator.cs" />
     <Compile Include="CSharpFormatter.cs" />
     <Compile Include="CSharpParserGenerator.cs" />
