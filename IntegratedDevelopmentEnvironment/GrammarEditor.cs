@@ -15,6 +15,7 @@ namespace IntegratedDevelopmentEnvironment {
         private string _filePathName;
         private IMetaSyntax _formatter;
         private Grammar _grammar;
+        private NfaGrammar _cachedNfaGrammar;
         private bool _hasUnsavedChanges;
 
         public event Action<Grammar> GrammarChanged = delegate(Grammar grammar) { };
@@ -80,6 +81,15 @@ namespace IntegratedDevelopmentEnvironment {
             }
         }
 
+        public NfaGrammar NfaGrammar {
+            get {
+                if (_cachedNfaGrammar == null) {
+                    _cachedNfaGrammar = Grammar.ToNfaGrammar();
+                }
+                return _cachedNfaGrammar;
+            }
+        }
+
         private void UpdateTitle() {
             if (String.IsNullOrEmpty(_filePathName)) {
                 Text = "*Unnamed";
@@ -91,7 +101,8 @@ namespace IntegratedDevelopmentEnvironment {
             }
         }
 
-        public void OnGrammarChanged() {
+        protected void OnGrammarChanged() {
+            _cachedNfaGrammar = null;
             _hasUnsavedChanges = true;
             UpdateTitle();
             GrammarChanged(_grammar);

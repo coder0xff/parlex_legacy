@@ -6,8 +6,9 @@ using WeifenLuo.WinFormsUI.Docking;
 namespace IntegratedDevelopmentEnvironment {
     public partial class GrammarTester : DockContent {
         private GrammarEditor _grammarEditor;
-        private NfaGrammar _cachedGrammar;
         private String _overridenMainName = null;
+        private bool _grammarChangedInBackground;
+
         public GrammarTester(GrammarEditor grammarEditor, String overridenMainName = null) {
             _grammarEditor = grammarEditor;
             _overridenMainName = overridenMainName;
@@ -17,8 +18,11 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         void _grammarEditor_GrammarChanged(Grammar obj) {
-            _cachedGrammar = null;
-            ScheduleParse();
+            if (Main.Instance.ActiveMdiChild != this) {
+                _grammarChangedInBackground = true;
+            } else {
+                ScheduleParse();
+            }
         }
 
         class ErrorInfo {
@@ -35,15 +39,13 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void Evaluate() {
-            if (_cachedGrammar == null) {
-                toolStripStatusLabel1.Text = "Analyzing grammar";
-                Application.DoEvents();
-                _cachedGrammar = _grammarEditor.Grammar.ToNfaGrammar();
-            }
-            var parser = new Parser(_cachedGrammar);
-            NfaProduction selectedMainProduction = _cachedGrammar.Main;
+            toolStripStatusLabel1.Text = "Analyzing grammar";
+            Application.DoEvents();
+            var nfaGrammar = _grammarEditor.NfaGrammar;
+            var parser = new Parser(nfaGrammar);
+            NfaProduction selectedMainProduction = nfaGrammar.Main;
             if (_overridenMainName != null) {
-                var temp = _cachedGrammar.GetProduction(_overridenMainName);
+                var temp = nfaGrammar.GetProduction(_overridenMainName);
                 if (temp == null) {
                     toolStripStatusLabel1.Text = "The production that this tester was made for (" + _overridenMainName + ") no longer exists.";
                     return;
@@ -100,6 +102,13 @@ namespace IntegratedDevelopmentEnvironment {
                 textBoxDocument.SelectionStart = error.Position;
                 textBoxDocument.SelectionLength = 1;
                 textBoxDocument.ScrollToCaret();
+            }
+        }
+
+        private void GrammarTester_Activated(object sender, EventArgs e) {
+            if (_grammarChangedInBackground) {
+                _grammarChangedInBackground = false;
+                ScheduleParse();
             }
         }
     }
