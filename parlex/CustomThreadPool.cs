@@ -7,7 +7,10 @@ namespace Parlex {
 #if (SINGLE_THREAD)
 
     internal class CustomThreadPool {
-        internal static void QueueUserWorkItem(WaitCallback callback) {
+
+        public event Action OnIdle = () => { };
+ 
+        internal void QueueUserWorkItem(WaitCallback callback) {
             callback(null);
         }
     }

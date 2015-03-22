@@ -63,12 +63,28 @@ namespace Parlex {
 
         public NfaGrammar ToNfaGrammar() {
             var result = new NfaGrammar();
+            Dictionary<Production, NfaProduction> map = new Dictionary<Production, NfaProduction>();
             foreach (var production in Productions) {
                 var nfa = production.Behavior.ToNfa();
                 var nfaProduction = new NfaProduction(production.Name, production.Greedy, nfa);
                 result.Productions.Add(nfaProduction);
                 if (production == Main) {
                     result.Main = nfaProduction;
+                }
+                map[production] = nfaProduction;
+            }
+            foreach (var nfaProduction in result.Productions) {
+                foreach (var from in nfaProduction.TransitionFunction) {
+                    foreach (var transition in from.Value.ToArray()) {
+                        var asProduction = transition.Key as Production;
+                        NfaProduction transitionNfa;
+                        if (asProduction != null && map.TryGetValue(asProduction, out transitionNfa)) {
+                            foreach (var to in transition.Value) {
+                                from.Value[transitionNfa].Add(to);
+                            }
+                            from.Value.TryRemove(asProduction);
+                        }
+                    }
                 }
             }
             return result;
