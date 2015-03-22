@@ -1,12 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Data.SqlClient;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using Parlex;
 using WeifenLuo.WinFormsUI.Docking;
@@ -15,9 +7,10 @@ namespace IntegratedDevelopmentEnvironment {
     public partial class GrammarTester : DockContent {
         private GrammarEditor _grammarEditor;
         private NfaGrammar _cachedGrammar;
-
-        public GrammarTester(GrammarEditor grammarEditor, String main = null) {
+        private String _overridenMainName = null;
+        public GrammarTester(GrammarEditor grammarEditor, String overridenMainName = null) {
             _grammarEditor = grammarEditor;
+            _overridenMainName = overridenMainName;
             _grammarEditor.GrammarChanged += _grammarEditor_GrammarChanged;
             InitializeComponent();
             Show(Main.Instance.dockPanel1, DockState.Document);
@@ -48,15 +41,23 @@ namespace IntegratedDevelopmentEnvironment {
                 _cachedGrammar = _grammarEditor.Grammar.ToNfaGrammar();
             }
             var parser = new Parser(_cachedGrammar);
-            NfaProduction m = _cachedGrammar.Main;
-            if (m == null) {
+            NfaProduction selectedMainProduction = _cachedGrammar.Main;
+            if (_overridenMainName != null) {
+                var temp = _cachedGrammar.GetProduction(_overridenMainName);
+                if (temp == null) {
+                    toolStripStatusLabel1.Text = "The production that this tester was made for (" + _overridenMainName + ") no longer exists.";
+                    return;
+                }
+                selectedMainProduction = temp;
+            }
+            if (selectedMainProduction == null) {
                 toolStripStatusLabel1.Text = "The grammar does not have a main production";
                 return;
             }
             toolStripStatusLabel1.Text = "Parsing...";
             Application.DoEvents();
             DateTime start = DateTime.Now;
-            var job = parser.Parse(textBoxDocument.Text, 0, -1, m);
+            var job = parser.Parse(textBoxDocument.Text, 0, -1, selectedMainProduction);
             job.Join();
             var seconds = (DateTime.Now - start).TotalSeconds;
             var errors = false; // todo: Parser generates error info

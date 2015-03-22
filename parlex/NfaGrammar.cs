@@ -10,16 +10,8 @@ namespace Parlex {
         public NfaProduction Main;
 
 
-        public NfaProduction GetRecognizerByName(String name) {
+        public NfaProduction GetProduction(String name) {
             return Productions.FirstOrDefault(x => x.Name == name);
-        }
-
-        public ISymbol GetSymbol(String name) {
-            ISymbol result;
-            if (!StandardSymbols.TryGetBuiltinISymbolByName(name, out result)) {
-                result = GetRecognizerByName(name);
-            }
-            return result;
         }
 
         public Grammar ToGrammar() {
