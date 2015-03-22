@@ -1,10 +1,10 @@
 namespace Parlex {
-    public class TerminalSyntaxNode : SyntaxNode {
+    public class TerminalParseNode : ParseNode {
         private readonly ITerminal _terminal;
         public ITerminal Terminal {
             get { return _terminal; }
         }
-        public TerminalSyntaxNode(ITerminal terminal) {
+        public TerminalParseNode(ITerminal terminal) {
             _terminal = terminal;
         }
 
@@ -18,7 +18,7 @@ namespace Parlex {
 
         public string Name { get { return _terminal.Name; } }
         public bool IsGreedy { get { return false; } }
-        public SyntaxNode Create() {
+        public ParseNode Create() {
             return this;
         }
     }

@@ -1,23 +1,22 @@
 ﻿using System;
 using System.Collections.Concurrent.More;
 using System.Linq;
-using Automata;
 
 namespace Parlex {
     public class Parser {
         private readonly ISymbol _mainSymbol;
-        public Parser(Grammar grammar, ISymbol mainSymbol = null) {
-            _mainSymbol = mainSymbol ?? grammar.MainProduction;
+        public Parser(NfaGrammar grammar, ISymbol mainSymbol = null) {
+            _mainSymbol = mainSymbol ?? grammar.Main;
             _factories = new AutoDictionary<ISymbol, DynamicSyntaxNodeFactory>(symbol => new DynamicSyntaxNodeFactory(this, symbol));
         }
 
         private readonly AutoDictionary<ISymbol, DynamicSyntaxNodeFactory> _factories;
 
-        private class DynamicSyntaxNode : SyntaxNode {
+        private class DynamicParseNode : ParseNode {
             private readonly NfaProduction _production;
             private readonly Parser _parser;
 
-            public DynamicSyntaxNode(Parser parser, NfaProduction production) {
+            public DynamicParseNode(Parser parser, NfaProduction production) {
                 _production = production;
                 _parser = parser;
             }
@@ -73,11 +72,11 @@ namespace Parlex {
                 }
             }
 
-            public SyntaxNode Create() {
+            public ParseNode Create() {
                 if (_production != null) {
-                    return new DynamicSyntaxNode(_parser, _production);
+                    return new DynamicParseNode(_parser, _production);
                 }
-                return new TerminalSyntaxNode(_terminal);
+                return new TerminalParseNode(_terminal);
             }
 
             public bool Is(ITerminal terminal) {

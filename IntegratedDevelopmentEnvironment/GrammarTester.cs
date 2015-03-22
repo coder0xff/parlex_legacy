@@ -13,14 +13,18 @@ using WeifenLuo.WinFormsUI.Docking;
 namespace IntegratedDevelopmentEnvironment {
     public partial class GrammarTester : DockContent {
         private GrammarEditor _grammarEditor;
-        private Grammar _grammar;
-        private String _main;
+        private NfaGrammar _cachedGrammar;
 
         public GrammarTester(GrammarEditor grammarEditor, String main = null) {
             _grammarEditor = grammarEditor;
-            _main = main;
+            _grammarEditor.GrammarChanged += _grammarEditor_GrammarChanged;
             InitializeComponent();
             Show(Main.Instance.dockPanel1, DockState.Document);
+        }
+
+        void _grammarEditor_GrammarChanged(Grammar obj) {
+            _cachedGrammar = null;
+            ScheduleParse();
         }
 
         class ErrorInfo {
@@ -35,18 +39,22 @@ namespace IntegratedDevelopmentEnvironment {
                 return "Expected " + Symbol + " at " + Position;
             }
         }
+
         private void Evaluate() {
-            bool errors;
-            var grammar = _grammarEditor.GetGrammar(out errors);
-            var parser = new Parser(grammar);
-            NfaProduction m = grammar.MainProduction;
-            if (_main != null) {
-                m = grammar.GetRecognizerByName(_main);
+            if (_cachedGrammar == null) { 
+            _cachedGrammar = _grammarEditor.Grammar.ToNfaGrammar();
+}
+            var parser = new Parser(_cachedGrammar);
+            NfaProduction m = _cachedGrammar.Main;
+            if (m == null) {
+                toolStripStatusLabel1.Text = "The grammar does not have a main production";
+                return;
             }
             DateTime start = DateTime.Now;
             var job = parser.Parse(textBoxDocument.Text, 0, -1, m);
             job.Join();
             var seconds = (DateTime.Now - start).TotalSeconds;
+            var errors = false; // todo: Parser generates error info
             if (job.AbstractSyntaxGraph.IsEmpty) {
                 if (errors) {
                     toolStripStatusLabel1.Text = "The grammar contains errors, and this text could not be parsed.";
@@ -70,10 +78,14 @@ namespace IntegratedDevelopmentEnvironment {
             Evaluate();
         }
 
-        private void textBoxDocument_TextChanged(object sender, EventArgs e) {
+        private void ScheduleParse() {
             timer1.Stop();
             timer1.Start();
             toolStripStatusLabel1.Text = "Parse pending...";
+        }
+
+        private void textBoxDocument_TextChanged(object sender, EventArgs e) {
+            ScheduleParse();
         }
 
         private void listBoxErrors_SelectedIndexChanged(object sender, EventArgs e) {

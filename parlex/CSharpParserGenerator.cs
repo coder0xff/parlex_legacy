@@ -51,7 +51,7 @@ namespace Parlex {
             }
         }
 
-        public void Generate(string destinationDirectory, Grammar grammar, String parserName) {
+        public void Generate(string destinationDirectory, NfaGrammar grammar, String parserName) {
             var nameMap = new AutoDictionary<ISymbol, String>(x => CSharpName(x.Name));
             foreach (var production in grammar.Productions) {
                 var nfa = production.Reassign();

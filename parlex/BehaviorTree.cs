@@ -172,9 +172,9 @@ namespace Parlex {
                 return new Null();
             }
             Node result = possibleResults.First().Key;
-            result.Optimize();
+            result = result.Optimize();
             while (CollapseRedundantNodes(ref result)) {
-                result.Optimize();
+                result = result.Optimize();
             }
             return result;
         }
@@ -190,10 +190,6 @@ namespace Parlex {
                 Node[] oldChildren = Children.ToArray();
                 Children.Clear();
                 foreach (Node oldChild in oldChildren) {
-                    oldChild.Optimize();
-                    if (oldChild is Null) {
-                        continue;
-                    }
                     if (oldChild is Choice) {
                         foreach (Node childChild in (oldChild as Choice).Children) {
                             Children.Add(childChild);
@@ -204,8 +200,29 @@ namespace Parlex {
                 }
             }
 
-            internal override void Optimize() {
+            internal override Node Optimize() {
+                Node[] oldChildren = Children.ToArray();
+                Children.Clear();
+                bool isOptional = false;
+                foreach (var child in oldChildren) {
+                    var newChild = child.Optimize();
+                    if (!(newChild is Null)) {
+                        Children.Add(newChild);
+                    } else {
+                        isOptional = true;
+                    }
+                }
                 FlattenNestedChoices();
+                Node result;
+                if (Children.Count == 1) {
+                    result = Children[0];
+                } else {
+                    result = this;
+                }
+                if (isOptional) {
+                    result = new Optional { Child = result };
+                }
+                return result;
                 //todo: convert some choices to options
             }
 
@@ -221,7 +238,9 @@ namespace Parlex {
                 Symbol = symbol;
             }
 
-            internal override void Optimize() {}
+            internal override Node Optimize() {
+                return this;
+            }
 
             internal override GNfa ToNfa() {
                 var result = new GNfa();
@@ -237,12 +256,14 @@ namespace Parlex {
         }
 
         public abstract class Node {
-            internal abstract void Optimize();
+            internal abstract Node Optimize();
             internal abstract GNfa ToNfa();
         }
 
         private class Null : Node {
-            internal override void Optimize() {}
+            internal override Node Optimize() {
+                return this;
+            }
 
             internal override GNfa ToNfa() {
                 throw new Exception("A Null node cannot be converted to an Nfa.");
@@ -251,10 +272,14 @@ namespace Parlex {
 
         public class Optional : Node {
             public Node Child;
-            internal override void Optimize() {}
+
+            internal override Node Optimize() {
+                Child = Child.Optimize();
+                return this;
+            }
 
             internal override GNfa ToNfa() {
-                if (Child == null) throw new InvalidBehaviorTreeException();
+                if (Child == null) return new GNfa();
                 var result = Child.ToNfa();
                 foreach (GState startState in result.StartStates) {
                     result.AcceptStates.Add(startState);
@@ -265,10 +290,13 @@ namespace Parlex {
 
         public class Repetition : Node {
             public Node Child;
-            internal override void Optimize() {}
+            internal override Node Optimize() {
+                Child.Optimize();
+                return this;
+            }
 
             internal override GNfa ToNfa() {
-                if (Child == null) throw new InvalidBehaviorTreeException();
+                if (Child == null) return new GNfa();
                 GNfa result = Child.ToNfa();
                 foreach (GNfa.Transition transition in result.GetTransitions()) {
                     if (result.AcceptStates.Contains(transition.ToState)) {
@@ -307,10 +335,6 @@ namespace Parlex {
                 Node[] oldChildren = Children.ToArray();
                 Children.Clear();
                 foreach (Node oldChild in oldChildren) {
-                    oldChild.Optimize();
-                    if (oldChild is Null) {
-                        continue;
-                    }
                     if (oldChild is Sequence) {
                         foreach (Node childChild in (oldChild as Sequence).Children) {
                             Children.Add(childChild);
@@ -321,8 +345,20 @@ namespace Parlex {
                 }
             }
 
-            internal override void Optimize() {
+            internal override Node Optimize() {
+                Node[] oldChildren = Children.ToArray();
+                Children.Clear();
+                foreach (var child in oldChildren) {
+                    var newChild = child.Optimize();
+                    if (!(newChild is Null)) {
+                        Children.Add(newChild);
+                    }
+                }
                 FlattenNestedSequences();
+                if (Children.Count == 1) {
+                    return Children[0];
+                }
+                return this;
             }
 
             internal override GNfa ToNfa() {
@@ -333,7 +369,7 @@ namespace Parlex {
                 result.AcceptStates.Add(state);
                 foreach (Node child in Children) {
                     GNfa childNfa = child.ToNfa();
-                    result.Insert(result.AcceptStates.First(), childNfa);
+                    result.Append(childNfa);
                 }
                 return result;
             }

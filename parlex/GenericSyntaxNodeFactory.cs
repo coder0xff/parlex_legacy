@@ -5,11 +5,11 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Parlex {
-    public class GenericSyntaxNodeFactory<T> : ISyntaxNodeFactory where T : SyntaxNode, new() {
+    public class GenericSyntaxNodeFactory<T> : ISyntaxNodeFactory where T : ParseNode, new() {
         public string Name { get; private set; }
         public bool IsGreedy { get; private set; }
 
-        SyntaxNode ISyntaxNodeFactory.Create() {
+        ParseNode ISyntaxNodeFactory.Create() {
             return new T();
         }
 
@@ -71,7 +71,7 @@ namespace Parlex {
             get { return _backing.IsGreedy; }
         }
 
-        SyntaxNode ISyntaxNodeFactory.Create() {
+        ParseNode ISyntaxNodeFactory.Create() {
             return _backing.Create();
         }
 

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Parlex;
 
 namespace Parlex {
-    public abstract class SyntaxNode {
+    public abstract class ParseNode {
         internal ParseEngine Engine { get; set; }
         internal ParseEngine.Dispatcher Dispatcher { get; set; }
         internal readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
@@ -37,7 +37,7 @@ namespace Parlex {
             Transition(new SymbolNodeFactory(symbol), nextState);
         }
 
-        protected void Transition<T>(Action nextState) where T : SyntaxNode, new() {
+        protected void Transition<T>(Action nextState) where T : ParseNode, new() {
             Transition(new GenericSyntaxNodeFactory<T>(), nextState);
         }
 

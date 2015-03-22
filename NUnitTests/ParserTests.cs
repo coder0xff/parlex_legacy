@@ -8,7 +8,7 @@ namespace NUnitTests {
     public class ParserTests {
         [Test]
         public void TestMethod1() {
-            var g = new Grammar();
+            var g = new NfaGrammar();
             var identifier = new NfaProduction("identifier", true, false);
             var identifier0 = new Nfa<ISymbol>.State();
             var identifier1 = new Nfa<ISymbol>.State();
@@ -36,7 +36,7 @@ namespace NUnitTests {
 
             g.Productions.Add(syntax);
             g.Productions.Add(identifier);
-            g.MainProduction = syntax;
+            g.Main = syntax;
 
             Parser parser = new Parser(g);
             for (int i = 0; i < 1000; i++) {

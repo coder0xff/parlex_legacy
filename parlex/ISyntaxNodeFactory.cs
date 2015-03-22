@@ -8,7 +8,7 @@ namespace Parlex {
     public interface ISyntaxNodeFactory {
         String Name { get; }
         Boolean IsGreedy { get; }
-        SyntaxNode Create();
+        ParseNode Create();
         bool Is(ITerminal terminal);
         bool Is(NfaProduction production);
     }

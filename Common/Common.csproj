@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FastDelegate.Net">
+      <HintPath>..\..\FastDelegate.Net\FastDelegate.Net\bin\Debug\FastDelegate.Net.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -52,12 +55,6 @@
     <Compile Include="JaggedAutoDictionary.cs" />
     <Compile Include="ReadOnlyHashSet.cs" />
     <Compile Include="DistinctRecursiveAlgorithmProcessor.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\FastDelegate\FastDelegate.csproj">
-      <Project>{df14bfd1-226c-4975-b8e9-0ef0a9b1de37}</Project>
-      <Name>FastDelegate</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

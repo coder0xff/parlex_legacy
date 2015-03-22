@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using FastDelegate;
+using FastDelegate.Net;
 
 namespace Common {
     public class DynamicDispatcher {

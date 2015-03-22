@@ -506,8 +506,8 @@ namespace Automata {
             return neededColumns.Count == 0;
         }
 
-        private static bool SubsetAssignmentIsLegitimate(Nfa<TAlphabet, int> intersectionRuleNFA, Nfa<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
-            Nfa<TAlphabet, Nfa<TAlphabet, int>.StateSet> intersectionRuleDfa = intersectionRuleNFA.Determinize();
+        private static bool SubsetAssignmentIsLegitimate(Nfa<TAlphabet, int> intersectionRuleNfa, Nfa<TAlphabet, int> minimizedDfa, bool[,] reducedAutomataMatrix, Bimap<int, Grid> orderedGrids) {
+            Nfa<TAlphabet, Nfa<TAlphabet, int>.StateSet> intersectionRuleDfa = intersectionRuleNfa.Determinize();
             List<Nfa<TAlphabet, Nfa<TAlphabet, int>.StateSet>.State> intersectionRuleDfaOrderedStates = intersectionRuleDfa.States.ToList();
             intersectionRuleDfaOrderedStates.Remove(intersectionRuleDfa.StartStates.First());
             intersectionRuleDfaOrderedStates.Insert(0, intersectionRuleDfa.StartStates.First());
@@ -982,7 +982,7 @@ namespace Automata {
                     result.Append(" -> ");
                     result.Append(nodeNames[transition.ToState]);
                     result.Append(" [ label = \"");
-                    result.Append(transition.Symbol);
+                    result.Append(transition.Symbol.ToString().Replace("\"", "\\\""));
                     result.AppendLine("\" ];");
                 }
                 result.AppendLine("}");
@@ -1544,24 +1544,31 @@ namespace Automata {
             return equivalent;
         }
 
-        public static Nfa<TAlphabet, int> Intersect(IEnumerable<Nfa<TAlphabet>> nfas) {
-            IEnumerable<Nfa<TAlphabet, int>> minDets = nfas.Select(nfa => nfa.MinimizedDfa());
-            Nfa<TAlphabet, int> singleTransitionNFA = Nfa<TAlphabet, int>.Union(minDets);
-            JaggedAutoDictionary<Nfa<TAlphabet, int>.State, TAlphabet, HashSet<Nfa<TAlphabet, int>.State>> singleTransitionFunction = singleTransitionNFA.TransitionFunction;
-            HashSet<Nfa<TAlphabet, int>.State> singleAcceptStates = singleTransitionNFA.AcceptStates;
-            int stateCount = 0;
+        public static Nfa<TAlphabet> Intersect(IEnumerable<Nfa<TAlphabet>> nfas) {
+            var minimizedDeterministic = nfas.Select(nfa => nfa.MinimizedDfa());
+            //get a listing of all transitions that need to be considered from any state
+            var singleTransitionNfa = Nfa<TAlphabet, int>.Union(minimizedDeterministic);
+            var singleTransitionFunction = singleTransitionNfa.TransitionFunction;
+            var singleAcceptStates = singleTransitionNfa.AcceptStates;
+            var stateCount = 0;
             var resultStates = new AutoDictionary<ReadOnlyHashSet<Nfa<TAlphabet, int>.State>, Nfa<TAlphabet, int>.State>(x => new Nfa<TAlphabet, int>.State(Interlocked.Increment(ref stateCount)));
             var processor = new DistinctRecursiveAlgorithmProcessor<ReadOnlyHashSet<Nfa<TAlphabet, int>.State>>();
-            var startStateSet = new ReadOnlyHashSet<Nfa<TAlphabet, int>.State>(minDets.Select(x => x.StartStates.First()));
+            var startStateSet = new ReadOnlyHashSet<Nfa<TAlphabet, int>.State>(minimizedDeterministic.Select(x => x.StartStates.First()));
             var result = new Nfa<TAlphabet, int>();
             var acceptStates = new ConcurrentSet<Nfa<TAlphabet, int>.State>();
             processor.Add(startStateSet);
             processor.Run(stateSet => {
                 Nfa<TAlphabet, int>.State fromState = resultStates[stateSet];
+                //since each determinized machine can only have one active state
+                //and we only do transitions that have arrows from every active state
+                //if no active states are not accept states
+                //then all source machines are in an accept state
                 if (singleAcceptStates.IsSupersetOf(stateSet)) {
                     acceptStates.TryAdd(fromState);
                 }
-                ReadOnlyHashSet<TAlphabet> fromSymbols = ReadOnlyHashSet<TAlphabet>.IntersectMany(stateSet.Select(state => singleTransitionFunction[state].Keys));
+                //only permit transitions with arrows from every active state
+                var fromSymbols = ReadOnlyHashSet<TAlphabet>.IntersectMany(stateSet.Select(state => singleTransitionFunction[state].Keys));
+                //generate new configurations, and add them to the processor
                 foreach (TAlphabet fromSymbol in fromSymbols) {
                     TAlphabet symbol = fromSymbol;
                     var nextStateSet = new ReadOnlyHashSet<Nfa<TAlphabet, int>.State>(stateSet.Select(state => singleTransitionFunction[state][symbol].First()));
@@ -1570,12 +1577,45 @@ namespace Automata {
                     result.TransitionFunction[fromState][fromSymbol].Add(toState);
                 }
             });
-            result.States.UnionWith(resultStates.Values);
-            result.StartStates.Add(resultStates[startStateSet]);
-            result.AcceptStates.UnionWith(acceptStates);
-            return result;
+            result.States.UnionWith(resultStates.Values); //result.States was previously empty
+            result.StartStates.Add(resultStates[startStateSet]); //the one and only
+            result.AcceptStates.UnionWith(acceptStates); //result.AcceptStates was previously empty
+            return result.Minimized().Reassign();
         }
 
+        public Nfa<TAlphabet> Negation(HashSet<TAlphabet> alphabetUniverse) {
+            var result = new Nfa<TAlphabet>();
+            var sinkState = new State();
+            result.AcceptStates.Add(sinkState);
+            foreach (var state in States) {
+                result.States.Add(state);
+                if (!AcceptStates.Contains(state)) {
+                    result.AcceptStates.Add(state);
+                }
+            }
+            foreach (var startState in StartStates) {
+                result.StartStates.Add(startState);
+            }
+            foreach (var transition in GetTransitions()) {
+                result.TransitionFunction[transition.FromState][transition.Symbol].Add(transition.ToState);
+            }
+            foreach (var state in result.States) {
+                var outgoingTransitions = result.TransitionFunction[state].Keys;
+                var sinkTransitions = alphabetUniverse.Except(outgoingTransitions);
+                foreach (var sinkTransition in sinkTransitions) {
+                    result.TransitionFunction[state][sinkTransition].Add(sinkState);
+                }
+            }
+            return result.Minimized();
+        }
+
+        //subtract one NFA from another
+        //possible because NFAs are closed under negation and intersection
+        public Nfa<TAlphabet> Difference(Nfa<TAlphabet> rhs) {
+            var alphabetUniverse = new HashSet<TAlphabet>();
+            alphabetUniverse.UnionWith(TransitionFunction.SelectMany(kvp => kvp.Value.Keys));
+            return Intersect(new[] {this, rhs.Negation(alphabetUniverse)});
+        } 
         //public bool Contains(Nfa<TAlphabet> that)
         //{
         //    return Intersect(new[] { this, that }).IsEquivalent(that);

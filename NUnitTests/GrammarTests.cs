@@ -8,7 +8,7 @@ namespace NUnitTests {
     public class GrammarTests {
         [Test]
         public void TestSerialization() {
-            String s = WirthSyntaxNotation.GrammarToString(WirthSyntaxNotation.WorthSyntaxNotationParserGrammar);
+            String s = WirthSyntaxNotation.GrammarToString(WirthSyntaxNotationGrammar.NfaGrammar.ToGrammar());
             Debug.WriteLine(s);
         }
     }

@@ -11,7 +11,7 @@ namespace IntegratedDevelopmentEnvironment {
         public Main() {
             InitializeComponent();
             Instance = this;
-            var grammarEditor = GrammarEditor.ForGrammar(WirthSyntaxNotation.WorthSyntaxNotationParserGrammar, new WirthSyntaxNotation.Formatter());
+            var grammarEditor = GrammarEditor.ForGrammar(WirthSyntaxNotationGrammar.NfaGrammar.ToGrammar(), new WirthSyntaxNotation.Formatter());
             grammarEditor.Show(dockPanel1, DockState.Document);
         }
 
@@ -24,7 +24,9 @@ namespace IntegratedDevelopmentEnvironment {
             if (openFileDialog.ShowDialog(this) == DialogResult.OK) {
                 if (openFileDialog.FilterIndex == 1 || openFileDialog.FilterIndex == 2) {
                     GrammarEditor grammarEditor = GrammarEditor.ForFile(openFileDialog.FileName, new WirthSyntaxNotation.Formatter());
-                    grammarEditor.Show(dockPanel1, DockState.Document);
+                    if (grammarEditor != null) {
+                        grammarEditor.Show(dockPanel1, DockState.Document);
+                    }
                 }
             }
         }
@@ -39,7 +41,7 @@ namespace IntegratedDevelopmentEnvironment {
             }
         }
 
-        private IGrammarFormatter getGrammarFormatterForTypeIndex(int index) {
+        private IMetaSyntax getGrammarFormatterForTypeIndex(int index) {
             switch (index) {
                 case 1:
                     return new WirthSyntaxNotation.Formatter();

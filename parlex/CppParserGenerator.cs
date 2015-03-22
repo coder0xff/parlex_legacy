@@ -9,7 +9,7 @@ namespace Parlex {
     /// Outputs a single self-contained C++ header file
     /// </summary>
     class CppParserGenerator : IParserGenerator {
-        public void Generate(string destinationDirectory, Grammar grammar, String parserName) {
+        public void Generate(string destinationDirectory, NfaGrammar grammar, String parserName) {
             throw new NotImplementedException();
         }
     }

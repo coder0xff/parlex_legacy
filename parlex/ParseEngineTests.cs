@@ -7,7 +7,7 @@ using Parlex;
 namespace NUnitTests {
     [TestFixture]
     public class ParserEngineTests {
-        private class LetterTerminal : SyntaxNode {
+        private class LetterTerminal : ParseNode {
             public override void Start() {
                 if (Position < Engine.CodePoints.Length) {
                     if (Unicode.LowercaseLetters.Contains(Engine.CodePoints[Position])) {
@@ -21,7 +21,7 @@ namespace NUnitTests {
             }
         }
 
-        private class SumProduction : SyntaxNode {
+        private class SumProduction : ParseNode {
             public override void Start() {
                 Transition<LetterTerminal>(State1);
             }

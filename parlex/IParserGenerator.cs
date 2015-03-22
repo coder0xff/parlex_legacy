@@ -7,6 +7,6 @@ using System.Threading.Tasks;
 
 namespace Parlex {
     interface IParserGenerator {
-        void Generate(String destinationDirectory, Grammar grammar, String parserName);
+        void Generate(String destinationDirectory, NfaGrammar grammar, String parserName);
     }
 }

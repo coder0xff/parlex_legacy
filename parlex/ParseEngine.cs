@@ -36,7 +36,7 @@ namespace Parlex {
                 internal Dispatcher Dependent { get; set; }
                 internal Action Handler { get; set; }
                 internal int FifoIndex { get; set; }
-                internal SyntaxNode Node { get; set; }
+                internal ParseNode Node { get; set; }
                 internal ParseContext Context { get; set; }
                 internal bool Ended { get; set; }
             }
@@ -77,7 +77,7 @@ namespace Parlex {
                 }
             }
 
-            internal void AddDependency(Dispatcher dependent, SyntaxNode node, Action handler) {
+            internal void AddDependency(Dispatcher dependent, ParseNode node, Action handler) {
 #if PARSE_TRACE
                 System.Diagnostics.Debug.WriteLine("Creating dependency by Dispatcher " + dependent + " on Dispatcher " + this);
 #endif
@@ -191,7 +191,7 @@ namespace Parlex {
             GetDispatcher(new MatchCategory(0, _main));
         }
 
-        internal void AddDependency(ISyntaxNodeFactory symbol, Dispatcher dependent, SyntaxNode node, Action handler) {
+        internal void AddDependency(ISyntaxNodeFactory symbol, Dispatcher dependent, ParseNode node, Action handler) {
             GetDispatcher(new MatchCategory(node._context.Value.Position, symbol)).AddDependency(dependent, node, handler);
         }
 

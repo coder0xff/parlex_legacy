@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Parlex {
-    public class NfaSymbolNode : SyntaxNode {
+    public class NfaSymbolNode : ParseNode {
         private readonly NfaProduction _production;
 
         public NfaSymbolNode(NfaProduction production) {

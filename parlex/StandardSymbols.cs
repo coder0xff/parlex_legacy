@@ -34,7 +34,7 @@ namespace Parlex {
 
         public static bool TryGetBuiltinFieldByName(String name, out FieldInfo field) {
             field = null;
-            foreach (var fieldInfo in typeof(Grammar).GetFields(BindingFlags.Public | BindingFlags.Static)) {
+            foreach (var fieldInfo in typeof(StandardSymbols).GetFields(BindingFlags.Public | BindingFlags.Static)) {
                 if (typeof(ISymbol).IsAssignableFrom(fieldInfo.FieldType)) {
                     if (((ISymbol)fieldInfo.GetValue(null)).Name == name) {
                         field = fieldInfo;
@@ -226,7 +226,7 @@ namespace Parlex {
             NameToBuiltInSymbol["character"] = CharacterTerminal;
             NameToBuiltInSymbol["whiteSpace"] = WhiteSpaceTerminal;
             NameToBuiltInSymbol["newLine"] = NewLine;
-            NameToBuiltInSymbol["whiteSpacesEater"] = WhiteSpaces;
+            NameToBuiltInSymbol["whiteSpaces"] = WhiteSpaces;
             NameToBuiltInSymbol["nonDoubleQuote"] = NonDoubleQuoteCharacterTerminal;
             NameToBuiltInSymbol["doubleQuote"] = DoubleQuoteTerminal;
             NameToBuiltInSymbol["nonDoubleQuoteNonBackSlash"] = NonDoubleQuoteNonBackSlashCharacterTerminal;

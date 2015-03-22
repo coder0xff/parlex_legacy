@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{225EE06C-3EC1-4D0C-919A-338DB9D77548}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D3EDB85-8150-40ED-9E88-057823E71E65}"
-	ProjectSection(SolutionItems) = preProject
-		Performance1.psess = Performance1.psess
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parlex", "Parlex\Parlex.csproj", "{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}"
 EndProject
@@ -17,8 +14,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Automata", "Automata\Automata.csproj", "{7862B8A9-EEBD-49B4-B604-EDC03CF90EF1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegratedDevelopmentEnvironment", "IntegratedDevelopmentEnvironment\IntegratedDevelopmentEnvironment.csproj", "{5288A5FD-3A5A-4340-91EE-2D1E93440EF1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FastDelegate", "..\FastDelegate\FastDelegate.csproj", "{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parser", "..\Plange\Parser\Parser.csproj", "{B6457078-FAE4-4032-838C-30166FE89633}"
 EndProject
@@ -112,21 +107,6 @@ Global
 		{5288A5FD-3A5A-4340-91EE-2D1E93440EF1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{5288A5FD-3A5A-4340-91EE-2D1E93440EF1}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{5288A5FD-3A5A-4340-91EE-2D1E93440EF1}.Release|Win32.ActiveCfg = Release|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Debug|Win32.ActiveCfg = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.DebugWithoutPlugins|Any CPU.ActiveCfg = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.DebugWithoutPlugins|Any CPU.Build.0 = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.DebugWithoutPlugins|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.DebugWithoutPlugins|Mixed Platforms.Build.0 = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.DebugWithoutPlugins|Win32.ActiveCfg = Debug|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37}.Release|Win32.ActiveCfg = Release|Any CPU
 		{B6457078-FAE4-4032-838C-30166FE89633}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B6457078-FAE4-4032-838C-30166FE89633}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6457078-FAE4-4032-838C-30166FE89633}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -160,9 +140,6 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{DF14BFD1-226C-4975-B8E9-0EF0A9B1DE37} = {5D3EDB85-8150-40ED-9E88-057823E71E65}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = Common\Common.csproj
