@@ -3,11 +3,11 @@ using System;
 namespace Parlex {
     public class StringTerminal : ITerminal {
         protected bool Equals(StringTerminal other) {
-            return String.Equals(_text, other._text);
+            return String.Equals(Text, other.Text);
         }
 
         public override int GetHashCode() {
-            return (_text != null ? _text.GetHashCode() : 0);
+            return (Text != null ? Text.GetHashCode() : 0);
         }
 
         private readonly String _text;
@@ -38,11 +38,15 @@ namespace Parlex {
         }
 
         public String Name {
-            get { return "String terminal: " + _text; }
+            get { return "String terminal: " + Text; }
+        }
+
+        public string Text {
+            get { return _text; }
         }
 
         public override string ToString() {
-            return _text;
+            return Text;
         }
 
         public override bool Equals(object obj) {

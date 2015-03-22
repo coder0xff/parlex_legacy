@@ -50,7 +50,7 @@ namespace Parlex {
             throw new InvalidOperationException();
         }
 
-        private static BehaviorTree.Node ProcessTermClause2(Parser.Job job, Match term) {
+        private static BehaviorTree.Node ProcessTermClause(Parser.Job job, Match term) {
             var result = new BehaviorTree.Sequence();
             foreach (MatchClass matchClass in term.Children) {
                 if (matchClass.Symbol.Is(StandardSymbols.WhiteSpaceTerminal)) {
@@ -67,7 +67,7 @@ namespace Parlex {
             var result = new BehaviorTree.Choice();
 
             for (var index = 0; index < expression.Children.Length; index += 2) {
-                var child = ProcessTermClause2(job, job.AbstractSyntaxGraph.NodeTable[expression.Children[index]].First());
+                var child = ProcessTermClause(job, job.AbstractSyntaxGraph.NodeTable[expression.Children[index]].First());
                 result.Children.Add(child);
             }
 
@@ -151,6 +151,14 @@ namespace Parlex {
             return sb.ToString();
         }
 
+        private static String BehaviorTreeOptionalToString(BehaviorTree.Optional repetition) {
+            var sb = new StringBuilder();
+            sb.Append("[");
+            sb.Append(BehaviorTreeNodeToString(repetition.Child));
+            sb.Append("]");
+            return sb.ToString();
+        }
+
         private static String BehaviorTreeRepetitionToString(BehaviorTree.Repetition repetition) {
             var sb = new StringBuilder();
             sb.Append("{");
@@ -160,13 +168,10 @@ namespace Parlex {
         }
 
         private static String BehaviorTreeTerminalToString(BehaviorTree.Leaf leaf) {
-            string temp = leaf.Symbol.ToString();
-            if (leaf.Symbol is StringTerminal) {
-                if (temp == "\"") {
-                    temp = "doubleQuote";
-                } else {
-                    temp = Util.QuoteStringLiteral(temp);
-                }
+            string temp = leaf.Symbol.Name;
+            var asStringTerminal = leaf.Symbol as StringTerminal;
+            if (asStringTerminal != null) {
+                temp = Util.QuoteStringLiteral(asStringTerminal.Text);
             }
             String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(leaf.Symbol);
             if (temp2 != null) temp = temp2;
@@ -185,6 +190,9 @@ namespace Parlex {
             }
             if (node is BehaviorTree.Leaf) {
                 return BehaviorTreeTerminalToString(node as BehaviorTree.Leaf);
+            }
+            if (node is BehaviorTree.Optional) {
+                return BehaviorTreeOptionalToString(node as BehaviorTree.Optional);
             }
             throw new InvalidOperationException();
         }
