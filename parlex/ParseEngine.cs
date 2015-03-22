@@ -104,10 +104,14 @@ namespace Parlex {
                                 var newPos = dependencyEntry.Context.Position + matchClass.Length;
                                 var newChain = new List<MatchClass>(dependencyEntry.Context.ParseChain) { matchClass };
                                 var oldContext = dependencyEntry.Context;
-                                dependencyEntry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain };
                                 dependencyEntry.Node.StartDependency();
-                                dependencyEntry.Handler();
-                                dependencyEntry.Node.EndDependency();
+                                var entry = dependencyEntry;
+                                _threadPool.QueueUserWorkItem(_ => {
+                                        entry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain };
+                                        entry.Handler();
+                                        entry.Node.EndDependency();
+                                        entry.Node._context.Value = null;
+                                    });
                                 dependencyEntry.Node._context.Value = oldContext;
                             }
                             if (Completed && !dependencyEntry.Ended) {
