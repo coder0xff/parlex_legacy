@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlClient;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -41,15 +42,19 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void Evaluate() {
-            if (_cachedGrammar == null) { 
-            _cachedGrammar = _grammarEditor.Grammar.ToNfaGrammar();
-}
+            if (_cachedGrammar == null) {
+                toolStripStatusLabel1.Text = "Analyzing grammar";
+                Application.DoEvents();
+                _cachedGrammar = _grammarEditor.Grammar.ToNfaGrammar();
+            }
             var parser = new Parser(_cachedGrammar);
             NfaProduction m = _cachedGrammar.Main;
             if (m == null) {
                 toolStripStatusLabel1.Text = "The grammar does not have a main production";
                 return;
             }
+            toolStripStatusLabel1.Text = "Parsing...";
+            Application.DoEvents();
             DateTime start = DateTime.Now;
             var job = parser.Parse(textBoxDocument.Text, 0, -1, m);
             job.Join();

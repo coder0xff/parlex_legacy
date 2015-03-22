@@ -38,11 +38,12 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportCSharpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.generateCParserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exportCSharpSaveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.productionContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.generateCParserToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.productionContextMenu.SuspendLayout();
@@ -165,6 +166,7 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItem1,
             this.exportCSharpToolStripMenuItem,
             this.generateCParserToolStripMenuItem});
             this.fileToolStripMenuItem.MergeAction = System.Windows.Forms.MergeAction.MatchOnly;
@@ -174,10 +176,21 @@
             // 
             // exportCSharpToolStripMenuItem
             // 
+            this.exportCSharpToolStripMenuItem.MergeAction = System.Windows.Forms.MergeAction.Insert;
+            this.exportCSharpToolStripMenuItem.MergeIndex = 6;
             this.exportCSharpToolStripMenuItem.Name = "exportCSharpToolStripMenuItem";
             this.exportCSharpToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
             this.exportCSharpToolStripMenuItem.Text = "Export C#";
             this.exportCSharpToolStripMenuItem.Click += new System.EventHandler(this.exportCSharpToolStripMenuItem_Click);
+            // 
+            // generateCParserToolStripMenuItem
+            // 
+            this.generateCParserToolStripMenuItem.MergeAction = System.Windows.Forms.MergeAction.Insert;
+            this.generateCParserToolStripMenuItem.MergeIndex = 7;
+            this.generateCParserToolStripMenuItem.Name = "generateCParserToolStripMenuItem";
+            this.generateCParserToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
+            this.generateCParserToolStripMenuItem.Text = "Generate C# Parser";
+            this.generateCParserToolStripMenuItem.Click += new System.EventHandler(this.generateCParserToolStripMenuItem_Click);
             // 
             // exportCSharpSaveFileDialog
             // 
@@ -197,12 +210,12 @@
             this.testToolStripMenuItem.Text = "Test";
             this.testToolStripMenuItem.Click += new System.EventHandler(this.testToolStripMenuItem_Click);
             // 
-            // generateCParserToolStripMenuItem
+            // toolStripMenuItem1
             // 
-            this.generateCParserToolStripMenuItem.Name = "generateCParserToolStripMenuItem";
-            this.generateCParserToolStripMenuItem.Size = new System.Drawing.Size(174, 22);
-            this.generateCParserToolStripMenuItem.Text = "Generate C# Parser";
-            this.generateCParserToolStripMenuItem.Click += new System.EventHandler(this.generateCParserToolStripMenuItem_Click);
+            this.toolStripMenuItem1.MergeAction = System.Windows.Forms.MergeAction.Insert;
+            this.toolStripMenuItem1.MergeIndex = 5;
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(171, 6);
             // 
             // GrammarEditor
             // 
@@ -246,6 +259,7 @@
         private System.Windows.Forms.ToolStripMenuItem testToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem generateCParserToolStripMenuItem;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
+        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;
 
     }
 }
