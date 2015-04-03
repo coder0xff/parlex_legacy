@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Parlex {
-    public interface ISyntaxNodeFactory {
+    public interface IParseNodeFactory {
         String Name { get; }
         Boolean IsGreedy { get; }
         ParseNode Create();

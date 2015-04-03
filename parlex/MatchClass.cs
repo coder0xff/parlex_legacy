@@ -1,8 +1,15 @@
-﻿namespace Parlex {
-    internal class MatchClass {
-        private int Position { get; set; }
-        internal ISyntaxNodeFactory Symbol { get; private set; }
-        internal int Length { get; private set; }
+﻿using System;
+
+namespace Parlex {
+    public class MatchClass {
+        public ParseEngine Engine { get; private set; }
+        public int Position { get; private set; }
+        public IParseNodeFactory Symbol { get; private set; }
+        public int Length { get; private set; }
+
+        public String Text {
+            get { return Engine.Document.Utf32Substring(Position, Length); }
+        }
 
         private MatchCategory Category {
             get {
@@ -10,7 +17,8 @@
             }
         }
 
-        internal MatchClass(int position, ISyntaxNodeFactory symbol, int length) {
+        internal MatchClass(ParseEngine engine, int position, IParseNodeFactory symbol, int length) {
+            Engine = engine;
             Position = position;
             Symbol = symbol;
             Length = length;

@@ -532,7 +532,7 @@ namespace IntegratedDevelopmentEnvironment {
             if (folderBrowserDialog1.ShowDialog(this) == DialogResult.OK) {
                 bool errors;
                 var generator = new CSharpParserGenerator("Generated");
-                generator.Generate(folderBrowserDialog1.SelectedPath, _grammar.ToNfaGrammar(), "Parser");
+                generator.Generate(folderBrowserDialog1.SelectedPath, NfaGrammar, "Parser");
             }
         }
     }

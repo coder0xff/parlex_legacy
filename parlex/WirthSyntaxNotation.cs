@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Automata;
-using Common;
 
 namespace Parlex {
     public static class WirthSyntaxNotation {

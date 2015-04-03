@@ -8,17 +8,21 @@ using System.Threading;
 namespace Parlex {
     public class ParseEngine {
         internal readonly Int32[] CodePoints;
-        private readonly ISyntaxNodeFactory _main;
+        private readonly IParseNodeFactory _main;
         private int _activeDispatcherCount;
         private readonly Dictionary<MatchCategory, Dispatcher> _dispatchers = new Dictionary<MatchCategory, Dispatcher>();
         private readonly ManualResetEventSlim _blocker = new ManualResetEventSlim();
         public AbstractSyntaxGraph AbstractSyntaxGraph { get; private set; }
+
+        public string Document { get; private set; }
+
         private readonly int _start;
         private readonly int _length;
         internal readonly CustomThreadPool ThreadPool = new CustomThreadPool();
         private readonly Action _idleHandler;
 
-        public ParseEngine(string document, ISyntaxNodeFactory main, int start = 0, int length = -1) {
+        public ParseEngine(string document, IParseNodeFactory main, int start = 0, int length = -1) {
+            Document = document;
             _start = start;
             CodePoints = document.GetUtf32CodePoints();
             _length = length < 0 ? CodePoints.Length : length;
@@ -29,7 +33,7 @@ namespace Parlex {
         }
 
         public ParseEngine(string document, Type mainSyntaxNode, int start = 0, int length = -1) :
-            this(document, new GenericSyntaxNodeFactory(mainSyntaxNode), start, length) { }
+            this(document, new GenericParseNodeFactory(mainSyntaxNode), start, length) { }
 
         internal class Dispatcher : MatchCategory {
             internal class DependencyEntry {
@@ -48,7 +52,7 @@ namespace Parlex {
             internal bool Completed;
             internal event Action<Dispatcher> OnComplete;
             private readonly CustomThreadPool _threadPool;
-            internal Dispatcher(CustomThreadPool threadPool, int position, ISyntaxNodeFactory symbol)
+            internal Dispatcher(CustomThreadPool threadPool, int position, IParseNodeFactory symbol)
                 : base(position, symbol) {
                 _threadPool = threadPool;
                 IsGreedy = symbol.IsGreedy;
@@ -195,7 +199,7 @@ namespace Parlex {
             GetDispatcher(new MatchCategory(0, _main));
         }
 
-        internal void AddDependency(ISyntaxNodeFactory symbol, Dispatcher dependent, ParseNode node, Action handler) {
+        internal void AddDependency(IParseNodeFactory symbol, Dispatcher dependent, ParseNode node, Action handler) {
             GetDispatcher(new MatchCategory(node._context.Value.Position, symbol)).AddDependency(dependent, node, handler);
         }
 
@@ -255,7 +259,7 @@ namespace Parlex {
 
         private void ConstructAbstractSyntaxGraph() {
             AbstractSyntaxGraph = new AbstractSyntaxGraph {
-                Root = new MatchClass(_start, _main, _length),
+                Root = new MatchClass(this, _start, _main, _length),
                 NodeTable = new Dictionary<MatchClass, List<Match>>()
             };
             AddSymbolMatchesToAbstractSyntaxForest();

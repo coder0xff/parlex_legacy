@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using Parlex;
 using WeifenLuo.WinFormsUI.Docking;
@@ -78,6 +80,7 @@ namespace IntegratedDevelopmentEnvironment {
             }
             toolStripStatusLabel1.Text += " (" + seconds + "s)";
             listBoxErrors.Items.Clear();
+            PopulateStructureTreeView(job.AbstractSyntaxGraph);
             //listBoxErrors.Items.AddRange(job.PossibleErrors.Select(x => new ErrorInfo(x)).ToArray<Object>());
         }
 
@@ -111,5 +114,38 @@ namespace IntegratedDevelopmentEnvironment {
                 ScheduleParse();
             }
         }
+
+        private TreeNode PopulateStructureTreeView(AbstractSyntaxGraph asg, Match match) {
+            var result = new TreeNode("Match");
+            foreach (var matchClass in match.Children) {
+                result.Nodes.Add(PopulateStructureTreeView(asg, matchClass));
+            }
+            return result;
+        }
+
+        private TreeNode PopulateStructureTreeView(AbstractSyntaxGraph asg, MatchClass matchClass) {
+            var builder = new StringBuilder();
+            builder.Append(matchClass.Symbol.Name);
+            builder.Append(" ");
+            builder.Append(matchClass.Position);
+            builder.Append(" ");
+            builder.Append(matchClass.Length.ToString());
+            builder.Append(" : ");
+            var text = matchClass.Engine.Document.Utf32Substring(matchClass.Position, matchClass.Length);
+            builder.AppendLine(Util.QuoteStringLiteral(text));
+            var result = new TreeNode(builder.ToString());
+            foreach (var match in asg.NodeTable[matchClass]) {
+                result.Nodes.Add(PopulateStructureTreeView(asg, match));
+            }
+            return result;
+        }
+
+        public void PopulateStructureTreeView(AbstractSyntaxGraph asg) {
+            treeViewStructure.Nodes.Clear();
+            if (!asg.IsEmpty) {
+                treeViewStructure.Nodes.Add(PopulateStructureTreeView(asg, asg.Root));
+            }
+        }
+
     }
 }

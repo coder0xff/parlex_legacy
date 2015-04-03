@@ -1,8 +1,8 @@
 ﻿namespace Parlex {
     public class MatchCategory {
         public int Position { get; private set; }
-        public ISyntaxNodeFactory Symbol { get; private set; }
-        internal MatchCategory(int position, ISyntaxNodeFactory symbol) {
+        public IParseNodeFactory Symbol { get; private set; }
+        internal MatchCategory(int position, IParseNodeFactory symbol) {
             Position = position;
             Symbol = symbol;
         }

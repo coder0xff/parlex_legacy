@@ -7,10 +7,10 @@ namespace Parlex {
         private readonly ISymbol _mainSymbol;
         public Parser(NfaGrammar grammar, ISymbol mainSymbol = null) {
             _mainSymbol = mainSymbol ?? grammar.Main;
-            _factories = new AutoDictionary<ISymbol, DynamicSyntaxNodeFactory>(symbol => new DynamicSyntaxNodeFactory(this, symbol));
+            _factories = new AutoDictionary<ISymbol, DynamicParseNodeFactory>(symbol => new DynamicParseNodeFactory(this, symbol));
         }
 
-        private readonly AutoDictionary<ISymbol, DynamicSyntaxNodeFactory> _factories;
+        private readonly AutoDictionary<ISymbol, DynamicParseNodeFactory> _factories;
 
         private class DynamicParseNode : ParseNode {
             private readonly NfaProduction _production;
@@ -40,12 +40,12 @@ namespace Parlex {
             }
         }
 
-        internal class DynamicSyntaxNodeFactory : ISyntaxNodeFactory {
+        internal class DynamicParseNodeFactory : IParseNodeFactory {
             private readonly Parser _parser;
             private readonly NfaProduction _production;
             private readonly ITerminal _terminal;
 
-            public DynamicSyntaxNodeFactory(Parser parser, ISymbol symbol) {
+            public DynamicParseNodeFactory(Parser parser, ISymbol symbol) {
                 _parser = parser;
                 _production = symbol as NfaProduction;
                 if (_production == null) {
@@ -96,7 +96,7 @@ namespace Parlex {
             private readonly ParseEngine _engine;
             private readonly String _document;
             public String Document { get { return _document; } }
-            internal Job(String document, int start, int length, DynamicSyntaxNodeFactory main) {
+            internal Job(String document, int start, int length, DynamicParseNodeFactory main) {
                 _document = document;
                 _engine = new ParseEngine(_document, main, start, length);
             }

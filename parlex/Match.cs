@@ -3,17 +3,17 @@ using System.Linq;
 using System.Text;
 
 namespace Parlex {
-    internal class Match {
+    public class Match {
         internal MatchClass MatchClass {
             get {
-                return new MatchClass(Position, Symbol, Length);
+                return new MatchClass(Engine, Position, Symbol, Length);
             }
         }
-        internal int Position { get; set; }
-        internal ISyntaxNodeFactory Symbol { get; set; }
-        internal int Length { get; set; }
-        internal MatchClass[] Children { get; set; }
-        internal ParseEngine Engine { private get; set; }
+        public int Position { get; internal set; }
+        public IParseNodeFactory Symbol { get; internal set; }
+        public int Length { get; internal set; }
+        public MatchClass[] Children { get; internal set; }
+        public ParseEngine Engine { get; set; }
 
         public override string ToString() {
             var sb = new StringBuilder();

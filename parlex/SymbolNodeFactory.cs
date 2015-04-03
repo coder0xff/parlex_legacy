@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Parlex {
-    internal class SymbolNodeFactory : ISyntaxNodeFactory {
+    internal class SymbolNodeFactory : IParseNodeFactory {
         protected bool Equals(SymbolNodeFactory other) {
             return Equals(_production, other._production) && Equals(_terminal, other._terminal);
         }

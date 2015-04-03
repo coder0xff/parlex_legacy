@@ -5,30 +5,30 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Parlex {
-    public class GenericSyntaxNodeFactory<T> : ISyntaxNodeFactory where T : ParseNode, new() {
+    public class GenericParseNodeFactory<T> : IParseNodeFactory where T : ParseNode, new() {
         public string Name { get; private set; }
         public bool IsGreedy { get; private set; }
 
-        ParseNode ISyntaxNodeFactory.Create() {
+        ParseNode IParseNodeFactory.Create() {
             return new T();
         }
 
-        bool ISyntaxNodeFactory.Is(ITerminal terminal) {
+        bool IParseNodeFactory.Is(ITerminal terminal) {
             return false;
         }
 
-        bool ISyntaxNodeFactory.Is(NfaProduction production) {
+        bool IParseNodeFactory.Is(NfaProduction production) {
             return false;
         }
 
-        public GenericSyntaxNodeFactory() {
+        public GenericParseNodeFactory() {
             Name = typeof(T).Name;
             IsGreedy = typeof(T).GetCustomAttributes(typeof(GreedyAttribute), false).Length > 0;
         }
 
-        public static ISyntaxNodeFactory FromType(Type t) {
-            var t2 = typeof(GenericSyntaxNodeFactory<>).MakeGenericType(t);
-            return (ISyntaxNodeFactory)Activator.CreateInstance(t2);
+        public static IParseNodeFactory FromType(Type t) {
+            var t2 = typeof(GenericParseNodeFactory<>).MakeGenericType(t);
+            return (IParseNodeFactory)Activator.CreateInstance(t2);
         }
 
         public override bool Equals(object obj) {
@@ -38,7 +38,7 @@ namespace Parlex {
             if (ReferenceEquals(this, obj)) {
                 return true;
             }
-            var asNonGeneric = obj as GenericSyntaxNodeFactory;
+            var asNonGeneric = obj as GenericParseNodeFactory;
             if (asNonGeneric != null) {
                 return Equals(asNonGeneric._backing);
             }
@@ -53,33 +53,33 @@ namespace Parlex {
         }
     }
 
-    public class GenericSyntaxNodeFactory : ISyntaxNodeFactory {
+    public class GenericParseNodeFactory : IParseNodeFactory {
         private Type _t;
-        internal ISyntaxNodeFactory _backing;
+        internal IParseNodeFactory _backing;
 
-        public GenericSyntaxNodeFactory(Type t) {
+        public GenericParseNodeFactory(Type t) {
             _t = t;
-            var t2 = typeof(GenericSyntaxNodeFactory<>).MakeGenericType(t);
-            _backing = (ISyntaxNodeFactory)Activator.CreateInstance(t2);
+            var t2 = typeof(GenericParseNodeFactory<>).MakeGenericType(t);
+            _backing = (IParseNodeFactory)Activator.CreateInstance(t2);
         }
 
-        string ISyntaxNodeFactory.Name {
+        string IParseNodeFactory.Name {
             get { return _backing.Name; }
         }
 
-        bool ISyntaxNodeFactory.IsGreedy {
+        bool IParseNodeFactory.IsGreedy {
             get { return _backing.IsGreedy; }
         }
 
-        ParseNode ISyntaxNodeFactory.Create() {
+        ParseNode IParseNodeFactory.Create() {
             return _backing.Create();
         }
 
-        bool ISyntaxNodeFactory.Is(ITerminal terminal) {
+        bool IParseNodeFactory.Is(ITerminal terminal) {
             return _backing.Is(terminal);
         }
 
-        bool ISyntaxNodeFactory.Is(NfaProduction production) {
+        bool IParseNodeFactory.Is(NfaProduction production) {
             return _backing.Is(production);
         }
 

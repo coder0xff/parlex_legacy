@@ -43,7 +43,7 @@ namespace Parlex {
                     if (asStringTerminal != null) {
                         builder.AppendLine("\t\t\tTransition(" + Util.QuoteStringLiteral(asStringTerminal.ToString()) + ", State" + toState.Value + ");");                        
                     } else if (StandardSymbols.IsBuiltIn(transition)) {
-                        builder.AppendLine("\t\t\tTransition(Grammar." + StandardSymbols.TryGetBuiltInFieldBySymbol(transition).Name + ", State" + toState.Value + ");");
+                        builder.AppendLine("\t\t\tTransition(StandardSymbols." + StandardSymbols.TryGetBuiltInFieldBySymbol(transition).Name + ", State" + toState.Value + ");");
                     } else {
                         builder.AppendLine("\t\t\tTransition<" + nameMap[transition] + ">(State" + toState.Value + ");");
                     }
@@ -61,7 +61,7 @@ namespace Parlex {
                 builder.AppendLine("using Parlex;");
                 builder.AppendLine();
                 builder.AppendLine("namespace " + _namespace + " {");
-                builder.AppendLine("\tpartial class " + cSharpName + " : SyntaxNode {");
+                builder.AppendLine("\tpublic partial class " + cSharpName + " : ParseNode {");
                 builder.AppendLine("\t\tpublic override void Start() {");
                 foreach (var startState in nfa.StartStates) {
                     builder.AppendLine("\t\t\tState" + startState.Value + "();");

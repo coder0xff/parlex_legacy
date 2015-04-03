@@ -37,6 +37,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -61,7 +62,7 @@
     <Compile Include="InvalidNfaOperationException.cs" />
     <Compile Include="IParserGenerator.cs" />
     <Compile Include="ISymbol.cs" />
-    <Compile Include="ISyntaxNodeFactory.cs" />
+    <Compile Include="IParseNodeFactory.cs" />
     <Compile Include="ITerminal.cs" />
     <Compile Include="Match.cs" />
     <Compile Include="MatchCategory.cs" />
@@ -83,7 +84,7 @@
     <Compile Include="StringTerminal.cs" />
     <Compile Include="SymbolNodeFactory.cs" />
     <Compile Include="ParseNode.cs" />
-    <Compile Include="GenericSyntaxNodeFactory.cs" />
+    <Compile Include="GenericParseNodeFactory.cs" />
     <Compile Include="TerminalParseNode.cs" />
     <Compile Include="UndefinedProductionException.cs" />
     <Compile Include="Unicode.cs" />

@@ -61,11 +61,11 @@ namespace Parlex {
         public static String QuoteStringLiteral(String text) {
             text = text.Replace("\\", "\\\\");
             text = text.Replace("\a", "\\a");
-            text = text.Replace("\b", "\\a");
-            text = text.Replace("\f", "\\a");
-            text = text.Replace("\n", "\\a");
-            text = text.Replace("\r", "\\a");
-            text = text.Replace("\t", "\\a");
+            text = text.Replace("\b", "\\b");
+            text = text.Replace("\f", "\\f");
+            text = text.Replace("\n", "\\n");
+            text = text.Replace("\r", "\\r");
+            text = text.Replace("\t", "\\t");
             //text = text.Replace("'", "\'");
             text = text.Replace("\"", "\\\"");
             //text = text.Replace("?", "\\?");

@@ -28,7 +28,7 @@ namespace Parlex {
         public abstract void Start();
         public virtual void OnCompletion(NodeParseResult result) {}
 
-        protected void Transition(ISyntaxNodeFactory symbol, Action nextState) {
+        protected void Transition(IParseNodeFactory symbol, Action nextState) {
             StartDependency();
             Engine.AddDependency(symbol, Dispatcher, this, nextState);
         }
@@ -38,7 +38,7 @@ namespace Parlex {
         }
 
         protected void Transition<T>(Action nextState) where T : ParseNode, new() {
-            Transition(new GenericSyntaxNodeFactory<T>(), nextState);
+            Transition(new GenericParseNodeFactory<T>(), nextState);
         }
 
         protected void Transition(String text, Action nextState) {
