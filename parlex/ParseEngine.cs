@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace Parlex {
     public class ParseEngine {
-        internal readonly Int32[] CodePoints;
+        public readonly Int32[] CodePoints;
         private readonly IParseNodeFactory _main;
         private int _activeDispatcherCount;
         private readonly Dictionary<MatchCategory, Dispatcher> _dispatchers = new Dictionary<MatchCategory, Dispatcher>();

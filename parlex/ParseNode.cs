@@ -8,7 +8,7 @@ using Parlex;
 
 namespace Parlex {
     public abstract class ParseNode {
-        internal ParseEngine Engine { get; set; }
+        public ParseEngine Engine { get; set; }
         internal ParseEngine.Dispatcher Dispatcher { get; set; }
         internal readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
 
