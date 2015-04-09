@@ -36,7 +36,7 @@ namespace Parlex {
         }
 
         ParseNode IParseNodeFactory.Create() {
-            return (ParseNode)Activator.CreateInstance(_t); //nodes[_t];
+            return nodes[_t];
         }
 
         bool IParseNodeFactory.Is(TerminalDefinition terminalDefinition) {

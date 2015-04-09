@@ -9,7 +9,7 @@ namespace Parlex {
         }
 
         public override void Start() {
-            if (!_terminalDefinition.Matches(_context.Value.Engine.CodePoints, Position)) {
+            if (!_terminalDefinition.Matches(Context.Value.Engine.CodePoints, Position)) {
                 return;
             }
             Position += _terminalDefinition.Length;

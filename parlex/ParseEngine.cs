@@ -88,7 +88,7 @@ namespace Parlex {
                 System.Diagnostics.Debug.WriteLine("Creating dependency by Dispatcher " + dependent + " on Dispatcher " + this);
 #endif
                 lock (Dependents) {
-                    Dependents.Add(new DependencyEntry { Node = node, Handler = handler, Context = node._context.Value, Dependent = dependent }); //context is TLS
+                    Dependents.Add(new DependencyEntry { Node = node, Handler = handler, Context = node.Context.Value, Dependent = dependent }); //context is TLS
                 }
                 ScheduleFlush();
             }
@@ -110,23 +110,23 @@ namespace Parlex {
                                 var newPos = dependencyEntry.Context.Position + matchClass.Length;
                                 var newChain = new List<MatchClass>(dependencyEntry.Context.ParseChain) { matchClass };
                                 var oldContext = dependencyEntry.Context;
-                                dependencyEntry.Node._context.Value = dependencyEntry.Context;
+                                dependencyEntry.Node.Context.Value = dependencyEntry.Context;
                                 dependencyEntry.Node.StartDependency();
                                 var entry = dependencyEntry;
                                 _threadPool.QueueUserWorkItem(_ => {
-                                        entry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine, Dispatcher = entry.Context.Dispatcher, DependencyCounter = entry.Context.DependencyCounter};
+                                        entry.Node.Context.Value = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine, Dispatcher = entry.Context.Dispatcher, DependencyCounter = entry.Context.DependencyCounter};
                                         entry.Handler();
                                         entry.Node.EndDependency();
-                                        entry.Node._context.Value = null;
+                                        entry.Node.Context.Value = null;
                                     });
-                                dependencyEntry.Node._context.Value = oldContext;
+                                dependencyEntry.Node.Context.Value = oldContext;
                             }
                             if (Completed && !dependencyEntry.Ended) {
                                 dependencyEntry.Ended = true;
 #if PARSE_TRACE
                                 System.Diagnostics.Debug.WriteLine("Informing " + dependencyEntry.Dependent + " that " + this + " has completed");
 #endif
-                                dependencyEntry.Node._context.Value = dependencyEntry.Context;
+                                dependencyEntry.Node.Context.Value = dependencyEntry.Context;
                                 dependencyEntry.Node.EndDependency();
                             }
                         }
@@ -181,7 +181,7 @@ namespace Parlex {
             dispatcher.OnComplete += OnDispatcherTerminated;
             ThreadPool.QueueUserWorkItem(_ => {
                 var node = dispatcher.Symbol.Create();
-                node._context.Value = new ParseContext {
+                node.Context.Value = new ParseContext {
                     Position = dispatcher.Position, 
                     ParseChain = new List<MatchClass>(), 
                     Engine = this, 
@@ -208,7 +208,7 @@ namespace Parlex {
         }
 
         internal void AddDependency(IParseNodeFactory symbol, Dispatcher dependent, ParseNode node, Action handler) {
-            GetDispatcher(new MatchCategory(node._context.Value.Position, symbol)).AddDependency(dependent, node, handler);
+            GetDispatcher(new MatchCategory(node.Context.Value.Position, symbol)).AddDependency(dependent, node, handler);
         }
 
         private void Finish() {

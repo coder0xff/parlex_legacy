@@ -55,8 +55,8 @@ namespace NUnitTests {
             }
 
             private void State1() {
-                if (Position < _context.Value.Engine.CodePoints.Length) {
-                    if (_context.Value.Engine.CodePoints[Position] == '+') {
+                if (Position < Context.Value.Engine.CodePoints.Length) {
+                    if (Context.Value.Engine.CodePoints[Position] == '+') {
                         Position++;
                         Transition(StandardSymbols.LetterTerminalDefinition, State2);
                     }

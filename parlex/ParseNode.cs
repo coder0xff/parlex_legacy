@@ -8,18 +8,16 @@ using Parlex;
 
 namespace Parlex {
     public abstract class ParseNode {
-        public readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
-
-        internal int _activeDependencyCount;
+        public readonly ThreadLocal<ParseContext> Context = new ThreadLocal<ParseContext>();
 
         public int Position {
             get {
-                return _context.Value.Position;
+                return Context.Value.Position;
             }
             set {
-                var temp = _context.Value;
+                var temp = Context.Value;
                 temp.Position = value;
-                _context.Value = temp;
+                Context.Value = temp;
             }
         }
 
@@ -28,7 +26,7 @@ namespace Parlex {
 
         protected void Transition(IParseNodeFactory symbol, Action nextState) {
             StartDependency();
-            _context.Value.Engine.AddDependency(symbol, _context.Value.Dispatcher, this, nextState);
+            Context.Value.Engine.AddDependency(symbol, Context.Value.Dispatcher, this, nextState);
         }
 
         protected void Transition(RecognizerDefinition recognizerDefinition, Action nextState) {
@@ -44,32 +42,24 @@ namespace Parlex {
         }
 
         protected void Accept() {
-            var dispatcher = _context.Value.Dispatcher;
+            var dispatcher = Context.Value.Dispatcher;
             dispatcher.AddResult(new Match {
-                Children = _context.Value.ParseChain.ToArray(),
-                Length = _context.Value.Position - dispatcher.Position,
+                Children = Context.Value.ParseChain.ToArray(),
+                Length = Context.Value.Position - dispatcher.Position,
                 Position = dispatcher.Position,
                 Symbol = dispatcher.Symbol,
-                Engine = _context.Value.Engine
+                Engine = Context.Value.Engine
             });
         }
 
         internal void StartDependency() {
-            /*/
-            Interlocked.Increment(ref _activeDependencyCount);
-            /*/
-            _context.Value.DependencyCounter.Increment();
-            //*/
+            Context.Value.DependencyCounter.Increment();
         }
 
         internal void EndDependency() {
-            var savedContext = _context.Value;
-            /*/
-            if (Interlocked.Decrement(ref _activeDependencyCount) == 0) {
-            /*/
-            if (_context.Value.DependencyCounter.Decrement()) {
-            //*/
-                _context.Value.Engine.ThreadPool.QueueUserWorkItem(_ => savedContext.Dispatcher.NodeCompleted());
+            var savedContext = Context.Value;
+            if (Context.Value.DependencyCounter.Decrement()) {
+                Context.Value.Engine.ThreadPool.QueueUserWorkItem(_ => savedContext.Dispatcher.NodeCompleted());
             }
         }
     }
