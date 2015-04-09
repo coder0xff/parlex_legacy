@@ -2,7 +2,8 @@ using System;
 using Automata;
 
 namespace Parlex {
-    public class NfaProduction : Nfa<ISymbol>, ISymbol {
+    public class NfaProduction : ISymbol {
+        public Nfa<ISymbol> Nfa;
         private readonly bool _eatTrailingWhitespace;
         private readonly bool _greedy;
         private String _name;
@@ -13,8 +14,8 @@ namespace Parlex {
             _eatTrailingWhitespace = eatTrailingWhitespace;
         }
 
-        public NfaProduction(String name, bool greedy, Nfa<ISymbol> source)
-            : base(source) {
+        public NfaProduction(String name, bool greedy, Nfa<ISymbol> source) {
+            Nfa = new Nfa<ISymbol>(source);
             _name = name;
             _greedy = greedy;
         }

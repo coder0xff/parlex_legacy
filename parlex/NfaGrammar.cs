@@ -20,7 +20,7 @@ namespace Parlex {
             //Convert NfaProductions to Productions
             foreach (var nfaProduction in Productions) {
                 var resultProduction = map[nfaProduction];
-                var clone = new Nfa<ISymbol>(nfaProduction);
+                var clone = new Nfa<ISymbol>(nfaProduction.Nfa);
                 //And convert the transition that are NfaProductions to Productions
                 foreach (var from in clone.TransitionFunction) {
                     foreach (var transition in from.Value.ToArray()) {
@@ -34,7 +34,7 @@ namespace Parlex {
                         }
                     }
                 }
-                resultProduction.Behavior = new BehaviorTree(nfaProduction);
+                resultProduction.Behavior = new BehaviorTree(nfaProduction.Nfa);
                 result.Productions.Add(resultProduction);
                 if (nfaProduction == Main) {
                     result.Main = resultProduction;

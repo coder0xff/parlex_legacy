@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent.More;
 using System.Linq;
+using Automata;
 
 namespace Parlex {
     public class Parser {
@@ -22,16 +23,16 @@ namespace Parlex {
             }
 
             public override void Start() {
-                foreach (var state in _production.StartStates) {
+                foreach (var state in _production.Nfa.StartStates) {
                     ProcessState(state);
                 }
             }
 
-            private void ProcessState(NfaProduction.State state) {
-                if (_production.AcceptStates.Contains(state)) {
+            private void ProcessState(Nfa<ISymbol>.State state) {
+                if (_production.Nfa.AcceptStates.Contains(state)) {
                     Accept();
                 }
-                foreach (var transition in _production.GetTransitions().Where(transition => transition.FromState == state)) {
+                foreach (var transition in _production.Nfa.GetTransitions().Where(transition => transition.FromState == state)) {
                     var transition1 = transition;
                     Transition(_parser._factories[transition.Symbol], () => ProcessState(transition1.ToState));
                 }

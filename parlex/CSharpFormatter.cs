@@ -12,7 +12,7 @@ namespace Parlex {
         private Dictionary<ISymbol, String> SerializeStringTerminals(StreamWriter s, NfaGrammar grammar) {
             var results = new Dictionary<ISymbol, String>();
             var stringTerminals = grammar.Productions.SelectMany(production =>
-                production.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminal).Cast<StringTerminal>()
+                production.Nfa.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminal).Cast<StringTerminal>()
                 ).ToArray();
             for (var i = 0; i < stringTerminals.Length; i++) {
                 var name = "StringTerminal" + i;
@@ -53,19 +53,19 @@ namespace Parlex {
             var lowerCSharpName = Char.ToLower(cSharpName[0]) + cSharpName.Substring(1);
             var names = new Dictionary<Nfa<ISymbol>.State, string>();
             int counter = 0;
-            foreach (var state in production.States) {
+            foreach (var state in production.Nfa.States) {
                 names[state] = lowerCSharpName + "State" + counter;
                 counter++;
-                s.WriteLine("\t\tvar " + names[state] + " = new NfaProduction.State();");
+                s.WriteLine("\t\tvar " + names[state] + " = new Nfa<ISymbol>.State();");
                 s.WriteLine("\t\t" + cSharpName + ".States.Add(" + names[state] + ");");
             }
-            foreach (var startState in production.StartStates) {
+            foreach (var startState in production.Nfa.StartStates) {
                 s.WriteLine("\t\t" + cSharpName + ".StartStates.Add(" + names[startState] +");");
             }
-            foreach (var acceptState in production.AcceptStates) {
+            foreach (var acceptState in production.Nfa.AcceptStates) {
                 s.WriteLine("\t\t" + cSharpName + ".AcceptStates.Add(" + names[acceptState] + ");");
             }
-            foreach (var transition in production.GetTransitions()) {
+            foreach (var transition in production.Nfa.GetTransitions()) {
                 var symbolName = transition.Symbol.Name;
                 if (stringTerminalNames.ContainsKey(transition.Symbol)) {
                     symbolName = stringTerminalNames[transition.Symbol];

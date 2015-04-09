@@ -74,7 +74,7 @@ namespace Parlex {
                 map[production] = nfaProduction;
             }
             foreach (var nfaProduction in result.Productions) {
-                foreach (var from in nfaProduction.TransitionFunction) {
+                foreach (var from in nfaProduction.Nfa.TransitionFunction) {
                     foreach (var transition in from.Value.ToArray()) {
                         var asProduction = transition.Key as Production;
                         NfaProduction transitionNfa;

@@ -267,7 +267,7 @@ namespace Parlex {
         }
 
         private void DeadLockBreaker() {
-            //This should only be called when a complete work stopage is detected
+            //This should only be called when a complete work stoppage is detected
             //As such, locking is not needed
             var dispatchers = _dispatchers.Values.Where(dispatcher => !dispatcher.Completed).ToArray();
             //construct the flow graph
