@@ -1,10 +1,10 @@
 ﻿namespace Parlex {
     public class MatchCategory {
         public int Position { get; private set; }
-        public IParseNodeFactory Symbol { get; private set; }
-        internal MatchCategory(int position, IParseNodeFactory symbol) {
+        public Recognizer Recognizer { get; private set; }
+        internal MatchCategory(int position, Recognizer recognizer) {
             Position = position;
-            Symbol = symbol;
+            Recognizer = recognizer;
         }
 
         public override bool Equals(object obj) {
@@ -12,20 +12,20 @@
             if (ReferenceEquals(null, castObj)) {
                 return false;
             }
-            return castObj.Position.Equals(Position) && castObj.Symbol.Equals(Symbol);
+            return castObj.Position.Equals(Position) && castObj.Recognizer.Equals(Recognizer);
         }
 
         public override int GetHashCode() {
             unchecked {
                 int hash = 17;
                 hash = hash * 31 + Position.GetHashCode();
-                hash = hash * 31 + Symbol.GetHashCode();
+                hash = hash * 31 + Recognizer.GetHashCode();
                 return hash;
             }
         }
 
         public override string ToString() {
-            return "{" + Position + ":" + Symbol.Name + "}";
+            return "{" + Position + ":" + Recognizer.Name + "}";
         }
 
     }

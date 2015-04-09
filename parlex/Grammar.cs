@@ -22,11 +22,11 @@ namespace Parlex {
         }
 
         public void ResolveNode(BehaviorTree.Leaf leaf) {
-            var placeHolder = leaf.RecognizerDefinition as PlaceholderIRecognizerDefinition;
+            var placeHolder = leaf.Recognizer as PlaceholderRecognizer;
             if (placeHolder != null) {
                 var resolved = GetProduction(placeHolder.Name);
                 if (resolved != null) {
-                    leaf.RecognizerDefinition = resolved;
+                    leaf.Recognizer = resolved;
                 } else {
                     throw new UndefinedProductionException(placeHolder.Name);
                 }
@@ -47,7 +47,7 @@ namespace Parlex {
             }
         }
 
-        public static DynamicDispatcher _resolveNodeDispatcher;
+        private static DynamicDispatcher _resolveNodeDispatcher;
         void ResolveNode(BehaviorTree.Node node) {
             if (_resolveNodeDispatcher == null) {
                 _resolveNodeDispatcher = new DynamicDispatcher();
@@ -66,7 +66,7 @@ namespace Parlex {
             Dictionary<Production, NfaProduction> map = new Dictionary<Production, NfaProduction>();
             foreach (var production in Productions) {
                 var nfa = production.Behavior.ToNfa();
-                var nfaProduction = new NfaProduction(production.Name, production.Greedy, nfa);
+                var nfaProduction = new NfaProduction(production.Name, production.IsGreedy, nfa);
                 result.Productions.Add(nfaProduction);
                 if (production == Main) {
                     result.Main = nfaProduction;

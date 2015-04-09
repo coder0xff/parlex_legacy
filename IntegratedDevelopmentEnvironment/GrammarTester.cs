@@ -29,7 +29,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         class ErrorInfo {
             public readonly int Position;
-            public readonly RecognizerDefinition Symbol;
+            public readonly Recognizer Symbol;
             public ErrorInfo(MatchCategory error) {
                 Position = error.Position;
                 //recognizerDefinition = error.recognizerDefinition;
@@ -125,7 +125,7 @@ namespace IntegratedDevelopmentEnvironment {
 
         private TreeNode PopulateStructureTreeView(AbstractSyntaxGraph asg, MatchClass matchClass) {
             var builder = new StringBuilder();
-            builder.Append(matchClass.Symbol.Name);
+            builder.Append(matchClass.Recognizer.Name);
             builder.Append(" ");
             builder.Append(matchClass.Position);
             builder.Append(" ");

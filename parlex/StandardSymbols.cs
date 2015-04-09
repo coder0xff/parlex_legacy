@@ -9,34 +9,34 @@ using Automata;
 
 namespace Parlex {
     public class StandardSymbols {
-        public static readonly TerminalDefinition LetterTerminalDefinition = new CharacterSetTerminalDefinition("any letter character", Unicode.Letters, "letter");
-        public static readonly TerminalDefinition NumberTerminalDefinition = new CharacterSetTerminalDefinition("any number character", Unicode.Numbers, "number");
-        public static readonly TerminalDefinition DecimalDigitTerminalDefinition = new CharacterSetTerminalDefinition("'0' through '9'", Unicode.DecimalDigits, "decimalDigit");
-        public static readonly TerminalDefinition HexidecimalDigitTerminalDefinition = new CharacterSetTerminalDefinition("any hexidecimal digit", Unicode.HexidecimalDigits, "hexDigit");
-        public static readonly TerminalDefinition AlphaNumericTerminalDefinition = new CharacterSetTerminalDefinition("alphanumeric", Unicode.Alphanumeric);
-        public static readonly TerminalDefinition CharacterTerminalDefinition = new CharacterTerminalDefinitionT();
-        public static readonly TerminalDefinition WhiteSpaceTerminalDefinition = new CharacterSetTerminalDefinition("whitespace", Unicode.WhiteSpace);
-        public static readonly TerminalDefinition NonDoubleQuoteCharacterTerminalDefinition = new NonDoubleQuoteCharacterTerminalDefinitionT();
-        public static readonly TerminalDefinition DoubleQuoteTerminalDefinition = new StringTerminalDefinition("\"");
-        public static readonly TerminalDefinition NonDoubleQuoteNonBackSlashCharacterTerminalDefinition = new NonDoubleQuoteNonBackSlashCharacterTerminalDefinitionT();
-        public static readonly TerminalDefinition CarriageReturnTerminalDefinition = new CarriageReturnTerminalDefinitionT();
-        public static readonly TerminalDefinition LineFeedTerminalDefinition = new LineFeedTerminalDefinitionT();
-        public static readonly TerminalDefinition SimpleEscapeSequenceTerminalDefinition = new SimpleEscapeSequenceTerminalDefinitionT();
-        public static readonly TerminalDefinition UnicodeEscapeSequenceTerminalDefinition = new UnicodeEscapeSequenceTerminalDefinitionT();
+        public static readonly Terminal LetterTerminalDefinition = new CharacterSetTerminalDefinition("any letter character", Unicode.Letters, "letter");
+        public static readonly Terminal NumberTerminalDefinition = new CharacterSetTerminalDefinition("any number character", Unicode.Numbers, "number");
+        public static readonly Terminal DecimalDigitTerminalDefinition = new CharacterSetTerminalDefinition("'0' through '9'", Unicode.DecimalDigits, "decimalDigit");
+        public static readonly Terminal HexidecimalDigitTerminalDefinition = new CharacterSetTerminalDefinition("any hexidecimal digit", Unicode.HexidecimalDigits, "hexDigit");
+        public static readonly Terminal AlphaNumericTerminalDefinition = new CharacterSetTerminalDefinition("alphanumeric", Unicode.Alphanumeric);
+        public static readonly Terminal CharacterTerminalDefinition = new CharacterTerminalDefinitionT();
+        public static readonly Terminal WhiteSpaceTerminalDefinition = new CharacterSetTerminalDefinition("whitespace", Unicode.WhiteSpace);
+        public static readonly Terminal NonDoubleQuoteCharacterTerminalDefinition = new NonDoubleQuoteCharacterTerminalDefinitionT();
+        public static readonly Terminal DoubleQuoteTerminalDefinition = new StringTerminal("\"");
+        public static readonly Terminal NonDoubleQuoteNonBackSlashCharacterTerminalDefinition = new NonDoubleQuoteNonBackSlashCharacterTerminalDefinitionT();
+        public static readonly Terminal CarriageReturnTerminalDefinition = new CarriageReturnTerminalDefinitionT();
+        public static readonly Terminal LineFeedTerminalDefinition = new LineFeedTerminalDefinitionT();
+        public static readonly Terminal SimpleEscapeSequenceTerminalDefinition = new SimpleEscapeSequenceTerminalDefinitionT();
+        public static readonly Terminal UnicodeEscapeSequenceTerminalDefinition = new UnicodeEscapeSequenceTerminalDefinitionT();
         public static readonly NfaProduction NewLine = new NfaProduction("newLine", true, false);
         public static readonly NfaProduction WhiteSpaces = new NfaProduction("whiteSpaces", true, false);
         public static readonly NfaProduction StringLiteral = new NfaProduction("stringLiteral", false, true);
-        public static readonly Dictionary<String, RecognizerDefinition> NameToBuiltInSymbol = new Dictionary<string, RecognizerDefinition>();
+        public static readonly Dictionary<String, Recognizer> NameToBuiltInSymbol = new Dictionary<string, Recognizer>();
 
-        public static bool TryGetBuiltinISymbolByName(String name, out RecognizerDefinition recognizerDefinition) {
+        public static bool TryGetBuiltinISymbolByName(String name, out Recognizer recognizerDefinition) {
             return NameToBuiltInSymbol.TryGetValue(name, out recognizerDefinition);
         }
 
         public static bool TryGetBuiltinFieldByName(String name, out FieldInfo field) {
             field = null;
             foreach (var fieldInfo in typeof(StandardSymbols).GetFields(BindingFlags.Public | BindingFlags.Static)) {
-                if (typeof(RecognizerDefinition).IsAssignableFrom(fieldInfo.FieldType)) {
-                    if (((RecognizerDefinition)fieldInfo.GetValue(null)).Name == name) {
+                if (typeof(Recognizer).IsAssignableFrom(fieldInfo.FieldType)) {
+                    if (((Recognizer)fieldInfo.GetValue(null)).Name == name) {
                         field = fieldInfo;
                         return true;
                     }
@@ -45,20 +45,22 @@ namespace Parlex {
             return false;
         }
 
-        public static String TryGetBuiltInNameBySymbol(RecognizerDefinition recognizerDefinition) {
+        public static String TryGetBuiltInNameBySymbol(Recognizer recognizerDefinition) {
             var entry = NameToBuiltInSymbol.FirstOrDefault(kvp => kvp.Value.Equals(recognizerDefinition));
-            if (entry.Equals(default(KeyValuePair<String, RecognizerDefinition>))) {
+            if (entry.Equals(default(KeyValuePair<String, Recognizer>))) {
                 return null;
             }
             return entry.Key;
         }
 
-        public static FieldInfo TryGetBuiltInFieldBySymbol(RecognizerDefinition recognizerDefinition) {
+        public static FieldInfo TryGetBuiltInFieldBySymbol(Recognizer recognizerDefinition) {
             FieldInfo field;
             return TryGetBuiltinFieldByName(recognizerDefinition.Name, out field) ? field : null;
         }
 
-        public class CharacterTerminalDefinitionT : TerminalDefinition {
+        public class CharacterTerminalDefinitionT : Terminal {
+            public CharacterTerminalDefinitionT() : base("Any character") { }
+
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex >= documentUtf32CodePoints.Length) {
                     return false;
@@ -68,14 +70,6 @@ namespace Parlex {
 
             public override int Length {
                 get { return 1; }
-            }
-
-            public override String Name {
-                get { return "Any character"; }
-            }
-
-            public override string ToString() {
-                return "character";
             }
         }
 
@@ -95,8 +89,8 @@ namespace Parlex {
             Tuple.Create('?', '?')
         }.ToBimap(e => Char.ConvertToUtf32(e.Item1.ToString(CultureInfo.InvariantCulture), 0), e => e.Item2);
 
-        public class SimpleEscapeSequenceTerminalDefinitionT : TerminalDefinition {
-            public override string Name { get { return "escape sequence"; } }
+        public class SimpleEscapeSequenceTerminalDefinitionT : Terminal {
+            public SimpleEscapeSequenceTerminalDefinitionT() : base("escape sequence") {}
             public override int Length { get { return 2; } }
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex + 1 < documentUtf32CodePoints.Length) {
@@ -110,8 +104,8 @@ namespace Parlex {
             }
         }
 
-        public class UnicodeEscapeSequenceTerminalDefinitionT : TerminalDefinition {
-            public override string Name { get { return "Unicode escape sequence"; } }
+        public class UnicodeEscapeSequenceTerminalDefinitionT : Terminal {
+            public UnicodeEscapeSequenceTerminalDefinitionT() : base("Unicode escape sequence") {}
             public override int Length { get { return 7; } }
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex + 6 < documentUtf32CodePoints.Length) {
@@ -126,7 +120,9 @@ namespace Parlex {
             }
         }
 
-        public class NonDoubleQuoteCharacterTerminalDefinitionT : TerminalDefinition {
+        public class NonDoubleQuoteCharacterTerminalDefinitionT : Terminal {
+            public NonDoubleQuoteCharacterTerminalDefinitionT() : base("Non-double quote character") {}
+
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 return documentUtf32CodePoints[documentIndex] != Char.ConvertToUtf32("\"", 0);
             }
@@ -134,18 +130,10 @@ namespace Parlex {
             public override int Length {
                 get { return 1; }
             }
-
-            public override string Name {
-                get { return "Non-double quote character"; }
-            }
-
-            public override string ToString() {
-                return "nonDoubleQuote";
-            }
         }
 
-        public class NonDoubleQuoteNonBackSlashCharacterTerminalDefinitionT : TerminalDefinition {
-            public override string Name { get { return "Non-double quote character, non-back slash character"; } }
+        public class NonDoubleQuoteNonBackSlashCharacterTerminalDefinitionT : Terminal {
+            public NonDoubleQuoteNonBackSlashCharacterTerminalDefinitionT() : base("Non-double quote character, non-back slash character") {}
             public override int Length { get { return 1; }}
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex >= documentUtf32CodePoints.Length) return false;
@@ -154,8 +142,8 @@ namespace Parlex {
             }
         }
 
-        public class CarriageReturnTerminalDefinitionT : TerminalDefinition {
-            public override string Name { get { return "Carriage return"; } }
+        public class CarriageReturnTerminalDefinitionT : Terminal {
+            public CarriageReturnTerminalDefinitionT() : base("Carriage return") {}
             public override int Length { get { return 1; } }
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex >= documentUtf32CodePoints.Length) return false;
@@ -163,8 +151,8 @@ namespace Parlex {
             }
         }
 
-        public class LineFeedTerminalDefinitionT : TerminalDefinition {
-            public override string Name { get { return "Carriage return"; } }
+        public class LineFeedTerminalDefinitionT : Terminal {
+            public LineFeedTerminalDefinitionT() : base("Line feed") { }
             public override int Length { get { return 1; } }
             public override bool Matches(int[] documentUtf32CodePoints, int documentIndex) {
                 if (documentIndex >= documentUtf32CodePoints.Length) return false;
@@ -172,15 +160,15 @@ namespace Parlex {
             }
         }
 
-        public static bool IsBuiltIn(RecognizerDefinition transition) {
-            return NameToBuiltInSymbol.ContainsValue(transition);
+        public static bool IsBuiltIn(Recognizer terminal) {
+            return NameToBuiltInSymbol.ContainsValue(terminal);
         }
 
         static StandardSymbols() {
-            var newLineState0 = new Nfa<RecognizerDefinition>.State();
-            var newLineState1 = new Nfa<RecognizerDefinition>.State();
-            var newLineState2 = new Nfa<RecognizerDefinition>.State();
-            var newLineState3 = new Nfa<RecognizerDefinition>.State();
+            var newLineState0 = new Nfa<Recognizer>.State();
+            var newLineState1 = new Nfa<Recognizer>.State();
+            var newLineState2 = new Nfa<Recognizer>.State();
+            var newLineState3 = new Nfa<Recognizer>.State();
             var newLine = NewLine as NfaProduction;
             newLine.Nfa.States.Add(newLineState0);
             newLine.Nfa.States.Add(newLineState1);
@@ -194,8 +182,8 @@ namespace Parlex {
             newLine.Nfa.TransitionFunction[newLineState1][LineFeedTerminalDefinition].Add(newLineState2);
             newLine.Nfa.TransitionFunction[newLineState0][LineFeedTerminalDefinition].Add(newLineState3);
 
-            var whiteSpacesState0 = new Nfa<RecognizerDefinition>.State();
-            var whiteSpacesState1 = new Nfa<RecognizerDefinition>.State();
+            var whiteSpacesState0 = new Nfa<Recognizer>.State();
+            var whiteSpacesState1 = new Nfa<Recognizer>.State();
             var whiteSpaces = WhiteSpaces as NfaProduction;
             whiteSpaces.Nfa.States.Add(whiteSpacesState0);
             whiteSpaces.Nfa.States.Add(whiteSpacesState1);
@@ -204,9 +192,9 @@ namespace Parlex {
             whiteSpaces.Nfa.TransitionFunction[whiteSpacesState0][WhiteSpaceTerminalDefinition].Add(whiteSpacesState1);
             whiteSpaces.Nfa.TransitionFunction[whiteSpacesState1][WhiteSpaceTerminalDefinition].Add(whiteSpacesState1);
 
-            var stringLiteralState0 = new Nfa<RecognizerDefinition>.State();
-            var stringLiteralState1 = new Nfa<RecognizerDefinition>.State();
-            var stringLiteralState2 = new Nfa<RecognizerDefinition>.State();
+            var stringLiteralState0 = new Nfa<Recognizer>.State();
+            var stringLiteralState1 = new Nfa<Recognizer>.State();
+            var stringLiteralState2 = new Nfa<Recognizer>.State();
             StringLiteral.Nfa.States.Add(stringLiteralState0);
             StringLiteral.Nfa.States.Add(stringLiteralState1);
             StringLiteral.Nfa.States.Add(stringLiteralState2);

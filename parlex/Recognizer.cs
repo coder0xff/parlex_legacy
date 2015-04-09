@@ -10,6 +10,8 @@ namespace Parlex {
     public abstract class Recognizer {
         public readonly ThreadLocal<ParseContext> Context = new ThreadLocal<ParseContext>();
 
+        public abstract String Name { get; }
+        public abstract Boolean IsGreedy { get; }
         public int Position {
             get {
                 return Context.Value.Position;
@@ -24,21 +26,17 @@ namespace Parlex {
         public abstract void Start();
         public virtual void OnCompletion(NodeParseResult result) {}
 
-        protected void Transition(IParseNodeFactory symbol, Action nextState) {
+        protected void Transition(Recognizer symbol, Action nextState) {
             StartDependency();
             Context.Value.Engine.AddDependency(symbol, Context.Value.Dispatcher, this, nextState);
         }
 
-        protected void Transition(RecognizerDefinition recognizerDefinition, Action nextState) {
-            Transition(new SymbolNodeFactory(recognizerDefinition), nextState);
-        }
-
         protected void Transition<T>(Action nextState) where T : Recognizer, new() {
-            Transition(new GenericParseNodeFactory<T>(), nextState);
+            Transition(new T(), nextState);
         }
 
         protected void Transition(String text, Action nextState) {
-            Transition(new StringTerminalDefinition(text), nextState);
+            Transition(new StringTerminal(text), nextState);
         }
 
         protected void Accept() {
@@ -47,7 +45,7 @@ namespace Parlex {
                 Children = Context.Value.ParseChain.ToArray(),
                 Length = Context.Value.Position - dispatcher.Position,
                 Position = dispatcher.Position,
-                Symbol = dispatcher.Symbol,
+                Recognizer = dispatcher.Recognizer,
                 Engine = Context.Value.Engine
             });
         }

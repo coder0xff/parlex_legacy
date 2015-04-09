@@ -35,7 +35,7 @@ namespace Parlex {
 
         private void RenderVisualization(StringBuilder builder, MatchClass matchClass, int indent) {
             builder.Append(new string(' ', indent));
-            builder.Append(matchClass.Symbol.Name);
+            builder.Append(matchClass.Recognizer.Name);
             builder.Append(" ");
             builder.Append(matchClass.Position);
             builder.Append(" ");

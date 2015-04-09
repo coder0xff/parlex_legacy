@@ -8,6 +8,6 @@ namespace Parlex {
     /// attempting to satisfy the specified transitions
     /// </summary>
     public class NodeParseResult {
-        public HashSet<IParseNodeFactory> FailedSymbols;
+        public HashSet<Recognizer> FailedSymbols;
     }
 }

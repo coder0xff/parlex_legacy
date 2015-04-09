@@ -140,7 +140,7 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         public static TreeNode BuildTreeNode(BehaviorTree.Leaf leafNode) {
-            return new TreeNode("recognizerDefinition: " + leafNode.RecognizerDefinition.Name);
+            return new TreeNode("recognizerDefinition: " + leafNode.Recognizer.Name);
         }
 
         public static void DeleteBehaviorNodeChild(BehaviorTree.Choice parentNode, BehaviorTree.Node childNode) {
@@ -244,7 +244,7 @@ namespace IntegratedDevelopmentEnvironment {
                 TreeNode treeNode = BuildTreeNode(production.Behavior.Root);
                 treeNode.Text = production.Name + " " + treeNode.Text;
                 SetTagValue(treeNode, "production", production);
-                SetTagValue(treeNode, "greedy", production.Greedy);
+                SetTagValue(treeNode, "greedy", production.IsGreedy);
                 SetTagValue(treeNode, "tree", production.Behavior);
                 treeView.Nodes.Add(treeNode);
             }
@@ -326,9 +326,9 @@ namespace IntegratedDevelopmentEnvironment {
         void RemoveDependenciesOnProduction(Production production, TreeNode viewNode) {
             var behaviorNode = GetTagValue<BehaviorTree.Node>(viewNode, "node");
             var asLeaf = behaviorNode as BehaviorTree.Leaf;
-            if (asLeaf != null && asLeaf.RecognizerDefinition == production) {
-                asLeaf.RecognizerDefinition = new StringTerminalDefinition(production.Name);
-                viewNode.Text = "recognizerDefinition: " + asLeaf.RecognizerDefinition.Name;
+            if (asLeaf != null && asLeaf.Recognizer == production) {
+                asLeaf.Recognizer = new StringTerminal(production.Name);
+                viewNode.Text = "recognizer: " + asLeaf.Recognizer.Name;
             }
             foreach (var _node in viewNode.Nodes) {
                 var node = _node as TreeNode;
@@ -411,11 +411,11 @@ namespace IntegratedDevelopmentEnvironment {
             var behaviorNode = GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior");
             var leaf = behaviorNode as BehaviorTree.Leaf;
             if (leaf != null) {
-                editText = leaf.RecognizerDefinition.Name;
-                if (leaf.RecognizerDefinition is StringTerminalDefinition) {
-                    editText = leaf.RecognizerDefinition.ToString();
-                    RecognizerDefinition recognizerDefinition;
-                    if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizerDefinition) || _grammar.GetProduction(editText) != null) {
+                editText = leaf.Recognizer.Name;
+                if (leaf.Recognizer is StringTerminal) {
+                    editText = leaf.Recognizer.ToString();
+                    Recognizer recognizer;
+                    if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizer) || _grammar.GetProduction(editText) != null) {
                         editText = "\"" + editText + "\"";
                     }
                 }
@@ -437,13 +437,13 @@ namespace IntegratedDevelopmentEnvironment {
 
         private void treeView_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
             var unchanged = e.Label == e.Node.Text || e.Label == null;
-            RecognizerDefinition recognizerDefinition = null;
+            Recognizer recognizer = null;
             var editText = e.Label ?? e.Node.Text;
             var behaviorNode = GetTagValue<BehaviorTree.Node>(e.Node, "behavior");
             Production production;
             var dirtied = false;
             if (TryGetTagValue(e.Node, "production", out production)) {                
-                if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizerDefinition) || !unchanged && _grammar.GetProduction(editText) != null) {
+                if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizer) || !unchanged && _grammar.GetProduction(editText) != null) {
                     MessageBox.Show(this, "A built in recognizerDefinition or a production in this grammar already uses this name.");
                     e.CancelEdit = true;
                     e.Node.BeginEdit();
@@ -468,15 +468,15 @@ namespace IntegratedDevelopmentEnvironment {
                 var asUtf32 = editText.GetUtf32CodePoints();
                 var asStringLiteral = Util.ProcessStringLiteral(asUtf32, 0, asUtf32.Length);
                 if (asStringLiteral == null) {
-                    if (!StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizerDefinition)) {
-                        recognizerDefinition = _grammar.GetProduction(editText);
+                    if (!StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizer)) {
+                        recognizer = _grammar.GetProduction(editText);
                     }
                 }
-                if (recognizerDefinition == null) {
-                    recognizerDefinition = new StringTerminalDefinition(editText);
+                if (recognizer == null) {
+                    recognizer = new StringTerminal(editText);
                 }
-                editText = "recognizerDefinition: " + recognizerDefinition.Name;
-                leaf.RecognizerDefinition = recognizerDefinition;
+                editText = "recognizer: " + recognizer.Name;
+                leaf.Recognizer = recognizer;
                 dirtied = true;
             }
             e.CancelEdit = true;

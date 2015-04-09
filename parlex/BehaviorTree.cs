@@ -3,8 +3,8 @@ using System.Collections.Concurrent.More;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using GNfa = Automata.Nfa<Parlex.RecognizerDefinition>;
-using GState = Automata.Nfa<Parlex.RecognizerDefinition>.State;
+using GNfa = Automata.Nfa<Parlex.Recognizer>;
+using GState = Automata.Nfa<Parlex.Recognizer>.State;
 using Nfa = Automata.Nfa<Parlex.BehaviorTree.Node>;
 using State = Automata.Nfa<Parlex.BehaviorTree.Node>.State;
 using Transition = Automata.Nfa<Parlex.BehaviorTree.Node>.Transition;
@@ -232,10 +232,10 @@ namespace Parlex {
         }
 
         public class Leaf : Node {
-            public RecognizerDefinition RecognizerDefinition;
+            public Recognizer Recognizer;
 
-            public Leaf(RecognizerDefinition recognizerDefinition) {
-                RecognizerDefinition = recognizerDefinition;
+            public Leaf(Recognizer recognizer) {
+                Recognizer = recognizer;
             }
 
             internal override Node Optimize() {
@@ -250,7 +250,7 @@ namespace Parlex {
                 result.States.Add(startState);
                 result.AcceptStates.Add(acceptState);
                 result.States.Add(acceptState);
-                result.TransitionFunction[startState][RecognizerDefinition].Add(acceptState);
+                result.TransitionFunction[startState][Recognizer].Add(acceptState);
                 return result;
             }
         }

@@ -35,11 +35,11 @@ namespace Parlex {
             _namespace = @namespace;
         }
 
-        private void OutputTransitions(StringBuilder builder, String _namespace, AutoDictionary<RecognizerDefinition, String> nameMap, Nfa<RecognizerDefinition, int> nfa, Nfa<RecognizerDefinition, int>.State fromState) {
+        private void OutputTransitions(StringBuilder builder, String _namespace, AutoDictionary<Recognizer, String> nameMap, Nfa<Recognizer, int> nfa, Nfa<Recognizer, int>.State fromState) {
             foreach (var transitionAndToStates in nfa.TransitionFunction[fromState]) {
                 var transition = transitionAndToStates.Key;
                 foreach (var toState in transitionAndToStates.Value) {
-                    var asStringTerminal = transition as StringTerminalDefinition;
+                    var asStringTerminal = transition as StringTerminal;
                     if (asStringTerminal != null) {
                         builder.AppendLine("\t\t\tTransition(" + Util.QuoteStringLiteral(asStringTerminal.ToString()) + ", State" + toState.Value + ");");                        
                     } else if (StandardSymbols.IsBuiltIn(transition)) {
@@ -52,7 +52,7 @@ namespace Parlex {
         }
 
         public void Generate(string destinationDirectory, NfaGrammar grammar, String parserName) {
-            var nameMap = new AutoDictionary<RecognizerDefinition, String>(x => CSharpName(x.Name));
+            var nameMap = new AutoDictionary<Recognizer, String>(x => CSharpName(x.Name));
             foreach (var production in grammar.Productions) {
                 var nfa = production.Nfa.Reassign();
                 var cSharpName = nameMap[production];

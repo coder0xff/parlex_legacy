@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 
 namespace Parlex {
-    public class CharacterSetTerminalDefinition : TerminalDefinition {
+    public class CharacterSetTerminalDefinition : Terminal {
         private readonly String _name;
         private readonly HashSet<Int32> _unicodeCodePoints;
         private readonly String _shortName;
 
-        public CharacterSetTerminalDefinition(String name, IEnumerable<Int32> unicodeCodePoints, String shortName = null) {
+        public CharacterSetTerminalDefinition(String name, IEnumerable<Int32> unicodeCodePoints, String shortName = null) : base(name) {
             _name = name;
             _shortName = shortName ?? _name;
             _unicodeCodePoints = new HashSet<Int32>(unicodeCodePoints);

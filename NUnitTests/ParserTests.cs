@@ -11,8 +11,8 @@ namespace NUnitTests {
         public void TestMethod1() {
             var g = new NfaGrammar();
             var identifier = new NfaProduction("identifier", true, false);
-            var identifier0 = new Nfa<RecognizerDefinition>.State();
-            var identifier1 = new Nfa<RecognizerDefinition>.State();
+            var identifier0 = new Nfa<Recognizer>.State();
+            var identifier1 = new Nfa<Recognizer>.State();
             identifier.Nfa.States.Add(identifier0);
             identifier.Nfa.States.Add(identifier1);
             identifier.Nfa.StartStates.Add(identifier0);
@@ -21,10 +21,10 @@ namespace NUnitTests {
             identifier.Nfa.TransitionFunction[identifier1][StandardSymbols.LetterTerminalDefinition].Add(identifier1);
 
             var syntax = new NfaProduction("syntax", false, false);
-            var syntax0 = new Nfa<RecognizerDefinition>.State();
-            var syntax1 = new Nfa<RecognizerDefinition>.State();
-            var syntax2 = new Nfa<RecognizerDefinition>.State();
-            var syntax3 = new Nfa<RecognizerDefinition>.State();
+            var syntax0 = new Nfa<Recognizer>.State();
+            var syntax1 = new Nfa<Recognizer>.State();
+            var syntax2 = new Nfa<Recognizer>.State();
+            var syntax3 = new Nfa<Recognizer>.State();
             syntax.Nfa.States.Add(syntax0);
             syntax.Nfa.States.Add(syntax1);
             syntax.Nfa.States.Add(syntax2);
@@ -32,14 +32,14 @@ namespace NUnitTests {
             syntax.Nfa.StartStates.Add(syntax0);
             syntax.Nfa.AcceptStates.Add(syntax3);
             syntax.Nfa.TransitionFunction[syntax0][identifier].Add(syntax1);
-            syntax.Nfa.TransitionFunction[syntax1][new StringTerminalDefinition("=")].Add(syntax2);
+            syntax.Nfa.TransitionFunction[syntax1][new StringTerminal("=")].Add(syntax2);
             syntax.Nfa.TransitionFunction[syntax2][identifier].Add(syntax3);
 
             g.Productions.Add(syntax);
             g.Productions.Add(identifier);
             g.Main = syntax;
 
-            Parser parser = new Parser(g);
+            var parser = new Parser(g);
             for (int i = 0; i < 1000; i++) {
                 Debug.WriteLine("██████████ Iteration: " + i + " ██████████");
                 Parser.Job j = parser.Parse("AB=E");
@@ -50,6 +50,14 @@ namespace NUnitTests {
         }
 
         private class SumProduction : Recognizer {
+            public override string Name {
+                get { return "SumProduction"; }
+            }
+
+            public override bool IsGreedy {
+                get { return false; }
+            }
+
             public override void Start() {
                 Transition(StandardSymbols.LetterTerminalDefinition, State1);
             }
@@ -75,7 +83,7 @@ namespace NUnitTests {
         public void TestMethod2() {
             for (int i = 0; i < 1000; i++) {
                 Debug.WriteLine("██████████ Iteration: " + i + " ██████████");
-                var parser = new ParseEngine("a+b", new GenericParseNodeFactory<SumProduction>(), 0, 3);
+                var parser = new ParseEngine("a+b", new SumProduction(), 0, 3);
                 parser.Join();
                 Debug.Assert(parser.AbstractSyntaxGraph.NodeTable.Count == 3);
             }

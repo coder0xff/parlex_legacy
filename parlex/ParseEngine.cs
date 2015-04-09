@@ -8,7 +8,7 @@ using System.Threading;
 namespace Parlex {
     public class ParseEngine {
         public readonly Int32[] CodePoints;
-        private readonly IParseNodeFactory _main;
+        private readonly Recognizer _main;
         private int _activeDispatcherCount;
         private readonly Dictionary<MatchCategory, Dispatcher> _dispatchers = new Dictionary<MatchCategory, Dispatcher>();
         private readonly ManualResetEventSlim _blocker = new ManualResetEventSlim();
@@ -21,7 +21,7 @@ namespace Parlex {
         internal readonly CustomThreadPool ThreadPool = new CustomThreadPool();
         private readonly Action _idleHandler;
 
-        public ParseEngine(string document, IParseNodeFactory main, int start = 0, int length = -1) {
+        public ParseEngine(string document, Recognizer main, int start = 0, int length = -1) {
             Document = document;
             _start = start;
             CodePoints = document.GetUtf32CodePoints();
@@ -33,7 +33,7 @@ namespace Parlex {
         }
 
         public ParseEngine(string document, Type mainSyntaxNode, int start = 0, int length = -1) :
-            this(document, new GenericParseNodeFactory(mainSyntaxNode), start, length) { }
+            this(document, (Recognizer)Activator.CreateInstance(mainSyntaxNode), start, length) { }
 
         internal class Dispatcher : MatchCategory {
             internal class DependencyEntry {
@@ -53,11 +53,11 @@ namespace Parlex {
             internal bool Completed;
             internal event Action<Dispatcher> OnComplete;
             private readonly CustomThreadPool _threadPool;
-            internal Dispatcher(ParseEngine engine, CustomThreadPool threadPool, int position, IParseNodeFactory symbol)
-                : base(position, symbol) {
+            internal Dispatcher(ParseEngine engine, CustomThreadPool threadPool, int position, Recognizer recognizer)
+                : base(position, recognizer) {
                 _engine = engine;
                 _threadPool = threadPool;
-                IsGreedy = symbol.IsGreedy;
+                IsGreedy = recognizer.IsGreedy;
 #if PARSE_TRACE
                 System.Diagnostics.Debug.WriteLine("Creating Dispatcher " + this);
 #endif
@@ -160,7 +160,7 @@ namespace Parlex {
             }
 
             public override string ToString() {
-                return "{" + Position + ":" + Symbol.Name + "}";
+                return "{" + Position + ":" + Recognizer.Name + "}";
             }
         }
 
@@ -168,7 +168,7 @@ namespace Parlex {
             Dispatcher dispatcher;
             lock (_dispatchers) {
                 if (!_dispatchers.TryGetValue(matchCategory, out dispatcher)) {
-                    dispatcher = new Dispatcher(this, ThreadPool, matchCategory.Position, matchCategory.Symbol);
+                    dispatcher = new Dispatcher(this, ThreadPool, matchCategory.Position, matchCategory.Recognizer);
                     _dispatchers[matchCategory] = dispatcher;
                     StartDispatcher(dispatcher);
                 }
@@ -180,17 +180,16 @@ namespace Parlex {
             Interlocked.Increment(ref _activeDispatcherCount);
             dispatcher.OnComplete += OnDispatcherTerminated;
             ThreadPool.QueueUserWorkItem(_ => {
-                var node = dispatcher.Symbol.Create();
-                node.Context.Value = new ParseContext {
+                dispatcher.Recognizer.Context.Value = new ParseContext {
                     Position = dispatcher.Position, 
                     ParseChain = new List<MatchClass>(), 
                     Engine = this, 
                     Dispatcher = dispatcher, 
                     DependencyCounter = new DependencyCounter()
                 };
-                node.StartDependency();
-                node.Start();
-                node.EndDependency();
+                dispatcher.Recognizer.StartDependency();
+                dispatcher.Recognizer.Start();
+                dispatcher.Recognizer.EndDependency();
             });
         }
 
@@ -207,7 +206,7 @@ namespace Parlex {
             GetDispatcher(new MatchCategory(0, _main));
         }
 
-        internal void AddDependency(IParseNodeFactory symbol, Dispatcher dependent, Recognizer node, Action handler) {
+        internal void AddDependency(Recognizer symbol, Dispatcher dependent, Recognizer node, Action handler) {
             GetDispatcher(new MatchCategory(node.Context.Value.Position, symbol)).AddDependency(dependent, node, handler);
         }
 

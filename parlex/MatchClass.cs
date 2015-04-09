@@ -4,7 +4,7 @@ namespace Parlex {
     public class MatchClass {
         public ParseEngine Engine { get; private set; }
         public int Position { get; private set; }
-        public IParseNodeFactory Symbol { get; private set; }
+        public Recognizer Recognizer { get; private set; }
         public int Length { get; private set; }
 
         public String Text {
@@ -13,14 +13,14 @@ namespace Parlex {
 
         private MatchCategory Category {
             get {
-                return new MatchCategory(Position, Symbol);
+                return new MatchCategory(Position, Recognizer);
             }
         }
 
-        internal MatchClass(ParseEngine engine, int position, IParseNodeFactory symbol, int length) {
+        internal MatchClass(ParseEngine engine, int position, Recognizer recognizer, int length) {
             Engine = engine;
             Position = position;
-            Symbol = symbol;
+            Recognizer = recognizer;
             Length = length;
         }
 
@@ -42,7 +42,7 @@ namespace Parlex {
         }
 
         public override string ToString() {
-            return "{" + Position + ":" + Length + ":" + Symbol.Name + "}" ;
+            return "{" + Position + ":" + Length + ":" + Recognizer.Name + "}" ;
         }
 
     }

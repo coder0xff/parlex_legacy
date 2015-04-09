@@ -9,15 +9,15 @@ using Automata;
 
 namespace Parlex {
     public class CSharpFormatter : IMetaSyntax {
-        private Dictionary<RecognizerDefinition, String> SerializeStringTerminals(StreamWriter s, NfaGrammar grammar) {
-            var results = new Dictionary<RecognizerDefinition, String>();
+        private Dictionary<Recognizer, String> SerializeStringTerminals(StreamWriter s, NfaGrammar grammar) {
+            var results = new Dictionary<Recognizer, String>();
             var stringTerminals = grammar.Productions.SelectMany(production =>
-                production.Nfa.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminalDefinition).Cast<StringTerminalDefinition>()
+                production.Nfa.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminal).Cast<StringTerminal>()
                 ).ToArray();
             for (var i = 0; i < stringTerminals.Length; i++) {
-                var name = "StringTerminalDefinition" + i;
+                var name = "StringTerminal" + i;
                 results[stringTerminals[i]] = name;
-                s.WriteLine("\tprivate static readonly TerminalDefinition " + name + " = new StringTerminalDefinition(\"" + stringTerminals[i] + "\");");
+                s.WriteLine("\tprivate static readonly Terminal " + name + " = new StringTerminal(\"" + stringTerminals[i] + "\");");
             }
             return results;
         }
@@ -45,18 +45,18 @@ namespace Parlex {
 
         private void DefineProduction(StreamWriter s, NfaProduction production) {
             var cSharpName = CSharpName(production.Name);
-            s.WriteLine("\tprivate static readonly NfaProduction " + cSharpName + " = new NfaProduction(\"" + cSharpName + "\", " + (production.Greedy ? "true" : "false") + ", " + (production.EatWhiteSpace ? "true" : "false") + ");");
+            s.WriteLine("\tprivate static readonly NfaProduction " + cSharpName + " = new NfaProduction(\"" + cSharpName + "\", " + (production.IsGreedy ? "true" : "false") + ", " + (production.EatWhiteSpace ? "true" : "false") + ");");
         }
 
-        private void SerializeProduction(StreamWriter s, NfaProduction production, Dictionary<RecognizerDefinition, string> stringTerminalNames) {
+        private void SerializeProduction(StreamWriter s, NfaProduction production, Dictionary<Recognizer, string> stringTerminalNames) {
             var cSharpName = CSharpName(production.Name);
             var lowerCSharpName = Char.ToLower(cSharpName[0]) + cSharpName.Substring(1);
-            var names = new Dictionary<Nfa<RecognizerDefinition>.State, string>();
+            var names = new Dictionary<Nfa<Recognizer>.State, string>();
             int counter = 0;
             foreach (var state in production.Nfa.States) {
                 names[state] = lowerCSharpName + "State" + counter;
                 counter++;
-                s.WriteLine("\t\tvar " + names[state] + " = new Nfa<RecognizerDefinition>.State();");
+                s.WriteLine("\t\tvar " + names[state] + " = new Nfa<Recognizer>.State();");
                 s.WriteLine("\t\t" + cSharpName + ".States.Add(" + names[state] + ");");
             }
             foreach (var startState in production.Nfa.StartStates) {

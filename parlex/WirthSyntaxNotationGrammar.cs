@@ -3,16 +3,16 @@ using Automata;
 namespace Parlex {
     public static class WirthSyntaxNotationGrammar {
         public static NfaGrammar NfaGrammar = new NfaGrammar();
-        private static readonly TerminalDefinition DotTerminalDefinition = new StringTerminalDefinition(".");
-        private static readonly TerminalDefinition EqualTerminalDefinition = new StringTerminalDefinition("=");
-        private static readonly TerminalDefinition PipeTerminalDefinition = new StringTerminalDefinition("|");
-        private static readonly TerminalDefinition CloseSquareTerminalDefinition = new StringTerminalDefinition("]");
-        internal static readonly TerminalDefinition OpenParenthesisTerminalDefinition = new StringTerminalDefinition("(");
-        internal static readonly TerminalDefinition OpenCurlyTerminalDefinition = new StringTerminalDefinition("{");
-        internal static readonly TerminalDefinition OpenSquareTerminalDefinition = new StringTerminalDefinition("[");
-        private static readonly TerminalDefinition CloseCurlyTerminalDefinition = new StringTerminalDefinition("}");
-        private static readonly TerminalDefinition CloseParenthesisTerminalDefinition = new StringTerminalDefinition(")");
-        private static readonly TerminalDefinition UnderscoreTerminalDefinition = new StringTerminalDefinition("_");
+        private static readonly Terminal DotTerminalDefinition = new StringTerminal(".");
+        private static readonly Terminal EqualTerminalDefinition = new StringTerminal("=");
+        private static readonly Terminal PipeTerminalDefinition = new StringTerminal("|");
+        private static readonly Terminal CloseSquareTerminalDefinition = new StringTerminal("]");
+        internal static readonly Terminal OpenParenthesisTerminalDefinition = new StringTerminal("(");
+        internal static readonly Terminal OpenCurlyTerminalDefinition = new StringTerminal("{");
+        internal static readonly Terminal OpenSquareTerminalDefinition = new StringTerminal("[");
+        private static readonly Terminal CloseCurlyTerminalDefinition = new StringTerminal("}");
+        private static readonly Terminal CloseParenthesisTerminalDefinition = new StringTerminal(")");
+        private static readonly Terminal UnderscoreTerminalDefinition = new StringTerminal("_");
         private static readonly NfaProduction Syntax = new NfaProduction("Syntax", true, false);
         private static readonly NfaProduction Production = new NfaProduction("Production", false, false);
         private static readonly NfaProduction Expression = new NfaProduction("Expression", true, false);
@@ -22,8 +22,8 @@ namespace Parlex {
         internal static readonly NfaProduction Literal = new NfaProduction("Literal", true, false);
 
         static WirthSyntaxNotationGrammar() {
-            var syntaxState0 = new Nfa<RecognizerDefinition>.State();
-            var syntaxState1 = new Nfa<RecognizerDefinition>.State();
+            var syntaxState0 = new Nfa<Recognizer>.State();
+            var syntaxState1 = new Nfa<Recognizer>.State();
             Syntax.Nfa.States.Add(syntaxState0);
             Syntax.Nfa.States.Add(syntaxState1);
             Syntax.Nfa.StartStates.Add(syntaxState0);
@@ -33,11 +33,11 @@ namespace Parlex {
             Syntax.Nfa.TransitionFunction[syntaxState0][Production].Add(syntaxState0);
             NfaGrammar.Productions.Add(Syntax);
 
-            var productionState0 = new Nfa<RecognizerDefinition>.State();
-            var productionState1 = new Nfa<RecognizerDefinition>.State();
-            var productionState2 = new Nfa<RecognizerDefinition>.State();
-            var productionState3 = new Nfa<RecognizerDefinition>.State();
-            var productionState4 = new Nfa<RecognizerDefinition>.State();
+            var productionState0 = new Nfa<Recognizer>.State();
+            var productionState1 = new Nfa<Recognizer>.State();
+            var productionState2 = new Nfa<Recognizer>.State();
+            var productionState3 = new Nfa<Recognizer>.State();
+            var productionState4 = new Nfa<Recognizer>.State();
             Production.Nfa.States.Add(productionState0);
             Production.Nfa.States.Add(productionState1);
             Production.Nfa.States.Add(productionState2);
@@ -53,8 +53,8 @@ namespace Parlex {
             Production.Nfa.TransitionFunction[productionState0][EqualTerminalDefinition].Add(productionState1);
             NfaGrammar.Productions.Add(Production);
 
-            var expressionState0 = new Nfa<RecognizerDefinition>.State();
-            var expressionState1 = new Nfa<RecognizerDefinition>.State();
+            var expressionState0 = new Nfa<Recognizer>.State();
+            var expressionState1 = new Nfa<Recognizer>.State();
             Expression.Nfa.States.Add(expressionState0);
             Expression.Nfa.States.Add(expressionState1);
             Expression.Nfa.StartStates.Add(expressionState1);
@@ -64,8 +64,8 @@ namespace Parlex {
             Expression.Nfa.TransitionFunction[expressionState1][Term].Add(expressionState0);
             NfaGrammar.Productions.Add(Expression);
 
-            var termState0 = new Nfa<RecognizerDefinition>.State();
-            var termState1 = new Nfa<RecognizerDefinition>.State();
+            var termState0 = new Nfa<Recognizer>.State();
+            var termState1 = new Nfa<Recognizer>.State();
             Term.Nfa.States.Add(termState0);
             Term.Nfa.States.Add(termState1);
             Term.Nfa.StartStates.Add(termState0);
@@ -74,15 +74,15 @@ namespace Parlex {
             Term.Nfa.TransitionFunction[termState0][Factor].Add(termState1);
             NfaGrammar.Productions.Add(Term);
 
-            var factorState0 = new Nfa<RecognizerDefinition>.State();
-            var factorState1 = new Nfa<RecognizerDefinition>.State();
-            var factorState2 = new Nfa<RecognizerDefinition>.State();
-            var factorState3 = new Nfa<RecognizerDefinition>.State();
-            var factorState4 = new Nfa<RecognizerDefinition>.State();
-            var factorState5 = new Nfa<RecognizerDefinition>.State();
-            var factorState6 = new Nfa<RecognizerDefinition>.State();
-            var factorState7 = new Nfa<RecognizerDefinition>.State();
-            var factorState8 = new Nfa<RecognizerDefinition>.State();
+            var factorState0 = new Nfa<Recognizer>.State();
+            var factorState1 = new Nfa<Recognizer>.State();
+            var factorState2 = new Nfa<Recognizer>.State();
+            var factorState3 = new Nfa<Recognizer>.State();
+            var factorState4 = new Nfa<Recognizer>.State();
+            var factorState5 = new Nfa<Recognizer>.State();
+            var factorState6 = new Nfa<Recognizer>.State();
+            var factorState7 = new Nfa<Recognizer>.State();
+            var factorState8 = new Nfa<Recognizer>.State();
             Factor.Nfa.States.Add(factorState0);
             Factor.Nfa.States.Add(factorState1);
             Factor.Nfa.States.Add(factorState2);
@@ -109,8 +109,8 @@ namespace Parlex {
             Factor.Nfa.TransitionFunction[factorState7][Expression].Add(factorState3);
             NfaGrammar.Productions.Add(Factor);
 
-            var identifierState0 = new Nfa<RecognizerDefinition>.State();
-            var identifierState1 = new Nfa<RecognizerDefinition>.State();
+            var identifierState0 = new Nfa<Recognizer>.State();
+            var identifierState1 = new Nfa<Recognizer>.State();
             Identifier.Nfa.States.Add(identifierState0);
             Identifier.Nfa.States.Add(identifierState1);
             Identifier.Nfa.StartStates.Add(identifierState0);
@@ -122,8 +122,8 @@ namespace Parlex {
             Identifier.Nfa.TransitionFunction[identifierState1][UnderscoreTerminalDefinition].Add(identifierState1);
             NfaGrammar.Productions.Add(Identifier);
 
-            var literalState0 = new Nfa<RecognizerDefinition>.State();
-            var literalState1 = new Nfa<RecognizerDefinition>.State();
+            var literalState0 = new Nfa<Recognizer>.State();
+            var literalState1 = new Nfa<Recognizer>.State();
             Literal.Nfa.States.Add(literalState0);
             Literal.Nfa.States.Add(literalState1);
             Literal.Nfa.StartStates.Add(literalState1);

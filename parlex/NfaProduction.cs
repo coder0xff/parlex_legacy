@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Automata;
 
 namespace Parlex {
-    public class NfaProduction : RecognizerDefinition {
-        public Nfa<RecognizerDefinition> Nfa = new Nfa<RecognizerDefinition>();
+    public class NfaProduction : Recognizer {
+        public Nfa<Recognizer> Nfa = new Nfa<Recognizer>();
         private readonly bool _eatTrailingWhitespace;
         private readonly bool _greedy;
         private String _name;
@@ -14,14 +16,10 @@ namespace Parlex {
             _eatTrailingWhitespace = eatTrailingWhitespace;
         }
 
-        public NfaProduction(String name, bool greedy, Nfa<RecognizerDefinition> source) {
-            Nfa = new Nfa<RecognizerDefinition>(source);
+        public NfaProduction(String name, bool greedy, Nfa<Recognizer> source) {
+            Nfa = new Nfa<Recognizer>(source);
             _name = name;
             _greedy = greedy;
-        }
-
-        public bool Greedy {
-            get { return _greedy; }
         }
 
         public bool EatWhiteSpace {
@@ -30,6 +28,26 @@ namespace Parlex {
 
         public override String Name {
             get { return _name; }
+        }
+
+        public override bool IsGreedy {
+            get { return _greedy; }
+        }
+
+        public override void Start() {
+            EnterConfiguration(Nfa.StartStates.ToArray());
+        }
+
+        private void EnterConfiguration(Nfa<Recognizer>.State[] states) {
+            foreach (var state in states) {
+                foreach (var keyValuePair in Nfa.TransitionFunction[state]) {
+                    var pair = keyValuePair;
+                    Transition(keyValuePair.Key, () => EnterConfiguration(pair.Value.ToArray()));
+                }
+            }
+            if (states.Any(state => Nfa.AcceptStates.Contains(state))) {
+                Accept();
+            }
         }
 
         public override string ToString() {

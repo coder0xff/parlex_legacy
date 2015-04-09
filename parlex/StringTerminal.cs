@@ -1,8 +1,8 @@
 using System;
 
 namespace Parlex {
-    public class StringTerminalDefinition : TerminalDefinition {
-        protected bool Equals(StringTerminalDefinition other) {
+    public class StringTerminal : Terminal {
+        protected bool Equals(StringTerminal other) {
             return String.Equals(Text, other.Text);
         }
 
@@ -13,7 +13,7 @@ namespace Parlex {
         private readonly String _text;
         private readonly Int32[] _unicodeCodePoints;
 
-        public StringTerminalDefinition(String text) {
+        public StringTerminal(String text) : base("String Terminal: " + text) {
             if (text == null) {
                 throw new ArgumentNullException("text");
             }
@@ -37,8 +37,8 @@ namespace Parlex {
             get { return _unicodeCodePoints.Length; }
         }
 
-        public override String Name {
-            get { return "String TerminalDefinition: " + Text; }
+        public override bool IsGreedy {
+            get { return false; }
         }
 
         public string Text {
@@ -59,7 +59,7 @@ namespace Parlex {
             if (obj.GetType() != this.GetType()) {
                 return false;
             }
-            return Equals((StringTerminalDefinition)obj);
+            return Equals((StringTerminal)obj);
         }
     }
 }
