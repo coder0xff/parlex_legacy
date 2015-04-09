@@ -8,7 +8,6 @@ using Parlex;
 
 namespace Parlex {
     public abstract class ParseNode {
-        internal ParseEngine.Dispatcher Dispatcher { get; set; }
         public readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
 
         internal int _activeDependencyCount;
@@ -29,7 +28,7 @@ namespace Parlex {
 
         protected void Transition(IParseNodeFactory symbol, Action nextState) {
             StartDependency();
-            _context.Value.Engine.AddDependency(symbol, Dispatcher, this, nextState);
+            _context.Value.Engine.AddDependency(symbol, _context.Value.Dispatcher, this, nextState);
         }
 
         protected void Transition(RecognizerDefinition recognizerDefinition, Action nextState) {
@@ -45,11 +44,12 @@ namespace Parlex {
         }
 
         protected void Accept() {
-            Dispatcher.AddResult(new Match {
+            var dispatcher = _context.Value.Dispatcher;
+            dispatcher.AddResult(new Match {
                 Children = _context.Value.ParseChain.ToArray(),
-                Length = _context.Value.Position - Dispatcher.Position,
-                Position = Dispatcher.Position,
-                Symbol = Dispatcher.Symbol,
+                Length = _context.Value.Position - dispatcher.Position,
+                Position = dispatcher.Position,
+                Symbol = dispatcher.Symbol,
                 Engine = _context.Value.Engine
             });
         }
@@ -61,8 +61,9 @@ namespace Parlex {
         }
 
         internal void EndDependency() {
+            var savedContext = _context.Value;
             if (Interlocked.Decrement(ref _activeDependencyCount) == 0) {
-                _context.Value.Engine.ThreadPool.QueueUserWorkItem(_ => Dispatcher.NodeCompleted());
+                _context.Value.Engine.ThreadPool.QueueUserWorkItem(_ => savedContext.Dispatcher.NodeCompleted());
             }
         }
     }
