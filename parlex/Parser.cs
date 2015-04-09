@@ -5,13 +5,13 @@ using Automata;
 
 namespace Parlex {
     public class Parser {
-        private readonly ISymbol _mainSymbol;
-        public Parser(NfaGrammar grammar, ISymbol mainSymbol = null) {
-            _mainSymbol = mainSymbol ?? grammar.Main;
-            _factories = new AutoDictionary<ISymbol, DynamicParseNodeFactory>(symbol => new DynamicParseNodeFactory(this, symbol));
+        private readonly RecognizerDefinition _mainRecognizerDefinition;
+        public Parser(NfaGrammar grammar, RecognizerDefinition mainRecognizerDefinition = null) {
+            _mainRecognizerDefinition = mainRecognizerDefinition ?? grammar.Main;
+            _factories = new AutoDictionary<RecognizerDefinition, DynamicParseNodeFactory>(symbol => new DynamicParseNodeFactory(this, symbol));
         }
 
-        private readonly AutoDictionary<ISymbol, DynamicParseNodeFactory> _factories;
+        private readonly AutoDictionary<RecognizerDefinition, DynamicParseNodeFactory> _factories;
 
         private class DynamicParseNode : ParseNode {
             private readonly NfaProduction _production;
@@ -28,7 +28,7 @@ namespace Parlex {
                 }
             }
 
-            private void ProcessState(Nfa<ISymbol>.State state) {
+            private void ProcessState(Nfa<RecognizerDefinition>.State state) {
                 if (_production.Nfa.AcceptStates.Contains(state)) {
                     Accept();
                 }
@@ -44,14 +44,14 @@ namespace Parlex {
         internal class DynamicParseNodeFactory : IParseNodeFactory {
             private readonly Parser _parser;
             private readonly NfaProduction _production;
-            private readonly ITerminal _terminal;
+            private readonly TerminalDefinition _terminalDefinition;
 
-            public DynamicParseNodeFactory(Parser parser, ISymbol symbol) {
+            public DynamicParseNodeFactory(Parser parser, RecognizerDefinition recognizerDefinition) {
                 _parser = parser;
-                _production = symbol as NfaProduction;
+                _production = recognizerDefinition as NfaProduction;
                 if (_production == null) {
-                    _terminal = symbol as ITerminal;
-                    System.Diagnostics.Debug.Assert(_terminal != null);
+                    _terminalDefinition = recognizerDefinition as TerminalDefinition;
+                    System.Diagnostics.Debug.Assert(_terminalDefinition != null);
                 }
             }
 
@@ -60,7 +60,7 @@ namespace Parlex {
                     if (_production != null) {
                         return _production.Name;
                     }
-                    return _terminal.Name;
+                    return _terminalDefinition.Name;
                 }
             }
 
@@ -77,11 +77,11 @@ namespace Parlex {
                 if (_production != null) {
                     return new DynamicParseNode(_parser, _production);
                 }
-                return new TerminalParseNode(_terminal);
+                return new TerminalParseNode(_terminalDefinition);
             }
 
-            public bool Is(ITerminal terminal) {
-                return _terminal == terminal;
+            public bool Is(TerminalDefinition terminalDefinition) {
+                return _terminalDefinition == terminalDefinition;
             }
 
             public bool Is(NfaProduction production) {
@@ -111,8 +111,8 @@ namespace Parlex {
             }
         }
 
-        public Job Parse(String document, int start = 0, int length = -1, ISymbol mainSymbol = null) {
-            return new Job(document, start, length, _factories[mainSymbol ?? _mainSymbol]);
+        public Job Parse(String document, int start = 0, int length = -1, RecognizerDefinition mainRecognizerDefinition = null) {
+            return new Job(document, start, length, _factories[mainRecognizerDefinition ?? _mainRecognizerDefinition]);
         }
     }
 }

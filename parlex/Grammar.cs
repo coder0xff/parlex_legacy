@@ -22,11 +22,11 @@ namespace Parlex {
         }
 
         public void ResolveNode(BehaviorTree.Leaf leaf) {
-            var placeHolder = leaf.Symbol as PlaceholderISymbol;
+            var placeHolder = leaf.RecognizerDefinition as PlaceholderIRecognizerDefinition;
             if (placeHolder != null) {
                 var resolved = GetProduction(placeHolder.Name);
                 if (resolved != null) {
-                    leaf.Symbol = resolved;
+                    leaf.RecognizerDefinition = resolved;
                 } else {
                     throw new UndefinedProductionException(placeHolder.Name);
                 }

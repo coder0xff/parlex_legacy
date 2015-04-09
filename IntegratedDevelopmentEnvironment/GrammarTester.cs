@@ -29,10 +29,10 @@ namespace IntegratedDevelopmentEnvironment {
 
         class ErrorInfo {
             public readonly int Position;
-            public readonly ISymbol Symbol;
+            public readonly RecognizerDefinition Symbol;
             public ErrorInfo(MatchCategory error) {
                 Position = error.Position;
-                //Symbol = error.Symbol;
+                //recognizerDefinition = error.recognizerDefinition;
             }
 
             public override string ToString() {

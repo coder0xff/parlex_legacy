@@ -21,25 +21,25 @@ namespace Parlex {
 
             if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.Identifier)) {
                 var name = ProcessIdentifierClause(job, firstChild);
-                ISymbol builtIn;
-                return new BehaviorTree.Leaf(StandardSymbols.TryGetBuiltinISymbolByName(name, out builtIn) ? builtIn : new PlaceholderISymbol(name));
+                RecognizerDefinition builtIn;
+                return new BehaviorTree.Leaf(StandardSymbols.TryGetBuiltinISymbolByName(name, out builtIn) ? builtIn : new PlaceholderIRecognizerDefinition(name));
             }
 
             if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.Literal)) {
-                return new BehaviorTree.Leaf(new StringTerminal(ProcessLiteralClause(job, firstChild)));
+                return new BehaviorTree.Leaf(new StringTerminalDefinition(ProcessLiteralClause(job, firstChild)));
             }
 
-            if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.OpenSquareTerminal)) {
+            if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.OpenSquareTerminalDefinition)) {
                 Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
                 return new BehaviorTree.Optional {Child = ProcessExpressionClause(job, expression)};
             }
 
-            if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.OpenParenthesisTerminal)) {
+            if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.OpenParenthesisTerminalDefinition)) {
                 Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
                 return ProcessExpressionClause(job, expression);
             }
 
-            if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.OpenCurlyTerminal)) {
+            if (firstChild.Symbol.Is(WirthSyntaxNotationGrammar.OpenCurlyTerminalDefinition)) {
                 Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
                 return new BehaviorTree.Repetition {Child = ProcessExpressionClause(job, expression)};
             }
@@ -50,7 +50,7 @@ namespace Parlex {
         private static BehaviorTree.Node ProcessTermClause(Parser.Job job, Match term) {
             var result = new BehaviorTree.Sequence();
             foreach (MatchClass matchClass in term.Children) {
-                if (matchClass.Symbol.Is(StandardSymbols.WhiteSpaceTerminal)) {
+                if (matchClass.Symbol.Is(StandardSymbols.WhiteSpaceTerminalDefinition)) {
                     continue;
                 }
                 Match factor = job.AbstractSyntaxGraph.NodeTable[matchClass].First();
@@ -75,13 +75,13 @@ namespace Parlex {
             string name = ProcessIdentifierClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[0]].First()).Trim();
             var root = ProcessExpressionClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[2]].First());
             root.Optimize();
-            return new Production {Behavior = new BehaviorTree {Root = root}, Name = name};
+            return new Production(name) {Behavior = new BehaviorTree {Root = root}};
         }
 
         private static List<Production> ProcessSyntaxClause(Parser.Job job, Match syntax) {
             var results = new List<Production>();
             foreach (MatchClass matchClass in syntax.Children) {
-                if (matchClass.Symbol.Is(StandardSymbols.WhiteSpaceTerminal)) {
+                if (matchClass.Symbol.Is(StandardSymbols.WhiteSpaceTerminalDefinition)) {
                     continue;
                 }
                 results.Add(ProcessProductionClause(job, job.AbstractSyntaxGraph.NodeTable[matchClass].First()));
@@ -165,12 +165,12 @@ namespace Parlex {
         }
 
         private static String BehaviorTreeTerminalToString(BehaviorTree.Leaf leaf) {
-            string temp = leaf.Symbol.Name;
-            var asStringTerminal = leaf.Symbol as StringTerminal;
+            string temp = leaf.RecognizerDefinition.Name;
+            var asStringTerminal = leaf.RecognizerDefinition as StringTerminalDefinition;
             if (asStringTerminal != null) {
                 temp = Util.QuoteStringLiteral(asStringTerminal.Text);
             }
-            String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(leaf.Symbol);
+            String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(leaf.RecognizerDefinition);
             if (temp2 != null) temp = temp2;
             return temp;
         }

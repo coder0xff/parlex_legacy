@@ -52,7 +52,7 @@ namespace Parlex {
             }
 
             internal class TerminalNode : RewriteRuleNode {
-                internal StringTerminal terminalString;
+                internal StringTerminalDefinition TerminalDefinitionString;
             }
 
             //RewriteRuleNode definition;

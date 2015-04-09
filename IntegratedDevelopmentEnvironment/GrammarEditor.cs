@@ -140,7 +140,7 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         public static TreeNode BuildTreeNode(BehaviorTree.Leaf leafNode) {
-            return new TreeNode("Symbol: " + leafNode.Symbol.Name);
+            return new TreeNode("recognizerDefinition: " + leafNode.RecognizerDefinition.Name);
         }
 
         public static void DeleteBehaviorNodeChild(BehaviorTree.Choice parentNode, BehaviorTree.Node childNode) {
@@ -276,7 +276,7 @@ namespace IntegratedDevelopmentEnvironment {
             var unnamedName = GetUnnamedName();
             var viewNode = new TreeNode(unnamedName + ": " + typeof(T).Name);
             var behaviorNode = new T();
-            var production = new Production { Behavior = new BehaviorTree { Root = behaviorNode }, Name = unnamedName };
+            var production = new Production(unnamedName) { Behavior = new BehaviorTree { Root = behaviorNode }};
             SetTagValue(viewNode, "production", production);
             SetTagValue(viewNode, "behavior", behaviorNode);
             SetTagValue(viewNode, "greedy", false);
@@ -326,9 +326,9 @@ namespace IntegratedDevelopmentEnvironment {
         void RemoveDependenciesOnProduction(Production production, TreeNode viewNode) {
             var behaviorNode = GetTagValue<BehaviorTree.Node>(viewNode, "node");
             var asLeaf = behaviorNode as BehaviorTree.Leaf;
-            if (asLeaf != null && asLeaf.Symbol == production) {
-                asLeaf.Symbol = new StringTerminal(production.Name);
-                viewNode.Text = "Symbol: " + asLeaf.Symbol.Name;
+            if (asLeaf != null && asLeaf.RecognizerDefinition == production) {
+                asLeaf.RecognizerDefinition = new StringTerminalDefinition(production.Name);
+                viewNode.Text = "recognizerDefinition: " + asLeaf.RecognizerDefinition.Name;
             }
             foreach (var _node in viewNode.Nodes) {
                 var node = _node as TreeNode;
@@ -397,8 +397,8 @@ namespace IntegratedDevelopmentEnvironment {
         private void toolStripButtonLeaf_Click(object sender, EventArgs e) {
             var parentViewNode = treeView.SelectedNode;
             var parentBehaviorNode = GetTagValue<BehaviorTree.Node>(parentViewNode, "behavior");
-            var viewNode = new TreeNode(StandardSymbols.CharacterTerminal.Name);
-            var behaviorNode = new BehaviorTree.Leaf(StandardSymbols.CharacterTerminal);
+            var viewNode = new TreeNode(StandardSymbols.CharacterTerminalDefinition.Name);
+            var behaviorNode = new BehaviorTree.Leaf(StandardSymbols.CharacterTerminalDefinition);
             SetTagValue(viewNode, "behavior", behaviorNode);
             AddViewNodeChild(parentViewNode, viewNode);
             AddBehaviorNodeChild(parentBehaviorNode, behaviorNode);
@@ -411,11 +411,11 @@ namespace IntegratedDevelopmentEnvironment {
             var behaviorNode = GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior");
             var leaf = behaviorNode as BehaviorTree.Leaf;
             if (leaf != null) {
-                editText = leaf.Symbol.Name;
-                if (leaf.Symbol is StringTerminal) {
-                    editText = leaf.Symbol.ToString();
-                    ISymbol symbol;
-                    if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out symbol) || _grammar.GetProduction(editText) != null) {
+                editText = leaf.RecognizerDefinition.Name;
+                if (leaf.RecognizerDefinition is StringTerminalDefinition) {
+                    editText = leaf.RecognizerDefinition.ToString();
+                    RecognizerDefinition recognizerDefinition;
+                    if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizerDefinition) || _grammar.GetProduction(editText) != null) {
                         editText = "\"" + editText + "\"";
                     }
                 }
@@ -437,20 +437,20 @@ namespace IntegratedDevelopmentEnvironment {
 
         private void treeView_AfterLabelEdit(object sender, NodeLabelEditEventArgs e) {
             var unchanged = e.Label == e.Node.Text || e.Label == null;
-            ISymbol symbol = null;
+            RecognizerDefinition recognizerDefinition = null;
             var editText = e.Label ?? e.Node.Text;
             var behaviorNode = GetTagValue<BehaviorTree.Node>(e.Node, "behavior");
             Production production;
             var dirtied = false;
             if (TryGetTagValue(e.Node, "production", out production)) {                
-                if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out symbol) || !unchanged && _grammar.GetProduction(editText) != null) {
-                    MessageBox.Show(this, "A built in symbol or a production in this grammar already uses this name.");
+                if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizerDefinition) || !unchanged && _grammar.GetProduction(editText) != null) {
+                    MessageBox.Show(this, "A built in recognizerDefinition or a production in this grammar already uses this name.");
                     e.CancelEdit = true;
                     e.Node.BeginEdit();
                     return;
                 }
                 if (production.Name != editText) {
-                    production.Name = editText;
+                    production.SetName(editText);
                     dirtied = true;
                 }
                 if ((editText.ToLower() == "main" || editText.ToLower() == "syntax")) {
@@ -468,15 +468,15 @@ namespace IntegratedDevelopmentEnvironment {
                 var asUtf32 = editText.GetUtf32CodePoints();
                 var asStringLiteral = Util.ProcessStringLiteral(asUtf32, 0, asUtf32.Length);
                 if (asStringLiteral == null) {
-                    if (!StandardSymbols.TryGetBuiltinISymbolByName(editText, out symbol)) {
-                        symbol = _grammar.GetProduction(editText);
+                    if (!StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizerDefinition)) {
+                        recognizerDefinition = _grammar.GetProduction(editText);
                     }
                 }
-                if (symbol == null) {
-                    symbol = new StringTerminal(editText);
+                if (recognizerDefinition == null) {
+                    recognizerDefinition = new StringTerminalDefinition(editText);
                 }
-                editText = "Symbol: " + symbol.Name;
-                leaf.Symbol = symbol;
+                editText = "recognizerDefinition: " + recognizerDefinition.Name;
+                leaf.RecognizerDefinition = recognizerDefinition;
                 dirtied = true;
             }
             e.CancelEdit = true;

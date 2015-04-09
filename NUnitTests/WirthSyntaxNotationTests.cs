@@ -8,7 +8,7 @@ namespace NUnitTests {
     public class WirthSyntaxNotationTests {
         [Test]
         public void SelfReferentialParseTest() {
-            var metaMetaSyntax = File.ReadAllText(@"C:\Users\coder_000\Dropbox\parlex\WorthSyntaxNotationDefinedInItself.wsn");
+            const string metaMetaSyntax = "SYNTAX={PRODUCTION}.PRODUCTION=IDENTIFIER \"=\" EXPRESSION\".\".EXPRESSION=TERM {\"|\" TERM}.TERM=FACTOR {\" \" FACTOR}.FACTOR=IDENTIFIER|stringLiteral|\"[\" EXPRESSION \"]\"|\"(\" EXPRESSION \")\"|\"{\" EXPRESSION \"}\".IDENTIFIER=letter {letter}.";
             var grammar = WirthSyntaxNotation.GrammarFromString(metaMetaSyntax).ToNfaGrammar();
             grammar.Main = grammar.Productions.First(x => x.Name == "SYNTAX");
             var parser = new Parser(grammar);

@@ -7,23 +7,23 @@ using System.Threading.Tasks;
 namespace Parlex {
     internal class SymbolNodeFactory : IParseNodeFactory {
         protected bool Equals(SymbolNodeFactory other) {
-            return Equals(_production, other._production) && Equals(_terminal, other._terminal);
+            return Equals(_production, other._production) && Equals(_terminalDefinition, other._terminalDefinition);
         }
 
         public override int GetHashCode() {
             unchecked {
-                return ((_production != null ? _production.GetHashCode() : 0)*397) ^ (_terminal != null ? _terminal.GetHashCode() : 0);
+                return ((_production != null ? _production.GetHashCode() : 0)*397) ^ (_terminalDefinition != null ? _terminalDefinition.GetHashCode() : 0);
             }
         }
 
         private readonly NfaProduction _production;
-        private readonly ITerminal _terminal;
+        private readonly TerminalDefinition _terminalDefinition;
 
-        public SymbolNodeFactory(ISymbol symbol) {
-            _production = symbol as NfaProduction;
+        public SymbolNodeFactory(RecognizerDefinition recognizerDefinition) {
+            _production = recognizerDefinition as NfaProduction;
             if (_production == null) {
-                _terminal = symbol as ITerminal;
-                System.Diagnostics.Debug.Assert(_terminal != null);
+                _terminalDefinition = recognizerDefinition as TerminalDefinition;
+                System.Diagnostics.Debug.Assert(_terminalDefinition != null);
             }
         }
 
@@ -32,7 +32,7 @@ namespace Parlex {
                 if (_production != null) {
                     return _production.Name;
                 }
-                return _terminal.Name;
+                return _terminalDefinition.Name;
             }
         }
 
@@ -49,11 +49,11 @@ namespace Parlex {
             if (_production != null) {
                 return new NfaSymbolNode(_production);
             }
-            return new TerminalParseNode(_terminal);
+            return new TerminalParseNode(_terminalDefinition);
         }
 
-        public bool Is(ITerminal terminal) {
-            return _terminal == terminal;
+        public bool Is(TerminalDefinition terminalDefinition) {
+            return _terminalDefinition == terminalDefinition;
         }
 
         public bool Is(NfaProduction production) {

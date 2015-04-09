@@ -1,22 +1,22 @@
 namespace Parlex {
     public class TerminalParseNode : ParseNode {
-        private readonly ITerminal _terminal;
-        public ITerminal Terminal {
-            get { return _terminal; }
+        private readonly TerminalDefinition _terminalDefinition;
+        public TerminalDefinition TerminalDefinition {
+            get { return _terminalDefinition; }
         }
-        public TerminalParseNode(ITerminal terminal) {
-            _terminal = terminal;
+        public TerminalParseNode(TerminalDefinition terminalDefinition) {
+            _terminalDefinition = terminalDefinition;
         }
 
         public override void Start() {
-            if (!_terminal.Matches(Engine.CodePoints, Position)) {
+            if (!_terminalDefinition.Matches(Engine.CodePoints, Position)) {
                 return;
             }
-            Position += _terminal.Length;
+            Position += _terminalDefinition.Length;
             Accept();
         }
 
-        public string Name { get { return _terminal.Name; } }
+        public string Name { get { return _terminalDefinition.Name; } }
         public bool IsGreedy { get { return false; } }
         public ParseNode Create() {
             return this;

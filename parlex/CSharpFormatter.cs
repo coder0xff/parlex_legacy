@@ -9,15 +9,15 @@ using Automata;
 
 namespace Parlex {
     public class CSharpFormatter : IMetaSyntax {
-        private Dictionary<ISymbol, String> SerializeStringTerminals(StreamWriter s, NfaGrammar grammar) {
-            var results = new Dictionary<ISymbol, String>();
+        private Dictionary<RecognizerDefinition, String> SerializeStringTerminals(StreamWriter s, NfaGrammar grammar) {
+            var results = new Dictionary<RecognizerDefinition, String>();
             var stringTerminals = grammar.Productions.SelectMany(production =>
-                production.Nfa.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminal).Cast<StringTerminal>()
+                production.Nfa.TransitionFunction.SelectMany(x => x.Value).Select(x => x.Key).Distinct().Where(x => x is StringTerminalDefinition).Cast<StringTerminalDefinition>()
                 ).ToArray();
             for (var i = 0; i < stringTerminals.Length; i++) {
-                var name = "StringTerminal" + i;
+                var name = "StringTerminalDefinition" + i;
                 results[stringTerminals[i]] = name;
-                s.WriteLine("\tprivate static readonly ITerminal " + name + " = new StringTerminal(\"" + stringTerminals[i] + "\");");
+                s.WriteLine("\tprivate static readonly TerminalDefinition " + name + " = new StringTerminalDefinition(\"" + stringTerminals[i] + "\");");
             }
             return results;
         }
@@ -48,15 +48,15 @@ namespace Parlex {
             s.WriteLine("\tprivate static readonly NfaProduction " + cSharpName + " = new NfaProduction(\"" + cSharpName + "\", " + (production.Greedy ? "true" : "false") + ", " + (production.EatWhiteSpace ? "true" : "false") + ");");
         }
 
-        private void SerializeProduction(StreamWriter s, NfaProduction production, Dictionary<ISymbol, string> stringTerminalNames) {
+        private void SerializeProduction(StreamWriter s, NfaProduction production, Dictionary<RecognizerDefinition, string> stringTerminalNames) {
             var cSharpName = CSharpName(production.Name);
             var lowerCSharpName = Char.ToLower(cSharpName[0]) + cSharpName.Substring(1);
-            var names = new Dictionary<Nfa<ISymbol>.State, string>();
+            var names = new Dictionary<Nfa<RecognizerDefinition>.State, string>();
             int counter = 0;
             foreach (var state in production.Nfa.States) {
                 names[state] = lowerCSharpName + "State" + counter;
                 counter++;
-                s.WriteLine("\t\tvar " + names[state] + " = new Nfa<ISymbol>.State();");
+                s.WriteLine("\t\tvar " + names[state] + " = new Nfa<RecognizerDefinition>.State();");
                 s.WriteLine("\t\t" + cSharpName + ".States.Add(" + names[state] + ");");
             }
             foreach (var startState in production.Nfa.StartStates) {

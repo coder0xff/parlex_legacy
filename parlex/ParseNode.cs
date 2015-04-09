@@ -33,8 +33,8 @@ namespace Parlex {
             Engine.AddDependency(symbol, Dispatcher, this, nextState);
         }
 
-        protected void Transition(ISymbol symbol, Action nextState) {
-            Transition(new SymbolNodeFactory(symbol), nextState);
+        protected void Transition(RecognizerDefinition recognizerDefinition, Action nextState) {
+            Transition(new SymbolNodeFactory(recognizerDefinition), nextState);
         }
 
         protected void Transition<T>(Action nextState) where T : ParseNode, new() {
@@ -42,7 +42,7 @@ namespace Parlex {
         }
 
         protected void Transition(String text, Action nextState) {
-            Transition(new StringTerminal(text), nextState);
+            Transition(new StringTerminalDefinition(text), nextState);
         }
 
         protected void Accept() {

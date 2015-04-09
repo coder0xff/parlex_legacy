@@ -1,4 +1,4 @@
-﻿//#define PARSE_TRACE
+﻿#define PARSE_TRACE
 using System;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;

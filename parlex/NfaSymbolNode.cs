@@ -19,7 +19,7 @@ namespace Parlex {
             }
         }
 
-        private void ProcessState(Nfa<ISymbol>.State state) {
+        private void ProcessState(Nfa<RecognizerDefinition>.State state) {
             if (_production.Nfa.AcceptStates.Contains(state)) {
                 Accept();
             }

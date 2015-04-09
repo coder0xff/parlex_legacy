@@ -2,8 +2,8 @@ using System;
 using Automata;
 
 namespace Parlex {
-    public class NfaProduction : ISymbol {
-        public Nfa<ISymbol> Nfa;
+    public class NfaProduction : RecognizerDefinition {
+        public Nfa<RecognizerDefinition> Nfa = new Nfa<RecognizerDefinition>();
         private readonly bool _eatTrailingWhitespace;
         private readonly bool _greedy;
         private String _name;
@@ -14,8 +14,8 @@ namespace Parlex {
             _eatTrailingWhitespace = eatTrailingWhitespace;
         }
 
-        public NfaProduction(String name, bool greedy, Nfa<ISymbol> source) {
-            Nfa = new Nfa<ISymbol>(source);
+        public NfaProduction(String name, bool greedy, Nfa<RecognizerDefinition> source) {
+            Nfa = new Nfa<RecognizerDefinition>(source);
             _name = name;
             _greedy = greedy;
         }
@@ -28,9 +28,8 @@ namespace Parlex {
             get { return _eatTrailingWhitespace; }
         }
 
-        public String Name {
+        public override String Name {
             get { return _name; }
-            set { _name = value; }
         }
 
         public override string ToString() {

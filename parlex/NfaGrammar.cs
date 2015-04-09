@@ -16,11 +16,11 @@ namespace Parlex {
 
         public Grammar ToGrammar() {
             var result = new Grammar();
-            var map = new AutoDictionary<NfaProduction, Production>(nfaProduction => new Production{Name = nfaProduction.Name});
+            var map = new AutoDictionary<NfaProduction, Production>(nfaProduction => new Production(nfaProduction.Name));
             //Convert NfaProductions to Productions
             foreach (var nfaProduction in Productions) {
                 var resultProduction = map[nfaProduction];
-                var clone = new Nfa<ISymbol>(nfaProduction.Nfa);
+                var clone = new Nfa<RecognizerDefinition>(nfaProduction.Nfa);
                 //And convert the transition that are NfaProductions to Productions
                 foreach (var from in clone.TransitionFunction) {
                     foreach (var transition in from.Value.ToArray()) {

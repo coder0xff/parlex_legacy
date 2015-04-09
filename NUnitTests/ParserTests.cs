@@ -11,20 +11,20 @@ namespace NUnitTests {
         public void TestMethod1() {
             var g = new NfaGrammar();
             var identifier = new NfaProduction("identifier", true, false);
-            var identifier0 = new Nfa<ISymbol>.State();
-            var identifier1 = new Nfa<ISymbol>.State();
+            var identifier0 = new Nfa<RecognizerDefinition>.State();
+            var identifier1 = new Nfa<RecognizerDefinition>.State();
             identifier.Nfa.States.Add(identifier0);
             identifier.Nfa.States.Add(identifier1);
             identifier.Nfa.StartStates.Add(identifier0);
             identifier.Nfa.AcceptStates.Add(identifier1);
-            identifier.Nfa.TransitionFunction[identifier0][StandardSymbols.LetterTerminal].Add(identifier1);
-            identifier.Nfa.TransitionFunction[identifier1][StandardSymbols.LetterTerminal].Add(identifier1);
+            identifier.Nfa.TransitionFunction[identifier0][StandardSymbols.LetterTerminalDefinition].Add(identifier1);
+            identifier.Nfa.TransitionFunction[identifier1][StandardSymbols.LetterTerminalDefinition].Add(identifier1);
 
             var syntax = new NfaProduction("syntax", false, false);
-            var syntax0 = new Nfa<ISymbol>.State();
-            var syntax1 = new Nfa<ISymbol>.State();
-            var syntax2 = new Nfa<ISymbol>.State();
-            var syntax3 = new Nfa<ISymbol>.State();
+            var syntax0 = new Nfa<RecognizerDefinition>.State();
+            var syntax1 = new Nfa<RecognizerDefinition>.State();
+            var syntax2 = new Nfa<RecognizerDefinition>.State();
+            var syntax3 = new Nfa<RecognizerDefinition>.State();
             syntax.Nfa.States.Add(syntax0);
             syntax.Nfa.States.Add(syntax1);
             syntax.Nfa.States.Add(syntax2);
@@ -32,7 +32,7 @@ namespace NUnitTests {
             syntax.Nfa.StartStates.Add(syntax0);
             syntax.Nfa.AcceptStates.Add(syntax3);
             syntax.Nfa.TransitionFunction[syntax0][identifier].Add(syntax1);
-            syntax.Nfa.TransitionFunction[syntax1][new StringTerminal("=")].Add(syntax2);
+            syntax.Nfa.TransitionFunction[syntax1][new StringTerminalDefinition("=")].Add(syntax2);
             syntax.Nfa.TransitionFunction[syntax2][identifier].Add(syntax3);
 
             g.Productions.Add(syntax);

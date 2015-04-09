@@ -13,7 +13,7 @@ namespace Parlex {
             return new T();
         }
 
-        bool IParseNodeFactory.Is(ITerminal terminal) {
+        bool IParseNodeFactory.Is(TerminalDefinition terminalDefinition) {
             return false;
         }
 
@@ -75,8 +75,8 @@ namespace Parlex {
             return _backing.Create();
         }
 
-        bool IParseNodeFactory.Is(ITerminal terminal) {
-            return _backing.Is(terminal);
+        bool IParseNodeFactory.Is(TerminalDefinition terminalDefinition) {
+            return _backing.Is(terminalDefinition);
         }
 
         bool IParseNodeFactory.Is(NfaProduction production) {

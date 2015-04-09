@@ -9,7 +9,7 @@ namespace Parlex {
         String Name { get; }
         Boolean IsGreedy { get; }
         ParseNode Create();
-        bool Is(ITerminal terminal);
+        bool Is(TerminalDefinition terminalDefinition);
         bool Is(NfaProduction production);
     }
 }
