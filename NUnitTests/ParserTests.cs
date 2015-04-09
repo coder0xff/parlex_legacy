@@ -50,8 +50,8 @@ namespace NUnitTests {
         }
         private class LetterTerminal : ParseNode {
             public override void Start() {
-                if (Position < Engine.CodePoints.Length) {
-                    if (Unicode.LowercaseLetters.Contains(Engine.CodePoints[Position])) {
+                if (Position < _context.Value.Engine.CodePoints.Length) {
+                    if (Unicode.LowercaseLetters.Contains(_context.Value.Engine.CodePoints[Position])) {
                         Position++;
                         Accept();
                     }
@@ -68,8 +68,8 @@ namespace NUnitTests {
             }
 
             private void State1() {
-                if (Position < Engine.CodePoints.Length) {
-                    if (Engine.CodePoints[Position] == '+') {
+                if (Position < _context.Value.Engine.CodePoints.Length) {
+                    if (_context.Value.Engine.CodePoints[Position] == '+') {
                         Position++;
                         Transition<LetterTerminal>(State2);
                     }

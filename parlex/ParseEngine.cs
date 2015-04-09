@@ -45,6 +45,7 @@ namespace Parlex {
                 internal bool Ended { get; set; }
             }
 
+            private readonly ParseEngine _engine;
             private bool IsGreedy { get; set; }
             internal readonly List<Match> Matches = new List<Match>();
             private readonly List<MatchClass> _matchClasses = new List<MatchClass>();
@@ -52,8 +53,9 @@ namespace Parlex {
             internal bool Completed;
             internal event Action<Dispatcher> OnComplete;
             private readonly CustomThreadPool _threadPool;
-            internal Dispatcher(CustomThreadPool threadPool, int position, IParseNodeFactory symbol)
+            internal Dispatcher(ParseEngine engine, CustomThreadPool threadPool, int position, IParseNodeFactory symbol)
                 : base(position, symbol) {
+                _engine = engine;
                 _threadPool = threadPool;
                 IsGreedy = symbol.IsGreedy;
 #if PARSE_TRACE
@@ -111,7 +113,7 @@ namespace Parlex {
                                 dependencyEntry.Node.StartDependency();
                                 var entry = dependencyEntry;
                                 _threadPool.QueueUserWorkItem(_ => {
-                                        entry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain };
+                                        entry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine };
                                         entry.Handler();
                                         entry.Node.EndDependency();
                                         entry.Node._context.Value = null;
@@ -123,6 +125,7 @@ namespace Parlex {
 #if PARSE_TRACE
                                 System.Diagnostics.Debug.WriteLine("Informing " + dependencyEntry.Dependent + " that " + this + " has completed");
 #endif
+                                dependencyEntry.Node._context.Value = dependencyEntry.Context;
                                 dependencyEntry.Node.EndDependency();
                             }
                         }
@@ -164,7 +167,7 @@ namespace Parlex {
             Dispatcher dispatcher;
             lock (_dispatchers) {
                 if (!_dispatchers.TryGetValue(matchCategory, out dispatcher)) {
-                    dispatcher = new Dispatcher(ThreadPool, matchCategory.Position, matchCategory.Symbol);
+                    dispatcher = new Dispatcher(this, ThreadPool, matchCategory.Position, matchCategory.Symbol);
                     _dispatchers[matchCategory] = dispatcher;
                     StartDispatcher(dispatcher);
                 }
@@ -177,8 +180,7 @@ namespace Parlex {
             dispatcher.OnComplete += OnDispatcherTerminated;
             ThreadPool.QueueUserWorkItem(_ => {
                 var node = dispatcher.Symbol.Create();
-                node.Engine = this;
-                node._context.Value = new ParseContext { Position = dispatcher.Position, ParseChain = new List<MatchClass>() };
+                node._context.Value = new ParseContext { Position = dispatcher.Position, ParseChain = new List<MatchClass>(), Engine = this };
                 node.Dispatcher = dispatcher;
                 node.StartDependency();
                 node.Start();

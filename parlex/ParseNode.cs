@@ -8,9 +8,8 @@ using Parlex;
 
 namespace Parlex {
     public abstract class ParseNode {
-        public ParseEngine Engine { get; set; }
         internal ParseEngine.Dispatcher Dispatcher { get; set; }
-        internal readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
+        public readonly ThreadLocal<ParseContext> _context = new ThreadLocal<ParseContext>();
 
         internal int _activeDependencyCount;
 
@@ -30,7 +29,7 @@ namespace Parlex {
 
         protected void Transition(IParseNodeFactory symbol, Action nextState) {
             StartDependency();
-            Engine.AddDependency(symbol, Dispatcher, this, nextState);
+            _context.Value.Engine.AddDependency(symbol, Dispatcher, this, nextState);
         }
 
         protected void Transition(RecognizerDefinition recognizerDefinition, Action nextState) {
@@ -51,7 +50,7 @@ namespace Parlex {
                 Length = _context.Value.Position - Dispatcher.Position,
                 Position = Dispatcher.Position,
                 Symbol = Dispatcher.Symbol,
-                Engine = Engine
+                Engine = _context.Value.Engine
             });
         }
 
@@ -63,7 +62,7 @@ namespace Parlex {
 
         internal void EndDependency() {
             if (Interlocked.Decrement(ref _activeDependencyCount) == 0) {
-                Engine.ThreadPool.QueueUserWorkItem(_ => Dispatcher.NodeCompleted());
+                _context.Value.Engine.ThreadPool.QueueUserWorkItem(_ => Dispatcher.NodeCompleted());
             }
         }
     }
