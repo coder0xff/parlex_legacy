@@ -48,30 +48,17 @@ namespace NUnitTests {
                 Debug.Assert(!asf.IsEmpty);
             }
         }
-        private class LetterTerminal : ParseNode {
-            public override void Start() {
-                if (Position < _context.Value.Engine.CodePoints.Length) {
-                    if (Unicode.LowercaseLetters.Contains(_context.Value.Engine.CodePoints[Position])) {
-                        Position++;
-                        Accept();
-                    }
-                }
-            }
-
-            public override void OnCompletion(NodeParseResult result) {
-            }
-        }
 
         private class SumProduction : ParseNode {
             public override void Start() {
-                Transition<LetterTerminal>(State1);
+                Transition(StandardSymbols.LetterTerminalDefinition, State1);
             }
 
             private void State1() {
                 if (Position < _context.Value.Engine.CodePoints.Length) {
                     if (_context.Value.Engine.CodePoints[Position] == '+') {
                         Position++;
-                        Transition<LetterTerminal>(State2);
+                        Transition(StandardSymbols.LetterTerminalDefinition, State2);
                     }
                 }
             }

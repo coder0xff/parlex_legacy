@@ -55,8 +55,6 @@ namespace Parlex {
         }
 
         internal void StartDependency() {
-            var temp = _context.Value;
-            _context.Value = temp;
             Interlocked.Increment(ref _activeDependencyCount);
         }
 

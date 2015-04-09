@@ -110,6 +110,7 @@ namespace Parlex {
                                 var newPos = dependencyEntry.Context.Position + matchClass.Length;
                                 var newChain = new List<MatchClass>(dependencyEntry.Context.ParseChain) { matchClass };
                                 var oldContext = dependencyEntry.Context;
+                                dependencyEntry.Node._context.Value = dependencyEntry.Context;
                                 dependencyEntry.Node.StartDependency();
                                 var entry = dependencyEntry;
                                 _threadPool.QueueUserWorkItem(_ => {
