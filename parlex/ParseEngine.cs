@@ -114,7 +114,7 @@ namespace Parlex {
                                 dependencyEntry.Node.StartDependency();
                                 var entry = dependencyEntry;
                                 _threadPool.QueueUserWorkItem(_ => {
-                                        entry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine, Dispatcher = entry.Context.Dispatcher};
+                                        entry.Node._context.Value = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine, Dispatcher = entry.Context.Dispatcher, DependencyCounter = entry.Context.DependencyCounter};
                                         entry.Handler();
                                         entry.Node.EndDependency();
                                         entry.Node._context.Value = null;
@@ -181,7 +181,13 @@ namespace Parlex {
             dispatcher.OnComplete += OnDispatcherTerminated;
             ThreadPool.QueueUserWorkItem(_ => {
                 var node = dispatcher.Symbol.Create();
-                node._context.Value = new ParseContext { Position = dispatcher.Position, ParseChain = new List<MatchClass>(), Engine = this, Dispatcher = dispatcher};
+                node._context.Value = new ParseContext {
+                    Position = dispatcher.Position, 
+                    ParseChain = new List<MatchClass>(), 
+                    Engine = this, 
+                    Dispatcher = dispatcher, 
+                    DependencyCounter = new DependencyCounter()
+                };
                 node.StartDependency();
                 node.Start();
                 node.EndDependency();

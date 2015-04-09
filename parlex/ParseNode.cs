@@ -55,12 +55,20 @@ namespace Parlex {
         }
 
         internal void StartDependency() {
+            /*/
             Interlocked.Increment(ref _activeDependencyCount);
+            /*/
+            _context.Value.DependencyCounter.Increment();
+            //*/
         }
 
         internal void EndDependency() {
             var savedContext = _context.Value;
+            /*/
             if (Interlocked.Decrement(ref _activeDependencyCount) == 0) {
+            /*/
+            if (_context.Value.DependencyCounter.Decrement()) {
+            //*/
                 _context.Value.Engine.ThreadPool.QueueUserWorkItem(_ => savedContext.Dispatcher.NodeCompleted());
             }
         }

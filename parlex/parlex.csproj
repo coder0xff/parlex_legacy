@@ -48,6 +48,7 @@
     <Compile Include="AbstractSyntaxGraph.cs" />
     <Compile Include="Associativity.cs" />
     <Compile Include="BackusNaurForm.cs" />
+    <Compile Include="DependencyCounter.cs" />
     <Compile Include="Grammar.cs" />
     <Compile Include="CharacterSetTerminalDefinition.cs" />
     <Compile Include="CppParserGenerator.cs" />
