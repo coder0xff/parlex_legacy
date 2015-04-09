@@ -9,9 +9,16 @@ namespace Parlex {
     internal class CustomThreadPool {
 
         public event Action OnIdle = () => { };
- 
+        private int _nestCounter;
+
         internal void QueueUserWorkItem(WaitCallback callback) {
+            ++_nestCounter;
             callback(null);
+            --_nestCounter;
+            System.Diagnostics.Debug.WriteLine(_nestCounter);
+            if (_nestCounter == 0) {
+                OnIdle();
+            }
         }
     }
 
