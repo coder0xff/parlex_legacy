@@ -84,9 +84,9 @@
     <Compile Include="StringExtensions.cs" />
     <Compile Include="StringTerminalDefinition.cs" />
     <Compile Include="SymbolNodeFactory.cs" />
-    <Compile Include="ParseNode.cs" />
+    <Compile Include="Recognizer.cs" />
     <Compile Include="GenericParseNodeFactory.cs" />
-    <Compile Include="TerminalParseNode.cs" />
+    <Compile Include="TerminalRecognizer.cs" />
     <Compile Include="UndefinedProductionException.cs" />
     <Compile Include="Unicode.cs" />
     <Compile Include="Util.cs" />

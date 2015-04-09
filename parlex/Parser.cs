@@ -13,11 +13,11 @@ namespace Parlex {
 
         private readonly AutoDictionary<RecognizerDefinition, DynamicParseNodeFactory> _factories;
 
-        private class DynamicParseNode : ParseNode {
+        private class DynamicRecognizer : Recognizer {
             private readonly NfaProduction _production;
             private readonly Parser _parser;
 
-            public DynamicParseNode(Parser parser, NfaProduction production) {
+            public DynamicRecognizer(Parser parser, NfaProduction production) {
                 _production = production;
                 _parser = parser;
             }
@@ -73,11 +73,11 @@ namespace Parlex {
                 }
             }
 
-            public ParseNode Create() {
+            public Recognizer Create() {
                 if (_production != null) {
-                    return new DynamicParseNode(_parser, _production);
+                    return new DynamicRecognizer(_parser, _production);
                 }
-                return new TerminalParseNode(_terminalDefinition);
+                return new TerminalRecognizer(_terminalDefinition);
             }
 
             public bool Is(TerminalDefinition terminalDefinition) {

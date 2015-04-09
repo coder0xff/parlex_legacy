@@ -49,7 +49,7 @@ namespace NUnitTests {
             }
         }
 
-        private class SumProduction : ParseNode {
+        private class SumProduction : Recognizer {
             public override void Start() {
                 Transition(StandardSymbols.LetterTerminalDefinition, State1);
             }

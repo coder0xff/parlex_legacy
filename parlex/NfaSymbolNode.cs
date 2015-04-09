@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Automata;
 
 namespace Parlex {
-    public class NfaSymbolNode : ParseNode {
+    public class NfaSymbolNode : Recognizer {
         private readonly NfaProduction _production;
 
         public NfaSymbolNode(NfaProduction production) {

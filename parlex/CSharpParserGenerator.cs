@@ -61,7 +61,7 @@ namespace Parlex {
                 builder.AppendLine("using Parlex;");
                 builder.AppendLine();
                 builder.AppendLine("namespace " + _namespace + " {");
-                builder.AppendLine("\tpublic partial class " + cSharpName + " : ParseNode {");
+                builder.AppendLine("\tpublic partial class " + cSharpName + " : Recognizer {");
                 builder.AppendLine("\t\tpublic override void Start() {");
                 foreach (var startState in nfa.StartStates) {
                     builder.AppendLine("\t\t\tState" + startState.Value + "();");

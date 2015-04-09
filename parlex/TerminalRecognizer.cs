@@ -1,10 +1,10 @@
 namespace Parlex {
-    public class TerminalParseNode : ParseNode {
+    public class TerminalRecognizer : Recognizer {
         private readonly TerminalDefinition _terminalDefinition;
         public TerminalDefinition TerminalDefinition {
             get { return _terminalDefinition; }
         }
-        public TerminalParseNode(TerminalDefinition terminalDefinition) {
+        public TerminalRecognizer(TerminalDefinition terminalDefinition) {
             _terminalDefinition = terminalDefinition;
         }
 
@@ -18,7 +18,7 @@ namespace Parlex {
 
         public string Name { get { return _terminalDefinition.Name; } }
         public bool IsGreedy { get { return false; } }
-        public ParseNode Create() {
+        public Recognizer Create() {
             return this;
         }
     }

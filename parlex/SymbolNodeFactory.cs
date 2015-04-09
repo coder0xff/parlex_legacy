@@ -45,11 +45,11 @@ namespace Parlex {
             }
         }
 
-        public ParseNode Create() {
+        public Recognizer Create() {
             if (_production != null) {
                 return new NfaSymbolNode(_production);
             }
-            return new TerminalParseNode(_terminalDefinition);
+            return new TerminalRecognizer(_terminalDefinition);
         }
 
         public bool Is(TerminalDefinition terminalDefinition) {

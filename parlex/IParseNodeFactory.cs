@@ -8,7 +8,7 @@ namespace Parlex {
     public interface IParseNodeFactory {
         String Name { get; }
         Boolean IsGreedy { get; }
-        ParseNode Create();
+        Recognizer Create();
         bool Is(TerminalDefinition terminalDefinition);
         bool Is(NfaProduction production);
     }

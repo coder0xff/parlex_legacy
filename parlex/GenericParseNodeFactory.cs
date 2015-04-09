@@ -6,15 +6,15 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace Parlex {
-    public class GenericParseNodeFactory<T> : GenericParseNodeFactory, IParseNodeFactory where T : ParseNode, new() {
+    public class GenericParseNodeFactory<T> : GenericParseNodeFactory, IParseNodeFactory where T : Recognizer, new() {
         public GenericParseNodeFactory() : base(typeof(T)) {
         }
     }
 
     public class GenericParseNodeFactory : IParseNodeFactory {
-        private static AutoDictionary<Type, ParseNode> nodes;
+        private static AutoDictionary<Type, Recognizer> nodes;
         static GenericParseNodeFactory() {
-            nodes = new AutoDictionary<Type, ParseNode>(t => (ParseNode)Activator.CreateInstance(t));
+            nodes = new AutoDictionary<Type, Recognizer>(t => (Recognizer)Activator.CreateInstance(t));
         }
 
         private readonly Type _t;
@@ -35,7 +35,7 @@ namespace Parlex {
             get { return _isGreedy; }
         }
 
-        ParseNode IParseNodeFactory.Create() {
+        Recognizer IParseNodeFactory.Create() {
             return nodes[_t];
         }
 

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Parlex;
 
 namespace Parlex {
-    public abstract class ParseNode {
+    public abstract class Recognizer {
         public readonly ThreadLocal<ParseContext> Context = new ThreadLocal<ParseContext>();
 
         public int Position {
@@ -33,7 +33,7 @@ namespace Parlex {
             Transition(new SymbolNodeFactory(recognizerDefinition), nextState);
         }
 
-        protected void Transition<T>(Action nextState) where T : ParseNode, new() {
+        protected void Transition<T>(Action nextState) where T : Recognizer, new() {
             Transition(new GenericParseNodeFactory<T>(), nextState);
         }
 
