@@ -2,7 +2,6 @@
 using Automata;
 using NUnit.Framework;
 using Parlex;
-using System.Linq;
 
 namespace NUnitTests {
     [TestFixture]
@@ -10,17 +9,17 @@ namespace NUnitTests {
         [Test]
         public void TestMethod1() {
             var g = new NfaGrammar();
-            var identifier = new NfaProduction("identifier", true, false);
+            var identifier = new NfaProduction("identifier", true);
             var identifier0 = new Nfa<Recognizer>.State();
             var identifier1 = new Nfa<Recognizer>.State();
             identifier.Nfa.States.Add(identifier0);
             identifier.Nfa.States.Add(identifier1);
             identifier.Nfa.StartStates.Add(identifier0);
             identifier.Nfa.AcceptStates.Add(identifier1);
-            identifier.Nfa.TransitionFunction[identifier0][StandardSymbols.LetterTerminalDefinition].Add(identifier1);
-            identifier.Nfa.TransitionFunction[identifier1][StandardSymbols.LetterTerminalDefinition].Add(identifier1);
+            identifier.Nfa.TransitionFunction[identifier0][StandardSymbols.Letter].Add(identifier1);
+            identifier.Nfa.TransitionFunction[identifier1][StandardSymbols.Letter].Add(identifier1);
 
-            var syntax = new NfaProduction("syntax", false, false);
+            var syntax = new NfaProduction("syntax", false);
             var syntax0 = new Nfa<Recognizer>.State();
             var syntax1 = new Nfa<Recognizer>.State();
             var syntax2 = new Nfa<Recognizer>.State();
@@ -42,7 +41,7 @@ namespace NUnitTests {
             var parser = new Parser(g);
             for (int i = 0; i < 1000; i++) {
                 Debug.WriteLine("██████████ Iteration: " + i + " ██████████");
-                Parser.Job j = parser.Parse("AB=E");
+                Job j = parser.Parse("AB=E");
                 j.Join();
                 var asf = j.AbstractSyntaxGraph;
                 Debug.Assert(!asf.IsEmpty);
@@ -59,23 +58,20 @@ namespace NUnitTests {
             }
 
             public override void Start() {
-                Transition(StandardSymbols.LetterTerminalDefinition, State1);
+                Transition(StandardSymbols.Letter, State1);
             }
 
             private void State1() {
-                if (Position < Context.Value.Engine.CodePoints.Length) {
-                    if (Context.Value.Engine.CodePoints[Position] == '+') {
-                        Position++;
-                        Transition(StandardSymbols.LetterTerminalDefinition, State2);
+                if (ParseContext.Position < ParseContext.Engine.CodePoints.Count) {
+                    if (ParseContext.Engine.CodePoints[ParseContext.Position] == '+') {
+                        ParseContext.Position++;
+                        Transition(StandardSymbols.Letter, State2);
                     }
                 }
             }
 
             private void State2() {
                 Accept();
-            }
-
-            public override void OnCompletion(NodeParseResult result) {
             }
         }
 

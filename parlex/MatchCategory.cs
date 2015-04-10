@@ -2,11 +2,6 @@
     public class MatchCategory {
         public int Position { get; private set; }
         public Recognizer Recognizer { get; private set; }
-        internal MatchCategory(int position, Recognizer recognizer) {
-            Position = position;
-            Recognizer = recognizer;
-        }
-
         public override bool Equals(object obj) {
             var castObj = obj as MatchCategory;
             if (ReferenceEquals(null, castObj)) {
@@ -26,6 +21,11 @@
 
         public override string ToString() {
             return "{" + Position + ":" + Recognizer.Name + "}";
+        }
+
+        internal MatchCategory(int position, Recognizer recognizer) {
+            Position = position;
+            Recognizer = recognizer;
         }
 
     }

@@ -2,7 +2,7 @@ using Automata;
 
 namespace Parlex {
     public static class WirthSyntaxNotationGrammar {
-        public static NfaGrammar NfaGrammar = new NfaGrammar();
+        public static readonly NfaGrammar NfaGrammar = new NfaGrammar();
         private static readonly Terminal DotTerminalDefinition = new StringTerminal(".");
         private static readonly Terminal EqualTerminalDefinition = new StringTerminal("=");
         private static readonly Terminal PipeTerminalDefinition = new StringTerminal("|");
@@ -13,13 +13,13 @@ namespace Parlex {
         private static readonly Terminal CloseCurlyTerminalDefinition = new StringTerminal("}");
         private static readonly Terminal CloseParenthesisTerminalDefinition = new StringTerminal(")");
         private static readonly Terminal UnderscoreTerminalDefinition = new StringTerminal("_");
-        private static readonly NfaProduction Syntax = new NfaProduction("Syntax", true, false);
-        private static readonly NfaProduction Production = new NfaProduction("Production", false, false);
-        private static readonly NfaProduction Expression = new NfaProduction("Expression", true, false);
-        private static readonly NfaProduction Term = new NfaProduction("Term", true, false);
-        private static readonly NfaProduction Factor = new NfaProduction("Factor", true, false);
-        internal static readonly NfaProduction Identifier = new NfaProduction("Identifier", true, false);
-        internal static readonly NfaProduction Literal = new NfaProduction("Literal", true, false);
+        private static readonly NfaProduction Syntax = new NfaProduction("Syntax", true);
+        private static readonly NfaProduction Production = new NfaProduction("Production", false);
+        private static readonly NfaProduction Expression = new NfaProduction("Expression", true);
+        private static readonly NfaProduction Term = new NfaProduction("Term", true);
+        private static readonly NfaProduction Factor = new NfaProduction("Factor", true);
+        internal static readonly NfaProduction Identifier = new NfaProduction("Identifier", true);
+        internal static readonly NfaProduction Literal = new NfaProduction("Literal", true);
 
         static WirthSyntaxNotationGrammar() {
             var syntaxState0 = new Nfa<Recognizer>.State();
@@ -115,10 +115,10 @@ namespace Parlex {
             Identifier.Nfa.States.Add(identifierState1);
             Identifier.Nfa.StartStates.Add(identifierState0);
             Identifier.Nfa.AcceptStates.Add(identifierState1);
-            Identifier.Nfa.TransitionFunction[identifierState0][StandardSymbols.AlphaNumericTerminalDefinition].Add(identifierState1);
+            Identifier.Nfa.TransitionFunction[identifierState0][StandardSymbols.Alphanumeric].Add(identifierState1);
             Identifier.Nfa.TransitionFunction[identifierState0][StandardSymbols.WhiteSpaces].Add(identifierState0);
             Identifier.Nfa.TransitionFunction[identifierState0][UnderscoreTerminalDefinition].Add(identifierState1);
-            Identifier.Nfa.TransitionFunction[identifierState1][StandardSymbols.AlphaNumericTerminalDefinition].Add(identifierState1);
+            Identifier.Nfa.TransitionFunction[identifierState1][StandardSymbols.Alphanumeric].Add(identifierState1);
             Identifier.Nfa.TransitionFunction[identifierState1][UnderscoreTerminalDefinition].Add(identifierState1);
             NfaGrammar.Productions.Add(Identifier);
 

@@ -2,18 +2,17 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Parlex {
-    public class Util {
-        public static String ProcessStringLiteral(Int32[] codePoints, int start, int length) {
-            if (start + length > codePoints.Length) throw new IndexOutOfRangeException();
+    public static class Utilities {
+        public static String ProcessStringLiteral(IReadOnlyList<Int32> codePoints, int start, int length) {
+            if (start + length > codePoints.Count) throw new IndexOutOfRangeException();
             var builder = new StringBuilder();
             int doubleQuote = Char.ConvertToUtf32("\"", 0);
             int backSlash = Char.ConvertToUtf32("\\", 0);
             int i;
             //first, eat leading whitespace
-            for (i = start; i < start + length && Unicode.WhiteSpace.Contains(codePoints[i]); i++) ;
+            for (i = start; i < start + length && Unicode.WhiteSpace.Contains(codePoints[i]); i++) {}
             if (i == start + length) return null;
             if (codePoints[i] != doubleQuote) return null;
             i++;
@@ -22,11 +21,11 @@ namespace Parlex {
                     i++;
                     if (i < start + length) {
                         var c = codePoints[i];
-                        if (Unicode.HexidecimalDigits.Contains(c)) {
+                        if (Unicode.HexadecimalDigits.Contains(c)) {
                             if (i + 5 < start + length) {
                                 var hexCharacters = new Int32[6];
                                 for (int j = 0; j < 6; j++) {
-                                    if (!Unicode.HexidecimalDigits.Contains(c)) return null;
+                                    if (!Unicode.HexadecimalDigits.Contains(c)) return null;
                                     hexCharacters[j] = codePoints[i];
                                     i++;
                                 }
@@ -53,7 +52,7 @@ namespace Parlex {
             if (i >= start + length) return null;
             if (codePoints[i] != doubleQuote) return null;
             i++;
-            for (; i < start + length && Unicode.WhiteSpace.Contains(codePoints[i]); i++) ;
+            for (; i < start + length && Unicode.WhiteSpace.Contains(codePoints[i]); i++) {}
             if (i != start + length) return null;
             return builder.ToString();
         }

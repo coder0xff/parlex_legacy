@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -12,8 +13,10 @@ namespace Parlex {
         public int Position { get; internal set; }
         public Recognizer Recognizer { get; internal set; }
         public int Length { get; internal set; }
-        public MatchClass[] Children { get; internal set; }
         public ParseEngine Engine { get; set; }
+        public IReadOnlyList<MatchClass> Children {
+            get { return ChildrenArray.ToList(); }
+        }
 
         public override string ToString() {
             var sb = new StringBuilder();
@@ -25,8 +28,10 @@ namespace Parlex {
             return sb.ToString();
         }
 
+        internal MatchClass[] ChildrenArray;
+
         internal void StripWhiteSpaceEaters() {
-            Children = Children.Where(x => x.Recognizer != StandardSymbols.WhiteSpaces).ToArray();
+            ChildrenArray = ChildrenArray.Where(x => x.Recognizer != StandardSymbols.WhiteSpaces).ToArray();
         }
 
     }

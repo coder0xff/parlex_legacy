@@ -9,9 +9,7 @@ namespace Parlex {
     internal class CustomThreadPool {
 
         public event Action OnIdle = () => { };
-        private int _nestCounter;
-
-        internal void QueueUserWorkItem(WaitCallback callback) {
+        public void QueueUserWorkItem(WaitCallback callback) {
             ++_nestCounter;
             callback(null);
             --_nestCounter;
@@ -20,14 +18,23 @@ namespace Parlex {
                 OnIdle();
             }
         }
+        private int _nestCounter;
+
     }
 
 #else
 
     internal class CustomThreadPool {
-        private int itemCount;
         public event Action OnIdle = () => { };
  
+        public void QueueUserWorkItem(WaitCallback callback) {
+            ItemQueued();
+            ThreadPool.QueueUserWorkItem(_ => {
+                callback(null);
+                ItemCompleted();
+            });
+        }
+        private int itemCount;
         void ItemQueued() {
             Interlocked.Increment(ref itemCount);
         }
@@ -38,13 +45,6 @@ namespace Parlex {
             }
         }
 
-        internal void QueueUserWorkItem(WaitCallback callback) {
-            ItemQueued();
-            ThreadPool.QueueUserWorkItem(_ => {
-                callback(null);
-                ItemCompleted();
-            });
-        }
     }
 
 #endif

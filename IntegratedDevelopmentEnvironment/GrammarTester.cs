@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using Parlex;
@@ -19,7 +18,7 @@ namespace IntegratedDevelopmentEnvironment {
             Show(Main.Instance.dockPanel1, DockState.Document);
         }
 
-        void _grammarEditor_GrammarChanged(Grammar obj) {
+        void _grammarEditor_GrammarChanged(Object sender, GrammarChangedEventArgs args) {
             if (Main.Instance.ActiveMdiChild != this) {
                 _grammarChangedInBackground = true;
             } else {
@@ -132,7 +131,7 @@ namespace IntegratedDevelopmentEnvironment {
             builder.Append(matchClass.Length.ToString());
             builder.Append(" : ");
             var text = matchClass.Engine.Document.Utf32Substring(matchClass.Position, matchClass.Length);
-            builder.AppendLine(Util.QuoteStringLiteral(text));
+            builder.AppendLine(Utilities.QuoteStringLiteral(text));
             var result = new TreeNode(builder.ToString());
             foreach (var match in asg.NodeTable[matchClass]) {
                 result.Nodes.Add(PopulateStructureTreeView(asg, match));

@@ -18,7 +18,7 @@ namespace IntegratedDevelopmentEnvironment {
         private NfaGrammar _cachedNfaGrammar;
         private bool _hasUnsavedChanges;
 
-        public event Action<Grammar> GrammarChanged = delegate(Grammar grammar) { };
+        public event Action<Object, GrammarChangedEventArgs> GrammarChanged = delegate { };
 
         public GrammarEditor() {
             InitializeComponent();
@@ -105,7 +105,7 @@ namespace IntegratedDevelopmentEnvironment {
             _cachedNfaGrammar = null;
             _hasUnsavedChanges = true;
             UpdateTitle();
-            GrammarChanged(_grammar);
+            GrammarChanged(this, new GrammarChangedEventArgs());
         }
 
         public static GrammarEditor ForFile(String filePathName, IMetaSyntax formatter) {
@@ -123,76 +123,76 @@ namespace IntegratedDevelopmentEnvironment {
             return result;
         }
 
-        public static TreeNode BuildTreeNode(BehaviorTree.Choice choiceNode) {
-            return new TreeNode("Choice", 0, 0, choiceNode.Children.Select(BuildTreeNode).ToArray());
+        public static TreeNode BuildTreeNode(ChoiceBehavior choiceBehaviorNode) {
+            return new TreeNode("ChoiceBehavior", 0, 0, choiceBehaviorNode.Children.Select(BuildTreeNode).ToArray());
         }
 
-        public static TreeNode BuildTreeNode(BehaviorTree.Optional optionalNode) {
+        public static TreeNode BuildTreeNode(Optional optionalNode) {
             return new TreeNode("Optional", 0, 0, new[] { BuildTreeNode(optionalNode.Child) });
         }
 
-        public static TreeNode BuildTreeNode(BehaviorTree.Repetition repetitionNode) {
-            return new TreeNode("Repetition", 0, 0, new[] { BuildTreeNode(repetitionNode.Child) });
+        public static TreeNode BuildTreeNode(RepetitionBehavior repetitionBehaviorNode) {
+            return new TreeNode("RepetitionBehavior", 0, 0, new[] { BuildTreeNode(repetitionBehaviorNode.Child) });
         }
 
-        public static TreeNode BuildTreeNode(BehaviorTree.Sequence sequenceNode) {
-            return new TreeNode("Sequence", 0, 0, sequenceNode.Children.Select(BuildTreeNode).ToArray());
+        public static TreeNode BuildTreeNode(SequenceBehavior sequenceBehaviorNode) {
+            return new TreeNode("SequenceBehavior", 0, 0, sequenceBehaviorNode.Children.Select(BuildTreeNode).ToArray());
         }
 
-        public static TreeNode BuildTreeNode(BehaviorTree.Leaf leafNode) {
-            return new TreeNode("recognizerDefinition: " + leafNode.Recognizer.Name);
+        public static TreeNode BuildTreeNode(BehaviorLeaf behaviorLeafNode) {
+            return new TreeNode("recognizerDefinition: " + behaviorLeafNode.Recognizer.Name);
         }
 
-        public static void DeleteBehaviorNodeChild(BehaviorTree.Choice parentNode, BehaviorTree.Node childNode) {
-            parentNode.Children.Remove(childNode);
+        public static void DeleteBehaviorNodeChild(ChoiceBehavior parentNode, BehaviorNode childBehaviorNode) {
+            parentNode.Children.Remove(childBehaviorNode);
         }
 
-        public static void DeleteBehaviorNodeChild(BehaviorTree.Optional parentNode, BehaviorTree.Node childNode) {
-            Debug.Assert(parentNode.Child == childNode);
+        public static void DeleteBehaviorNodeChild(Optional parentNode, BehaviorNode childBehaviorNode) {
+            Debug.Assert(parentNode.Child == childBehaviorNode);
             parentNode.Child = null;
         }
 
-        public static void DeleteBehaviorNodeChild(BehaviorTree.Repetition parentNode, BehaviorTree.Node childNode) {
-            Debug.Assert(parentNode.Child == childNode);
+        public static void DeleteBehaviorNodeChild(RepetitionBehavior parentNode, BehaviorNode childBehaviorNode) {
+            Debug.Assert(parentNode.Child == childBehaviorNode);
             parentNode.Child = null;
         }
 
-        public static void DeleteBehaviorNodeChild(BehaviorTree.Sequence parentNode, BehaviorTree.Node childNode) {
-            parentNode.Children.Remove(childNode);
+        public static void DeleteBehaviorNodeChild(SequenceBehavior parentNode, BehaviorNode childBehaviorNode) {
+            parentNode.Children.Remove(childBehaviorNode);
         }
 
         private static DynamicDispatcher _deleteTreeNodeChildDynamicDispatcher;
-        public static void DeleteBehaviorNodeChild(BehaviorTree.Node parentNode, BehaviorTree.Node childNode) {
+        public static void DeleteBehaviorNodeChild(BehaviorNode parentBehaviorNode, BehaviorNode childBehaviorNode) {
             if (_deleteTreeNodeChildDynamicDispatcher == null) {
                 _deleteTreeNodeChildDynamicDispatcher = new DynamicDispatcher();
             }
-            _deleteTreeNodeChildDynamicDispatcher.Dispatch<Object>(null, parentNode, childNode);
+            _deleteTreeNodeChildDynamicDispatcher.Dispatch<Object>(null, parentBehaviorNode, childBehaviorNode);
         }
 
-        public static void AddBehaviorNodeChild(BehaviorTree.Choice parentNode, BehaviorTree.Node childNode) {
-            parentNode.Children.Add(childNode);
+        public static void AddBehaviorNodeChild(ChoiceBehavior parentNode, BehaviorNode childBehaviorNode) {
+            parentNode.Children.Add(childBehaviorNode);
         }
 
-        public static void AddBehaviorNodeChild(BehaviorTree.Optional parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorNodeChild(Optional parentNode, BehaviorNode childBehaviorNode) {
             Debug.Assert(parentNode.Child == null);
-            parentNode.Child = childNode;
+            parentNode.Child = childBehaviorNode;
         }
 
-        public static void AddBehaviorNodeChild(BehaviorTree.Repetition parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorNodeChild(RepetitionBehavior parentNode, BehaviorNode childBehaviorNode) {
             Debug.Assert(parentNode.Child == null);
-            parentNode.Child = childNode;
+            parentNode.Child = childBehaviorNode;
         }
 
-        public static void AddBehaviorNodeChild(BehaviorTree.Sequence parentNode, BehaviorTree.Node childNode) {
-            parentNode.Children.Add(childNode);
+        public static void AddBehaviorNodeChild(SequenceBehavior parentNode, BehaviorNode childBehaviorNode) {
+            parentNode.Children.Add(childBehaviorNode);
         }
 
         private static DynamicDispatcher _addTreeNodeChildDynamicDispatcher;
-        public static void AddBehaviorNodeChild(BehaviorTree.Node parentNode, BehaviorTree.Node childNode) {
+        public static void AddBehaviorNodeChild(BehaviorNode parentBehaviorNode, BehaviorNode childBehaviorNode) {
             if (_addTreeNodeChildDynamicDispatcher == null) {
                 _addTreeNodeChildDynamicDispatcher = new DynamicDispatcher();
             }
-            _addTreeNodeChildDynamicDispatcher.Dispatch<TreeNode>(null, parentNode, childNode);
+            _addTreeNodeChildDynamicDispatcher.Dispatch<TreeNode>(null, parentBehaviorNode, childBehaviorNode);
         }
 
         static void SetTagValue(TreeNode node, String key, Object value) {
@@ -229,12 +229,12 @@ namespace IntegratedDevelopmentEnvironment {
 
         private static DynamicDispatcher _buildTreeNodeDynamicDispatcher;
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static TreeNode BuildTreeNode(BehaviorTree.Node behaviorNode) {
+        private static TreeNode BuildTreeNode(BehaviorNode behaviorBehaviorNode) {
             if (_buildTreeNodeDynamicDispatcher == null) {
                 _buildTreeNodeDynamicDispatcher = new DynamicDispatcher();
             }
-            var result = _buildTreeNodeDynamicDispatcher.Dispatch<TreeNode>(null, behaviorNode);
-            SetTagValue(result, "behavior", behaviorNode);
+            var result = _buildTreeNodeDynamicDispatcher.Dispatch<TreeNode>(null, behaviorBehaviorNode);
+            SetTagValue(result, "behavior", behaviorBehaviorNode);
             return result;
         }
 
@@ -251,10 +251,10 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void AddViewNodeChild(TreeNode parent, TreeNode child) {
-            var node = GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior");
-            if (node is BehaviorTree.Sequence || node is BehaviorTree.Choice) {
+            var node = GetTagValue<BehaviorNode>(treeView.SelectedNode, "behavior");
+            if (node is SequenceBehavior || node is ChoiceBehavior) {
                 parent.Nodes.Add(child);
-            } else if (node is BehaviorTree.Optional || node is BehaviorTree.Repetition) {
+            } else if (node is Optional || node is RepetitionBehavior) {
                 Debug.Assert(treeView.SelectedNode.Nodes.Count == 0);
                 parent.Nodes.Add(child);
             }
@@ -272,7 +272,7 @@ namespace IntegratedDevelopmentEnvironment {
             return unnamedName;
         }
 
-        private void CreateProduction<T>() where T : BehaviorTree.Node, new() {
+        private void CreateProduction<T>() where T : BehaviorNode, new() {
             var unnamedName = GetUnnamedName();
             var viewNode = new TreeNode(unnamedName + ": " + typeof(T).Name);
             var behaviorNode = new T();
@@ -286,9 +286,9 @@ namespace IntegratedDevelopmentEnvironment {
             OnGrammarChanged();
         }
 
-        private void CreateChild<T>() where T : BehaviorTree.Node, new() {
+        private void CreateChild<T>() where T : BehaviorNode, new() {
             var parentViewNode = treeView.SelectedNode;
-            var parentBehaviorNode = GetTagValue<BehaviorTree.Node>(parentViewNode, "behavior");
+            var parentBehaviorNode = GetTagValue<BehaviorNode>(parentViewNode, "behavior");
             var viewNode = new TreeNode(typeof(T).Name);
             var behaviorNode = new T();
             SetTagValue(viewNode, "behavior", behaviorNode);
@@ -298,7 +298,7 @@ namespace IntegratedDevelopmentEnvironment {
             OnGrammarChanged();
         }
 
-        private void Create<T>() where T : BehaviorTree.Node, new() {
+        private void Create<T>() where T : BehaviorNode, new() {
             if (treeView.SelectedNode == null) {
                 CreateProduction<T>();
             } else {
@@ -307,25 +307,25 @@ namespace IntegratedDevelopmentEnvironment {
         }
 
         private void toolStripButtonSequence_Click(object sender, EventArgs e) {
-            Create<BehaviorTree.Sequence>();
+            Create<SequenceBehavior>();
         }
 
         private void toolStripButtonRepetition_Click(object sender, EventArgs e) {
-            Create<BehaviorTree.Repetition>();
+            Create<RepetitionBehavior>();
         }
 
         private void toolStripButtonChoice_Click(object sender, EventArgs e) {
-            Create<BehaviorTree.Choice>();
+            Create<ChoiceBehavior>();
         }
 
         private void toolStripButtonOptional_Click(object sender, EventArgs e) {
-            Create<BehaviorTree.Optional>();
+            Create<Optional>();
         }
 
         //must be private because it does not call OnGrammarChanged
         void RemoveDependenciesOnProduction(Production production, TreeNode viewNode) {
-            var behaviorNode = GetTagValue<BehaviorTree.Node>(viewNode, "node");
-            var asLeaf = behaviorNode as BehaviorTree.Leaf;
+            var behaviorNode = GetTagValue<BehaviorNode>(viewNode, "BehaviorNode");
+            var asLeaf = behaviorNode as BehaviorLeaf;
             if (asLeaf != null && asLeaf.Recognizer == production) {
                 asLeaf.Recognizer = new StringTerminal(production.Name);
                 viewNode.Text = "recognizer: " + asLeaf.Recognizer.Name;
@@ -352,8 +352,8 @@ namespace IntegratedDevelopmentEnvironment {
                         RemoveProduction(viewNode, production);
                     } else {
                         var parent = viewNode.Parent;
-                        var parentBehaviorNode = GetTagValue<BehaviorTree.Node>(parent, "behavior");
-                        var nodeBehaviorNode = GetTagValue<BehaviorTree.Node>(viewNode, "behavior");
+                        var parentBehaviorNode = GetTagValue<BehaviorNode>(parent, "behavior");
+                        var nodeBehaviorNode = GetTagValue<BehaviorNode>(viewNode, "behavior");
                         DeleteBehaviorNodeChild(parentBehaviorNode, nodeBehaviorNode);
                         viewNode.Remove();
                     }
@@ -364,14 +364,14 @@ namespace IntegratedDevelopmentEnvironment {
 
         private void treeView_AfterSelect(object sender, TreeViewEventArgs e) {
             if (treeView.SelectedNode != null) {
-                var tag = GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior");
-                if (tag is BehaviorTree.Sequence || tag is BehaviorTree.Choice) {
+                var tag = GetTagValue<BehaviorNode>(treeView.SelectedNode, "behavior");
+                if (tag is SequenceBehavior || tag is ChoiceBehavior) {
                     toolStripButtonSequence.Enabled = true;
                     toolStripButtonChoice.Enabled = true;
                     toolStripButtonRepetition.Enabled = true;
                     toolStripButtonOptional.Enabled = true;
                     toolStripButtonLeaf.Enabled = true;
-                } else if (tag is BehaviorTree.Optional || tag is BehaviorTree.Repetition) {
+                } else if (tag is Optional || tag is RepetitionBehavior) {
                     bool canAdd = treeView.SelectedNode.Nodes.Count == 0;
                     toolStripButtonSequence.Enabled = canAdd;
                     toolStripButtonChoice.Enabled = canAdd;
@@ -396,9 +396,9 @@ namespace IntegratedDevelopmentEnvironment {
 
         private void toolStripButtonLeaf_Click(object sender, EventArgs e) {
             var parentViewNode = treeView.SelectedNode;
-            var parentBehaviorNode = GetTagValue<BehaviorTree.Node>(parentViewNode, "behavior");
-            var viewNode = new TreeNode(StandardSymbols.CharacterTerminalDefinition.Name);
-            var behaviorNode = new BehaviorTree.Leaf(StandardSymbols.CharacterTerminalDefinition);
+            var parentBehaviorNode = GetTagValue<BehaviorNode>(parentViewNode, "behavior");
+            var viewNode = new TreeNode(StandardSymbols.Any.Name);
+            var behaviorNode = new BehaviorLeaf(StandardSymbols.Any);
             SetTagValue(viewNode, "behavior", behaviorNode);
             AddViewNodeChild(parentViewNode, viewNode);
             AddBehaviorNodeChild(parentBehaviorNode, behaviorNode);
@@ -408,14 +408,14 @@ namespace IntegratedDevelopmentEnvironment {
 
         private void treeView_BeforeLabelEdit(object sender, NodeLabelEditEventArgs e) {
             var editText = treeView.SelectedNode.Text;
-            var behaviorNode = GetTagValue<BehaviorTree.Node>(treeView.SelectedNode, "behavior");
-            var leaf = behaviorNode as BehaviorTree.Leaf;
+            var behaviorNode = GetTagValue<BehaviorNode>(treeView.SelectedNode, "behavior");
+            var leaf = behaviorNode as BehaviorLeaf;
             if (leaf != null) {
                 editText = leaf.Recognizer.Name;
                 if (leaf.Recognizer is StringTerminal) {
                     editText = leaf.Recognizer.ToString();
                     Recognizer recognizer;
-                    if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizer) || _grammar.GetProduction(editText) != null) {
+                    if (StandardSymbols.TryGetBuiltInISymbolByName(editText, out recognizer) || _grammar.GetProduction(editText) != null) {
                         editText = "\"" + editText + "\"";
                     }
                 }
@@ -439,11 +439,11 @@ namespace IntegratedDevelopmentEnvironment {
             var unchanged = e.Label == e.Node.Text || e.Label == null;
             Recognizer recognizer = null;
             var editText = e.Label ?? e.Node.Text;
-            var behaviorNode = GetTagValue<BehaviorTree.Node>(e.Node, "behavior");
+            var behaviorNode = GetTagValue<BehaviorNode>(e.Node, "behavior");
             Production production;
             var dirtied = false;
             if (TryGetTagValue(e.Node, "production", out production)) {                
-                if (StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizer) || !unchanged && _grammar.GetProduction(editText) != null) {
+                if (StandardSymbols.TryGetBuiltInISymbolByName(editText, out recognizer) || !unchanged && _grammar.GetProduction(editText) != null) {
                     MessageBox.Show(this, "A built in recognizerDefinition or a production in this grammar already uses this name.");
                     e.CancelEdit = true;
                     e.Node.BeginEdit();
@@ -463,12 +463,12 @@ namespace IntegratedDevelopmentEnvironment {
                     dirtied = true;
                 }
                 editText = editText + ": " + behaviorNode.GetType().Name;
-            } else if (behaviorNode is BehaviorTree.Leaf) {
-                var leaf = behaviorNode as BehaviorTree.Leaf;
+            } else if (behaviorNode is BehaviorLeaf) {
+                var leaf = behaviorNode as BehaviorLeaf;
                 var asUtf32 = editText.GetUtf32CodePoints();
-                var asStringLiteral = Util.ProcessStringLiteral(asUtf32, 0, asUtf32.Length);
+                var asStringLiteral = Utilities.ProcessStringLiteral(asUtf32, 0, asUtf32.Length);
                 if (asStringLiteral == null) {
-                    if (!StandardSymbols.TryGetBuiltinISymbolByName(editText, out recognizer)) {
+                    if (!StandardSymbols.TryGetBuiltInISymbolByName(editText, out recognizer)) {
                         recognizer = _grammar.GetProduction(editText);
                     }
                 }
@@ -536,4 +536,6 @@ namespace IntegratedDevelopmentEnvironment {
             }
         }
     }
+
+    public class GrammarChangedEventArgs {}
 }

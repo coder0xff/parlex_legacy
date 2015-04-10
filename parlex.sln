@@ -6,6 +6,11 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{225EE06C-3EC1-4D0C-919A-338DB9D77548}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D3EDB85-8150-40ED-9E88-057823E71E65}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+		s026153_ISO_IEC_14977_1996(E).pdf = s026153_ISO_IEC_14977_1996(E).pdf
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Parlex", "Parlex\Parlex.csproj", "{440D651A-2DE1-4AE1-B293-4C21D5ECC16A}"
 EndProject

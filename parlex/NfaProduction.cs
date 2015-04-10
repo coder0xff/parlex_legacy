@@ -1,31 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Automata;
 
 namespace Parlex {
     public class NfaProduction : Recognizer {
-        public Nfa<Recognizer> Nfa = new Nfa<Recognizer>();
-        private readonly bool _eatTrailingWhitespace;
-        private readonly bool _greedy;
-        private String _name;
-
-        public NfaProduction(String name, bool greedy, bool eatTrailingWhitespace) {
-            _name = name;
-            _greedy = greedy;
-            _eatTrailingWhitespace = eatTrailingWhitespace;
-        }
-
-        public NfaProduction(String name, bool greedy, Nfa<Recognizer> source) {
-            Nfa = new Nfa<Recognizer>(source);
-            _name = name;
-            _greedy = greedy;
-        }
-
-        public bool EatWhiteSpace {
-            get { return _eatTrailingWhitespace; }
-        }
-
         public override String Name {
             get { return _name; }
         }
@@ -34,24 +12,43 @@ namespace Parlex {
             get { return _greedy; }
         }
 
-        public override void Start() {
-            EnterConfiguration(Nfa.StartStates.ToArray());
+        public Nfa<Recognizer> Nfa {
+            get { return _nfa; }
         }
 
-        private void EnterConfiguration(Nfa<Recognizer>.State[] states) {
-            foreach (var state in states) {
-                foreach (var keyValuePair in Nfa.TransitionFunction[state]) {
-                    var pair = keyValuePair;
-                    Transition(keyValuePair.Key, () => EnterConfiguration(pair.Value.ToArray()));
-                }
-            }
-            if (states.Any(state => Nfa.AcceptStates.Contains(state))) {
-                Accept();
-            }
+        public NfaProduction(String name, bool greedy) {
+            _name = name;
+            _greedy = greedy;
+        }
+
+        public NfaProduction(String name, bool greedy, Nfa<Recognizer> source) {
+            _nfa = new Nfa<Recognizer>(source);
+            _name = name;
+            _greedy = greedy;
+        }
+
+        public override void Start() {
+            EnterConfiguration(_nfa.StartStates.ToArray());
         }
 
         public override string ToString() {
             return Name;
         }
+        private void EnterConfiguration(Nfa<Recognizer>.State[] states) {
+            foreach (var state in states) {
+                foreach (var keyValuePair in _nfa.TransitionFunction[state]) {
+                    var pair = keyValuePair;
+                    Transition(keyValuePair.Key, () => EnterConfiguration(pair.Value.ToArray()));
+                }
+            }
+            if (states.Any(state => _nfa.AcceptStates.Contains(state))) {
+                Accept();
+            }
+        }
+
+        private Nfa<Recognizer> _nfa = new Nfa<Recognizer>();
+        private readonly bool _greedy;
+        private readonly String _name;
+
     }
 }

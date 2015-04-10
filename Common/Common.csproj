@@ -44,7 +44,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AsyncSet.cs" />
     <Compile Include="AutoDictionary.cs" />
     <Compile Include="Bimap.cs" />
     <Compile Include="ConcurrentSet.cs" />

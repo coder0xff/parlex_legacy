@@ -3,92 +3,26 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Common;
+using Parlex.Annotations;
 
 namespace Parlex {
     public static class WirthSyntaxNotation {
-       private static string ProcessIdentifierClause(Parser.Job job, Match identifier) {
-            return job.Document.Utf32Substring(identifier.Position, identifier.Length).Trim();
-        }
-
-        private static string ProcessLiteralClause(Parser.Job job, Match literal) {
-            var result = Util.ProcessStringLiteral(job.CodePoints, literal.Position, literal.Length);
-            if (result == null) throw new ApplicationException();
-            return result;
-        }
-
-        private static BehaviorTree.Node ProcessFactorClause(Parser.Job job, Match factor) {
-            Match firstChild = job.AbstractSyntaxGraph.NodeTable[factor.Children[0]].First();
-
-            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.Identifier) {
-                var name = ProcessIdentifierClause(job, firstChild);
-                Recognizer builtIn;
-                return new BehaviorTree.Leaf(StandardSymbols.TryGetBuiltinISymbolByName(name, out builtIn) ? builtIn : new PlaceholderRecognizer(name));
-            }
-
-            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.Literal) {
-                return new BehaviorTree.Leaf(new StringTerminal(ProcessLiteralClause(job, firstChild)));
-            }
-
-            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.OpenSquareTerminalDefinition) {
-                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
-                return new BehaviorTree.Optional {Child = ProcessExpressionClause(job, expression)};
-            }
-
-            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.OpenParenthesisTerminalDefinition) {
-                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
-                return ProcessExpressionClause(job, expression);
-            }
-
-            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.OpenCurlyTerminalDefinition) {
-                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
-                return new BehaviorTree.Repetition {Child = ProcessExpressionClause(job, expression)};
-            }
-
-            throw new InvalidOperationException();
-        }
-
-        private static BehaviorTree.Node ProcessTermClause(Parser.Job job, Match term) {
-            var result = new BehaviorTree.Sequence();
-            foreach (MatchClass matchClass in term.Children) {
-                if (matchClass.Recognizer == StandardSymbols.WhiteSpaceTerminalDefinition) {
-                    continue;
+        public class Formatter : IMetaSyntax {
+            public void Generate(Stream s, Grammar grammar) {
+                string text = GrammarToString(grammar);
+                using (var sw = new StreamWriter(s, new UTF8Encoding(true))) {
+                    sw.Write(text);
                 }
-                Match factor = job.AbstractSyntaxGraph.NodeTable[matchClass].First();
-                var child = ProcessFactorClause(job, factor);
-                result.Children.Add(child);
-            }
-            return result;
-        }
-
-        private static BehaviorTree.Node ProcessExpressionClause(Parser.Job job, Match expression) {
-            var result = new BehaviorTree.Choice();
-
-            for (var index = 0; index < expression.Children.Length; index += 2) {
-                var child = ProcessTermClause(job, job.AbstractSyntaxGraph.NodeTable[expression.Children[index]].First());
-                result.Children.Add(child);
             }
 
-            return result;
-        }
-
-        private static Production ProcessProductionClause(Parser.Job job, Match production) {
-            string name = ProcessIdentifierClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[0]].First()).Trim();
-            var root = ProcessExpressionClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[2]].First());
-            root.Optimize();
-            return new Production(name) {Behavior = new BehaviorTree {Root = root}};
-        }
-
-        private static List<Production> ProcessSyntaxClause(Parser.Job job, Match syntax) {
-            var results = new List<Production>();
-            foreach (MatchClass matchClass in syntax.Children) {
-                if (matchClass.Recognizer == StandardSymbols.WhiteSpaceTerminalDefinition) {
-                    continue;
-                }
-                results.Add(ProcessProductionClause(job, job.AbstractSyntaxGraph.NodeTable[matchClass].First()));
+            public Grammar Parse(Stream s) {
+                var sr = new StreamReader(s, Encoding.UTF8);
+                string text = sr.ReadToEnd();
+                sr.Dispose();
+                return GrammarFromString(text);
             }
-            return results;
         }
-
         public static Grammar GrammarFromString(String text) {
             var parser = new Parser(WirthSyntaxNotationGrammar.NfaGrammar);
             var j = parser.Parse(text);
@@ -110,11 +44,113 @@ namespace Parlex {
             return result;
         }
 
-        private static String BehaviorTreeSequenceToString(BehaviorTree.Sequence sequence) {
+        public static String GrammarToString(Grammar grammar) {
+            if (grammar == null) {
+                throw new ArgumentNullException("grammar");
+            }
+            var builder = new StringBuilder();
+            foreach (var recognizer in grammar.Productions) {
+                AppendRecognizer(builder, recognizer);
+            }
+            return builder.ToString();
+        }
+
+        private static void AppendRecognizer(StringBuilder builder, Production production) {
+            builder.Append(production.Name);
+            builder.Append("=");
+            builder.Append(BehaviorTreeNodeToString(production.Behavior.Root));
+            builder.AppendLine(".");
+        }
+
+       private static string ProcessIdentifierClause(Job job, Match identifier) {
+            return job.Document.Utf32Substring(identifier.Position, identifier.Length).Trim();
+        }
+
+        private static string ProcessLiteralClause(Job job, Match literal) {
+            var result = Utilities.ProcessStringLiteral(job.CodePoints, literal.Position, literal.Length);
+            if (result == null) throw new ApplicationException();
+            return result;
+        }
+
+        private static BehaviorNode ProcessFactorClause(Job job, Match factor) {
+            Match firstChild = job.AbstractSyntaxGraph.NodeTable[factor.Children[0]].First();
+
+            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.Identifier) {
+                var name = ProcessIdentifierClause(job, firstChild);
+                Recognizer builtIn;
+                return new BehaviorLeaf(StandardSymbols.TryGetBuiltInISymbolByName(name, out builtIn) ? builtIn : new PlaceholderProduction(name));
+            }
+
+            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.Literal) {
+                return new BehaviorLeaf(new StringTerminal(ProcessLiteralClause(job, firstChild)));
+            }
+
+            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.OpenSquareTerminalDefinition) {
+                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
+                return new Optional {Child = ProcessExpressionClause(job, expression)};
+            }
+
+            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.OpenParenthesisTerminalDefinition) {
+                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
+                return ProcessExpressionClause(job, expression);
+            }
+
+            if (firstChild.Recognizer == WirthSyntaxNotationGrammar.OpenCurlyTerminalDefinition) {
+                Match expression = job.AbstractSyntaxGraph.NodeTable[factor.Children[1]].First();
+                return new RepetitionBehavior {Child = ProcessExpressionClause(job, expression)};
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        private static BehaviorNode ProcessTermClause(Job job, Match term) {
+            var result = new SequenceBehavior();
+            foreach (MatchClass matchClass in term.Children) {
+                if (matchClass.Recognizer == StandardSymbols.WhiteSpace) {
+                    continue;
+                }
+                Match factor = job.AbstractSyntaxGraph.NodeTable[matchClass].First();
+                var child = ProcessFactorClause(job, factor);
+                result.Children.Add(child);
+            }
+            return result;
+        }
+
+        private static BehaviorNode ProcessExpressionClause(Job job, Match expression) {
+            var result = new ChoiceBehavior();
+
+            for (var index = 0; index < expression.Children.Count; index += 2) {
+                var child = ProcessTermClause(job, job.AbstractSyntaxGraph.NodeTable[expression.Children[index]].First());
+                result.Children.Add(child);
+            }
+
+            return result;
+        }
+
+        private static Production ProcessProductionClause(Job job, Match production) {
+            string name = ProcessIdentifierClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[0]].First()).Trim();
+            var root = ProcessExpressionClause(job, job.AbstractSyntaxGraph.NodeTable[production.Children[2]].First());
+            root.Optimize();
+            return new Production(name) {Behavior = new BehaviorTree {Root = root}};
+        }
+
+        private static List<Production> ProcessSyntaxClause(Job job, Match syntax) {
+            var results = new List<Production>();
+            foreach (MatchClass matchClass in syntax.Children) {
+                if (matchClass.Recognizer == StandardSymbols.WhiteSpace) {
+                    continue;
+                }
+                results.Add(ProcessProductionClause(job, job.AbstractSyntaxGraph.NodeTable[matchClass].First()));
+            }
+            return results;
+        }
+
+        [UsedImplicitly]
+        private static String BehaviorTreeNodeToString(SequenceBehavior sequenceBehavior) {
             var sb = new StringBuilder();
-            BehaviorTree.Node[] temp = sequence.Children.ToArray();
+            BehaviorNode[] temp = sequenceBehavior.Children.ToArray();
             for (int i = 0; i < temp.Length; ++i) {
-                bool parenthesetize = !(temp[i] is BehaviorTree.Leaf || temp[i] is BehaviorTree.Repetition);
+                bool parenthesetize = !(temp[i] is BehaviorLeaf || temp[i] is RepetitionBehavior);
                 if (parenthesetize) {
                     sb.Append("(");
                 }
@@ -129,11 +165,12 @@ namespace Parlex {
             return sb.ToString();
         }
 
-        private static String BehaviorTreeChoiceToString(BehaviorTree.Choice choice) {
+        [UsedImplicitly]
+        private static String BehaviorTreeNodeToString(ChoiceBehavior choiceBehavior) {
             var sb = new StringBuilder();
-            BehaviorTree.Node[] temp = choice.Children.ToArray();
+            BehaviorNode[] temp = choiceBehavior.Children.ToArray();
             for (int i = 0; i < temp.Length; ++i) {
-                bool parenthesetize = !(temp[i] is BehaviorTree.Leaf || temp[i] is BehaviorTree.Repetition);
+                bool parenthesetize = !(temp[i] is BehaviorLeaf || temp[i] is RepetitionBehavior);
                 if (parenthesetize) {
                     sb.Append("(");
                 }
@@ -148,7 +185,8 @@ namespace Parlex {
             return sb.ToString();
         }
 
-        private static String BehaviorTreeOptionalToString(BehaviorTree.Optional repetition) {
+        [UsedImplicitly]
+        private static String BehaviorTreeNodeToString(Optional repetition) {
             var sb = new StringBuilder();
             sb.Append("[");
             sb.Append(BehaviorTreeNodeToString(repetition.Child));
@@ -156,73 +194,34 @@ namespace Parlex {
             return sb.ToString();
         }
 
-        private static String BehaviorTreeRepetitionToString(BehaviorTree.Repetition repetition) {
+        [UsedImplicitly]
+        private static String BehaviorTreeNodeToString(RepetitionBehavior repetitionBehavior) {
             var sb = new StringBuilder();
             sb.Append("{");
-            sb.Append(BehaviorTreeNodeToString(repetition.Child));
+            sb.Append(BehaviorTreeNodeToString(repetitionBehavior.Child));
             sb.Append("}");
             return sb.ToString();
         }
 
-        private static String BehaviorTreeTerminalToString(BehaviorTree.Leaf leaf) {
-            string temp = leaf.Recognizer.Name;
-            var asStringTerminal = leaf.Recognizer as StringTerminal;
+        [UsedImplicitly]
+        private static String BehaviorTreeNodeToString(BehaviorLeaf behaviorLeaf) {
+            string temp = behaviorLeaf.Recognizer.Name;
+            var asStringTerminal = behaviorLeaf.Recognizer as StringTerminal;
             if (asStringTerminal != null) {
-                temp = Util.QuoteStringLiteral(asStringTerminal.Text);
+                temp = Utilities.QuoteStringLiteral(asStringTerminal.Text);
             }
-            String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(leaf.Recognizer);
+            String temp2 = StandardSymbols.TryGetBuiltInNameBySymbol(behaviorLeaf.Recognizer);
             if (temp2 != null) temp = temp2;
             return temp;
         }
 
-        private static String BehaviorTreeNodeToString(BehaviorTree.Node node) {
-            if (node is BehaviorTree.Sequence) {
-                return BehaviorTreeSequenceToString(node as BehaviorTree.Sequence);
+        private static DynamicDispatcher _behaviorTreeNodeToStringDispatcher;
+        private static String BehaviorTreeNodeToString(BehaviorNode behaviorNode) {
+            if (_behaviorTreeNodeToStringDispatcher == null) {
+                _behaviorTreeNodeToStringDispatcher = new DynamicDispatcher();
             }
-            if (node is BehaviorTree.Choice) {
-                return BehaviorTreeChoiceToString(node as BehaviorTree.Choice);
-            }
-            if (node is BehaviorTree.Repetition) {
-                return BehaviorTreeRepetitionToString(node as BehaviorTree.Repetition);
-            }
-            if (node is BehaviorTree.Leaf) {
-                return BehaviorTreeTerminalToString(node as BehaviorTree.Leaf);
-            }
-            if (node is BehaviorTree.Optional) {
-                return BehaviorTreeOptionalToString(node as BehaviorTree.Optional);
-            }
-            throw new InvalidOperationException();
+            return _behaviorTreeNodeToStringDispatcher.Dispatch<String>(behaviorNode);
         }
 
-        private static void AppendRecognizer(StringBuilder builder, Production production) {
-            builder.Append(production.Name);
-            builder.Append("=");
-            builder.Append(BehaviorTreeNodeToString(production.Behavior.Root));
-            builder.AppendLine(".");
-        }
-
-        public static String GrammarToString(Grammar grammar) {
-            var builder = new StringBuilder();
-            foreach (var recognizer in grammar.Productions) {
-                AppendRecognizer(builder, recognizer);
-            }
-            return builder.ToString();
-        }
-
-        public class Formatter : IMetaSyntax {
-            public void Generate(Stream s, Grammar grammar) {
-                string text = GrammarToString(grammar);
-                using (var sw = new StreamWriter(s, new UTF8Encoding(true))) {
-                    sw.Write(text);
-                }
-            }
-
-            public Grammar Parse(Stream s) {
-                var sr = new StreamReader(s, Encoding.UTF8);
-                string text = sr.ReadToEnd();
-                sr.Dispose();
-                return GrammarFromString(text);
-            }
-        }
     }
 }

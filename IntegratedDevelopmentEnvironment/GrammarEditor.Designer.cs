@@ -73,7 +73,7 @@
             this.toolStripButtonSequence.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonSequence.Name = "toolStripButtonSequence";
             this.toolStripButtonSequence.Size = new System.Drawing.Size(89, 22);
-            this.toolStripButtonSequence.Text = "New Sequence";
+            this.toolStripButtonSequence.Text = "New SequenceBehavior";
             this.toolStripButtonSequence.Click += new System.EventHandler(this.toolStripButtonSequence_Click);
             // 
             // toolStripButtonRepetition
@@ -83,7 +83,7 @@
             this.toolStripButtonRepetition.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonRepetition.Name = "toolStripButtonRepetition";
             this.toolStripButtonRepetition.Size = new System.Drawing.Size(92, 22);
-            this.toolStripButtonRepetition.Text = "New Repetition";
+            this.toolStripButtonRepetition.Text = "New RepetitionBehavior";
             this.toolStripButtonRepetition.Click += new System.EventHandler(this.toolStripButtonRepetition_Click);
             // 
             // toolStripButtonChoice
@@ -93,7 +93,7 @@
             this.toolStripButtonChoice.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonChoice.Name = "toolStripButtonChoice";
             this.toolStripButtonChoice.Size = new System.Drawing.Size(75, 22);
-            this.toolStripButtonChoice.Text = "New Choice";
+            this.toolStripButtonChoice.Text = "New ChoiceBehavior";
             this.toolStripButtonChoice.Click += new System.EventHandler(this.toolStripButtonChoice_Click);
             // 
             // toolStripButtonOptional
@@ -135,7 +135,7 @@
             this.toolStripButtonLeaf.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonLeaf.Name = "toolStripButtonLeaf";
             this.toolStripButtonLeaf.Size = new System.Drawing.Size(60, 22);
-            this.toolStripButtonLeaf.Text = "New Leaf";
+            this.toolStripButtonLeaf.Text = "New BehaviorLeaf";
             this.toolStripButtonLeaf.Click += new System.EventHandler(this.toolStripButtonLeaf_Click);
             // 
             // toolStripSeparator2

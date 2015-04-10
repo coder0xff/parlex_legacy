@@ -7,8 +7,7 @@ More generally speaking, parlex is an effort to improve the available tooling fo
 
  - Graphical representations of the behavior of grammars
  - Fully automated optimization and minimization of grammars
- - A new intuitive metasyntax for defining language grammars
  - Cross conversion between common grammars such as GLR, LALR, and LR(k).
  - Cross conversion between common metasyntaxes such as EBNF, Wirth Syntax Notation, and Regular Expressions
- - A framework for parallel non-deterministic parsing of text based on a supplid grammar definition
+ - A framework for parallel non-deterministic parsing of text based on a supplied grammar definition
  - An Integrated Development Environment

@@ -1,70 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Common;
+using Parlex.Annotations;
 
 namespace Parlex {
     public class Grammar {
-        public List<Production> Productions = new List<Production>();
+        public Production Main { get; set; }
 
-        public Production Main;
+        public List<Production> Productions {
+            get { return _productions; }
+        }
 
         public Production GetProduction(String name) {
-            return Productions.FirstOrDefault(production => production.Name == name);
-        }
-
-        public void ResolveNode(BehaviorTree.Choice choice) {
-            foreach (var child in choice.Children) {
-                ResolveNode(child);
-            }
-        }
-
-        public void ResolveNode(BehaviorTree.Leaf leaf) {
-            var placeHolder = leaf.Recognizer as PlaceholderRecognizer;
-            if (placeHolder != null) {
-                var resolved = GetProduction(placeHolder.Name);
-                if (resolved != null) {
-                    leaf.Recognizer = resolved;
-                } else {
-                    throw new UndefinedProductionException(placeHolder.Name);
-                }
-            }
-        }
-
-        public void ResolveNode(BehaviorTree.Optional optional) {
-            ResolveNode(optional.Child);
-        }
-
-        public void ResolveNode(BehaviorTree.Repetition repetition) {
-            ResolveNode(repetition.Child);
-        }
-
-        public void ResolveNode(BehaviorTree.Sequence sequence) {
-            foreach (var child in sequence.Children) {
-                ResolveNode(child);
-            }
-        }
-
-        private static DynamicDispatcher _resolveNodeDispatcher;
-        void ResolveNode(BehaviorTree.Node node) {
-            if (_resolveNodeDispatcher == null) {
-                _resolveNodeDispatcher = new DynamicDispatcher();
-            }
-            _resolveNodeDispatcher.Dispatch<Object>(this, node);
-        }
-
-        internal void Resolve() {
-            foreach (var production in Productions) {
-                ResolveNode(production.Behavior.Root);
-            }
+            return _productions.FirstOrDefault(production => production.Name == name);
         }
 
         public NfaGrammar ToNfaGrammar() {
             var result = new NfaGrammar();
-            Dictionary<Production, NfaProduction> map = new Dictionary<Production, NfaProduction>();
-            foreach (var production in Productions) {
+            var map = new Dictionary<Production, NfaProduction>();
+            foreach (var production in _productions) {
                 var nfa = production.Behavior.ToNfa();
                 var nfaProduction = new NfaProduction(production.Name, production.IsGreedy, nfa);
                 result.Productions.Add(nfaProduction);
@@ -89,5 +44,58 @@ namespace Parlex {
             }
             return result;
         }
+
+        [UsedImplicitly]
+        public void ResolveNode(ChoiceBehavior choiceBehavior) {
+            foreach (var child in choiceBehavior.Children) {
+                ResolveNode(child);
+            }
+        }
+
+        [UsedImplicitly]
+        public void ResolveNode(BehaviorLeaf behaviorLeaf) {
+            var placeHolder = behaviorLeaf.Recognizer as PlaceholderProduction;
+            if (placeHolder != null) {
+                var resolved = GetProduction(placeHolder.Name);
+                if (resolved != null) {
+                    behaviorLeaf.Recognizer = resolved;
+                } else {
+                    throw new UndefinedProductionException(placeHolder.Name);
+                }
+            }
+        }
+
+        [UsedImplicitly]
+        public void ResolveNode(Optional optional) {
+            ResolveNode(optional.Child);
+        }
+
+        [UsedImplicitly]
+        public void ResolveNode(RepetitionBehavior repetitionBehavior) {
+            ResolveNode(repetitionBehavior.Child);
+        }
+
+        [UsedImplicitly]
+        public void ResolveNode(SequenceBehavior sequenceBehavior) {
+            foreach (var child in sequenceBehavior.Children) {
+                ResolveNode(child);
+            }
+        }
+        void ResolveNode(BehaviorNode behaviorNode) {
+            if (_resolveNodeDispatcher == null) {
+                _resolveNodeDispatcher = new DynamicDispatcher();
+            }
+            _resolveNodeDispatcher.Dispatch<Object>(this, behaviorNode);
+        }
+
+        internal void Resolve() {
+            foreach (var production in _productions) {
+                ResolveNode(production.Behavior.Root);
+            }
+        }
+
+        private readonly List<Production> _productions = new List<Production>();
+
+        private static DynamicDispatcher _resolveNodeDispatcher;
     }
 }

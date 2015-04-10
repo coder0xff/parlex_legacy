@@ -2,20 +2,33 @@
 using System;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 
 namespace Parlex {
-    public class ParseEngine {
-        public readonly Int32[] CodePoints;
+    public class ParseEngine : IDisposable {
+        public string Document { get; private set; }
+
+        public IReadOnlyList<Int32> CodePoints {
+            get { return _codePoints; }
+        }
+
+        public AbstractSyntaxGraph AbstractSyntaxGraph { get; private set; }
+
+        public void Join() {
+            _blocker.Wait();
+        }
+
+        public void Dispose() {
+            _blocker.Dispose();
+        }
+
+        private readonly ReadOnlyCollection<Int32> _codePoints;
         private readonly Recognizer _main;
         private int _activeDispatcherCount;
         private readonly Dictionary<MatchCategory, Dispatcher> _dispatchers = new Dictionary<MatchCategory, Dispatcher>();
         private readonly ManualResetEventSlim _blocker = new ManualResetEventSlim();
-        public AbstractSyntaxGraph AbstractSyntaxGraph { get; private set; }
-
-        public string Document { get; private set; }
-
         private readonly int _start;
         private readonly int _length;
         internal readonly CustomThreadPool ThreadPool = new CustomThreadPool();
@@ -24,16 +37,13 @@ namespace Parlex {
         public ParseEngine(string document, Recognizer main, int start = 0, int length = -1) {
             Document = document;
             _start = start;
-            CodePoints = document.GetUtf32CodePoints();
-            _length = length < 0 ? CodePoints.Length : length;
+            _codePoints = new ReadOnlyCollection<int>(document.GetUtf32CodePoints());
+            _length = length < 0 ? _codePoints.Count : length;
             _main = main;
             _idleHandler = DeadLockBreaker;
             ThreadPool.OnIdle += _idleHandler;
             StartParse();
         }
-
-        public ParseEngine(string document, Type mainSyntaxNode, int start = 0, int length = -1) :
-            this(document, (Recognizer)Activator.CreateInstance(mainSyntaxNode), start, length) { }
 
         internal class Dispatcher : MatchCategory {
             internal class DependencyEntry {
@@ -88,7 +98,7 @@ namespace Parlex {
                 System.Diagnostics.Debug.WriteLine("Creating dependency by Dispatcher " + dependent + " on Dispatcher " + this);
 #endif
                 lock (Dependents) {
-                    Dependents.Add(new DependencyEntry { Node = node, Handler = handler, Context = node.Context.Value, Dependent = dependent }); //context is TLS
+                    Dependents.Add(new DependencyEntry { Node = node, Handler = handler, Context = node.ParseContext, Dependent = dependent }); //context is TLS
                 }
                 ScheduleFlush();
             }
@@ -110,23 +120,23 @@ namespace Parlex {
                                 var newPos = dependencyEntry.Context.Position + matchClass.Length;
                                 var newChain = new List<MatchClass>(dependencyEntry.Context.ParseChain) { matchClass };
                                 var oldContext = dependencyEntry.Context;
-                                dependencyEntry.Node.Context.Value = dependencyEntry.Context;
+                                dependencyEntry.Node.ParseContext = dependencyEntry.Context;
                                 dependencyEntry.Node.StartDependency();
                                 var entry = dependencyEntry;
                                 _threadPool.QueueUserWorkItem(_ => {
-                                        entry.Node.Context.Value = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine, Dispatcher = entry.Context.Dispatcher, DependencyCounter = entry.Context.DependencyCounter};
+                                        entry.Node.ParseContext = new ParseContext { Position = newPos, ParseChain = newChain, Engine = _engine, Dispatcher = entry.Context.Dispatcher, DependencyCounter = entry.Context.DependencyCounter};
                                         entry.Handler();
                                         entry.Node.EndDependency();
-                                        entry.Node.Context.Value = null;
+                                        entry.Node.ParseContext = null;
                                     });
-                                dependencyEntry.Node.Context.Value = oldContext;
+                                dependencyEntry.Node.ParseContext = oldContext;
                             }
                             if (Completed && !dependencyEntry.Ended) {
                                 dependencyEntry.Ended = true;
 #if PARSE_TRACE
                                 System.Diagnostics.Debug.WriteLine("Informing " + dependencyEntry.Dependent + " that " + this + " has completed");
 #endif
-                                dependencyEntry.Node.Context.Value = dependencyEntry.Context;
+                                dependencyEntry.Node.ParseContext = dependencyEntry.Context;
                                 dependencyEntry.Node.EndDependency();
                             }
                         }
@@ -180,7 +190,7 @@ namespace Parlex {
             Interlocked.Increment(ref _activeDispatcherCount);
             dispatcher.OnComplete += OnDispatcherTerminated;
             ThreadPool.QueueUserWorkItem(_ => {
-                dispatcher.Recognizer.Context.Value = new ParseContext {
+                dispatcher.Recognizer.ParseContext = new ParseContext {
                     Position = dispatcher.Position, 
                     ParseChain = new List<MatchClass>(), 
                     Engine = this, 
@@ -207,17 +217,13 @@ namespace Parlex {
         }
 
         internal void AddDependency(Recognizer symbol, Dispatcher dependent, Recognizer node, Action handler) {
-            GetDispatcher(new MatchCategory(node.Context.Value.Position, symbol)).AddDependency(dependent, node, handler);
+            GetDispatcher(new MatchCategory(node.ParseContext.Position, symbol)).AddDependency(dependent, node, handler);
         }
 
         private void Finish() {
             ThreadPool.OnIdle -= _idleHandler;
             ConstructAbstractSyntaxGraph();
             _blocker.Set();
-        }
-
-        public void Join() {
-            _blocker.Wait();
         }
 
         private void PruneAbstractSyntaxForest() {
@@ -307,5 +313,6 @@ namespace Parlex {
                 dispatcher.NodeCompleted();
             }
         }
+
     }
 }

@@ -1,27 +1,14 @@
-﻿using System;
-
-namespace Parlex {
+﻿namespace Parlex {
     public class MatchClass {
         public ParseEngine Engine { get; private set; }
         public int Position { get; private set; }
         public Recognizer Recognizer { get; private set; }
         public int Length { get; private set; }
 
-        public String Text {
-            get { return Engine.Document.Utf32Substring(Position, Length); }
-        }
-
-        private MatchCategory Category {
+        public MatchCategory Category {
             get {
                 return new MatchCategory(Position, Recognizer);
             }
-        }
-
-        internal MatchClass(ParseEngine engine, int position, Recognizer recognizer, int length) {
-            Engine = engine;
-            Position = position;
-            Recognizer = recognizer;
-            Length = length;
         }
 
         public override bool Equals(object obj) {
@@ -43,6 +30,13 @@ namespace Parlex {
 
         public override string ToString() {
             return "{" + Position + ":" + Length + ":" + Recognizer.Name + "}" ;
+        }
+
+        internal MatchClass(ParseEngine engine, int position, Recognizer recognizer, int length) {
+            Engine = engine;
+            Position = position;
+            Recognizer = recognizer;
+            Length = length;
         }
 
     }

@@ -1,24 +1,28 @@
 ﻿using System;
 using System.Collections.Concurrent.More;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Automata;
 
 namespace Parlex {
     public class NfaGrammar {
-        public readonly List<NfaProduction> Productions = new List<NfaProduction>();
-        public NfaProduction Main;
+        public Collection<NfaProduction> Productions {
+            get { return _productions; }
+        }
 
+
+        public NfaProduction Main { get; set; }
 
         public NfaProduction GetProduction(String name) {
-            return Productions.FirstOrDefault(x => x.Name == name);
+            return _productions.FirstOrDefault(x => x.Name == name);
         }
 
         public Grammar ToGrammar() {
             var result = new Grammar();
             var map = new AutoDictionary<NfaProduction, Production>(nfaProduction => new Production(nfaProduction.Name));
             //Convert NfaProductions to Productions
-            foreach (var nfaProduction in Productions) {
+            foreach (var nfaProduction in _productions) {
                 var resultProduction = map[nfaProduction];
                 var clone = new Nfa<Recognizer>(nfaProduction.Nfa);
                 //And convert the transition that are NfaProductions to Productions
@@ -42,5 +46,6 @@ namespace Parlex {
             }
             return result;
         }
+        private Collection<NfaProduction> _productions = new Collection<NfaProduction>();
     }
 }

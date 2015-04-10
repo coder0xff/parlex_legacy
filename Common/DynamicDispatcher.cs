@@ -5,12 +5,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using FastDelegate.Net;
 
 namespace Common {
     public class DynamicDispatcher {
-        private readonly Node _rootNode = new Node();
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         public DynamicDispatcher() {
             MethodBase method = new StackTrace(1).GetFrame(0).GetMethod();
@@ -21,16 +20,10 @@ namespace Common {
             }
         }
 
-        private static void BuildTree(Node node, Func<Object, Object[], Object> delegateFunc, IEnumerable<Type> parameterTypes) {
-            if (!parameterTypes.Any()) {
-                node.DelegateFunc = delegateFunc;
-            } else {
-                var actualType = parameterTypes.First();
-                BuildTree(node.Children[parameterTypes.First()], delegateFunc, parameterTypes.Skip(1));
-            }
-        }
-
         public TReturn Dispatch<TReturn>(Object instance, params Object[] parameters) {
+            if (parameters == null) {
+                throw new ArgumentNullException("parameters");
+            }
             Node currentNode = _rootNode;
             foreach (object parameter in parameters) {
                 var selectedType = parameter.GetType();
@@ -59,11 +52,27 @@ namespace Common {
             return (TReturn)currentNode.DelegateFunc(instance, parameters);
         }
 
+        private readonly Node _rootNode = new Node();
+
+        private static void BuildTree(Node node, Func<Object, Object[], Object> delegateFunc, IEnumerable<Type> parameterTypes) {
+            if (!parameterTypes.Any()) {
+                node.DelegateFunc = delegateFunc;
+            } else {
+                BuildTree(node.Children[parameterTypes.First()], delegateFunc, parameterTypes.Skip(1));
+            }
+        }
+
         private class Node {
             public readonly JaggedAutoDictionary<Type, Node> Children = new JaggedAutoDictionary<Type, Node>(x => new Node());
             public Func<Object, Object[], Object> DelegateFunc;
         }
     }
 
-    public class CompatibleOverloadNotFoundException : Exception {}
+    [Serializable]
+    public class CompatibleOverloadNotFoundException : Exception {
+        public CompatibleOverloadNotFoundException() { }
+        public CompatibleOverloadNotFoundException(String message) : base(message) {}
+        public CompatibleOverloadNotFoundException(String message, Exception innerException) : base(message, innerException) {}
+        protected CompatibleOverloadNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) {}
+    }
 }
